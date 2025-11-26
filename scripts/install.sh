@@ -538,8 +538,11 @@ install_standards() {
     
     print_info "Installing language standards..."
     
-    # Install Rust standards
+    # Install General standards (always first - contains core principles)
     if command -v curl &> /dev/null; then
+        curl -sSL "$REPO_URL/standards/general.md" -o "$COPILOT_DIR/standards/general.md" 2>/dev/null || {
+            print_warning "Could not download General standards from remote"
+        }
         curl -sSL "$REPO_URL/standards/rust.md" -o "$COPILOT_DIR/standards/rust.md" 2>/dev/null || {
             print_warning "Could not download Rust standards from remote"
         }
@@ -549,6 +552,10 @@ install_standards() {
     fi
     
     # Check if files were created
+    if [ -f "$COPILOT_DIR/standards/general.md" ]; then
+        print_success "General programming standards installed"
+    fi
+    
     if [ -f "$COPILOT_DIR/standards/rust.md" ]; then
         print_success "Rust standards installed"
     fi

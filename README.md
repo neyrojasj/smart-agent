@@ -173,6 +173,15 @@ summary:
 
 When installed with `--with-standards`, the agent will apply best practices for:
 
+### General (`standards/general.md`) - **Core Principles**
+Fundamental programming standards that apply across ALL languages:
+
+- **No default environment variables** - Missing config must fail at startup
+- **No silent error swallowing** - All errors must be handled or propagated
+- **No catch-all defaults** - Pattern matching must be exhaustive
+- **No unsafe unwrapping** - Always use `.expect()` with reason or handle explicitly
+- **Fail fast, fail loud** - Bugs caught in development, not production
+
 ### Rust (`standards/rust.md`)
 - Project structure conventions
 - Error handling with `thiserror` and `anyhow`
@@ -223,6 +232,7 @@ planning-copilot/
 ├── agents/
 │   └── planning.agent.md    # Main planning agent (with YAML frontmatter)
 ├── standards/
+│   ├── general.md           # General programming standards (all languages)
 │   ├── rust.md              # Rust best practices
 │   └── nodejs.md            # Node.js best practices
 ├── scripts/
