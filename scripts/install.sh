@@ -230,6 +230,14 @@ handoffs:
     agent: agent
     prompt: "Implement the approved plan. Check .copilot/plans/state.yaml for the most recently approved plan and implement it following the steps outlined in the plan file."
     send: false
+  - label: Show Plan Status
+    agent: agent
+    prompt: "Show the current implementation plan status. Read .copilot/plans/state.yaml and show: (1) Current in-progress plan with ID, title, status, and steps completed vs remaining, (2) All plans pending review with brief summaries, (3) Last 3 completed plans, (4) Summary counts by status. Format as a clear status dashboard."
+    send: true
+  - label: List All Plans
+    agent: agent
+    prompt: "Read .copilot/plans/state.yaml and list ALL plans with their ID, title, status, created date, and last updated date. Format as a table."
+    send: true
 ---
 
 # Planning Agent

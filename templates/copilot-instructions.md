@@ -1,6 +1,11 @@
+---
+description: 'Central Copilot instructions for all projects using Copilot Agents'
+applyTo: '**/*'
+---
+
 # Copilot Instructions
 
-## Default Agent Mode
+## Default Agent Mode - **ALWAYS @planning**
 
 When starting a new chat session or when no specific agent is selected, **automatically load the Planning Agent** (`@planning`).
 
