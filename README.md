@@ -142,6 +142,8 @@ The `copilot-instructions.md` ensures the Planning Agent is **automatically load
 
 When you first invoke the planning agent, it performs these steps:
 
+<div align="center">
+
 <table>
 <tr>
 <td width="10%" align="center">1️⃣</td>
@@ -180,9 +182,12 @@ When you first invoke the planning agent, it performs these steps:
 </tr>
 </table>
 
+</div>
+
 ### 🔄 Planning Workflow
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4A90E2','primaryTextColor':'#fff','primaryBorderColor':'#2E5C8A','lineColor':'#6c757d','secondaryColor':'#50C878','tertiaryColor':'#E74C3C'}}}%%
 graph TD
     A[💭 User Request] --> B[📝 Create Plan]
     B --> C[📋 draft]
@@ -196,11 +201,19 @@ graph TD
     I --> J[✅ completed]
     J --> K[📦 archived]
     
-    style A fill:#e1f5ff
-    style G fill:#d4edda
-    style H fill:#f8d7da
-    style J fill:#d1ecf1
-    style K fill:#f0f0f0
+    style A fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style B fill:#6c757d,stroke:#495057,stroke-width:2px,color:#fff
+    style C fill:#6c757d,stroke:#495057,stroke-width:2px,color:#fff
+    style D fill:#6c757d,stroke:#495057,stroke-width:2px,color:#fff
+    style E fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style F fill:#9B59B6,stroke:#7D3C98,stroke-width:3px,color:#fff
+    style G fill:#50C878,stroke:#2E7D4E,stroke-width:3px,color:#fff
+    style H fill:#E74C3C,stroke:#C0392B,stroke-width:3px,color:#fff
+    style I fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
+    style J fill:#3498DB,stroke:#2874A6,stroke-width:3px,color:#fff
+    style K fill:#95A5A6,stroke:#707B7C,stroke-width:2px,color:#fff
+    
+    linkStyle default stroke:#6c757d,stroke-width:2px
 ```
 
 ### ⚠️ Human-in-the-Loop Approval
@@ -297,6 +310,7 @@ Interact with the `@planning` agent using these commands:
 <div align="center">
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4A90E2','primaryTextColor':'#fff','primaryBorderColor':'#2E5C8A','lineColor':'#6c757d','secondaryColor':'#50C878','tertiaryColor':'#E74C3C','background':'#ffffff','mainBkg':'#4A90E2','secondBkg':'#50C878','tertiaryBkg':'#E74C3C','textColor':'#333','lineColor':'#6c757d','fontSize':'16px'}}}%%
 stateDiagram-v2
     [*] --> draft: Create
     draft --> pending_review: Complete
@@ -308,6 +322,22 @@ stateDiagram-v2
     completed --> archived: Archive
     rejected --> [*]
     archived --> [*]
+    
+    classDef draftStyle fill:#6c757d,stroke:#495057,stroke-width:2px,color:#fff
+    classDef reviewStyle fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    classDef approvedStyle fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    classDef rejectedStyle fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    classDef progressStyle fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
+    classDef completedStyle fill:#3498DB,stroke:#2874A6,stroke-width:2px,color:#fff
+    classDef archivedStyle fill:#95A5A6,stroke:#707B7C,stroke-width:2px,color:#fff
+    
+    class draft draftStyle
+    class pending_review reviewStyle
+    class approved approvedStyle
+    class rejected rejectedStyle
+    class in_progress progressStyle
+    class completed completedStyle
+    class archived archivedStyle
 ```
 
 </div>
