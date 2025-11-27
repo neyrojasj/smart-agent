@@ -140,25 +140,45 @@ The `copilot-instructions.md` ensures the Planning Agent is **automatically load
 
 ### 🏁 First Run Initialization
 
-When you first invoke the planning agent:
+When you first invoke the planning agent, it performs these steps:
 
-```mermaid
-graph LR
-    A[🚀 Start] --> B{📄 project_summary.md exists?}
-    B -->|No| C[🔍 Analyze project]
-    B -->|Yes| D[📖 Read instructions]
-    C --> E[📊 Create summary]
-    E --> D
-    D --> F[🔍 Scan .github/]
-    F --> G[📝 Update instructions]
-    G --> H[✅ Ready to plan]
-```
-
-1. ✅ **Check** if `.copilot/project_summary.md` exists
-2. 📊 **Analyze** your project structure (if needed)
-3. 📖 **Read** `.copilot/instructions.md` for custom rules
-4. 🔍 **Scan** `.github/` for existing configurations
-5. ✅ **Ready** to create plans
+<table>
+<tr>
+<td width="10%" align="center">1️⃣</td>
+<td width="90%">
+<strong>Check for Project Summary</strong><br/>
+<sub>Verifies if <code>.copilot/project_summary.md</code> exists</sub>
+</td>
+</tr>
+<tr>
+<td width="10%" align="center">2️⃣</td>
+<td width="90%">
+<strong>Analyze Project Structure</strong><br/>
+<sub>If summary doesn't exist, scans your codebase and generates insights</sub>
+</td>
+</tr>
+<tr>
+<td width="10%" align="center">3️⃣</td>
+<td width="90%">
+<strong>Read Custom Instructions</strong><br/>
+<sub>Loads project-specific rules from <code>.copilot/instructions.md</code></sub>
+</td>
+</tr>
+<tr>
+<td width="10%" align="center">4️⃣</td>
+<td width="90%">
+<strong>Scan GitHub Configuration</strong><br/>
+<sub>Discovers existing Copilot configurations in <code>.github/</code> folder</sub>
+</td>
+</tr>
+<tr>
+<td width="10%" align="center">5️⃣</td>
+<td width="90%">
+<strong>Ready to Plan</strong><br/>
+<sub>Agent is now fully initialized and ready to create plans</sub>
+</td>
+</tr>
+</table>
 
 ### 🔄 Planning Workflow
 
