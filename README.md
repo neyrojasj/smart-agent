@@ -124,6 +124,20 @@ your-project/
     │   ├── general.md           # Universal principles
     │   ├── rust.md              # Rust standards
     │   └── nodejs.md            # Node.js standards
+    ├── decisions/               # 📐 Design decisions
+    │   ├── state.yaml           # Decision index
+    │   └── DEC-XXX.md           # Individual decisions
+    ├── testing/                 # 🧪 Testing context
+    │   ├── state.yaml           # Testing configuration
+    │   └── strategy.md          # Testing strategy
+    ├── context/                 # 🗺️ Project context
+    │   ├── state.yaml           # Context state
+    │   ├── architecture.md      # System architecture
+    │   ├── codebase-map.md      # Navigation guide
+    │   └── dependencies.md      # Dependencies analysis
+    ├── memory/                  # 🧠 Persistent memory
+    │   ├── state.yaml           # Memory index
+    │   └── *.md                 # Individual memories
     ├── plans/
     │   ├── state.yaml           # 📈 Plan tracking
     │   └── PLAN-XXX.md          # 📋 Individual plans
@@ -545,7 +559,19 @@ planning-copilot/
     ├── plan-template.md         # 📋 Plan file template
     ├── project-summary-template.md  # 📊 Summary template
     ├── state.yaml               # 🔄 State file template
-    └── memory-template.md       # 🧠 Memory template
+    ├── memory-state.yaml        # 🧠 Memory state template
+    ├── memory-template.md       # 🧠 Memory file template
+    ├── decisions/               # 📐 Decision templates
+    │   ├── state.yaml           # Decision index template
+    │   └── decision-template.md # Individual decision template
+    ├── testing/                 # 🧪 Testing templates
+    │   ├── state.yaml           # Testing state template
+    │   └── strategy.md          # Strategy documentation template
+    └── context/                 # 🗺️ Context templates
+        ├── state.yaml           # Context state template
+        ├── architecture.md      # Architecture doc template
+        ├── codebase-map.md      # Codebase map template
+        └── dependencies.md      # Dependencies template
 ```
 
 ---

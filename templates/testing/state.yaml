@@ -1,0 +1,65 @@
+version: 1
+last_updated: "YYYY-MM-DDTHH:MM:SSZ"
+
+# Testing Context
+# This file provides a comprehensive overview of the project's testing strategy and state
+
+testing_framework:
+  primary: null  # jest | vitest | pytest | cargo-test | go-test | etc.
+  secondary: []  # additional testing tools
+  coverage_tool: null  # coverage tool if any
+  e2e_tool: null  # playwright | cypress | selenium | etc.
+
+# Test organization
+structure:
+  unit_tests:
+    location: null  # src/__tests__ | tests/unit | etc.
+    pattern: null  # *.test.ts | *_test.go | test_*.py | etc.
+    count: 0
+  integration_tests:
+    location: null
+    pattern: null
+    count: 0
+  e2e_tests:
+    location: null
+    pattern: null
+    count: 0
+
+# Coverage targets and current state
+coverage:
+  target_percentage: 80
+  current_percentage: null
+  last_measured: null
+  excluded_paths: []
+
+# Test commands
+commands:
+  run_all: null  # npm test | cargo test | pytest | etc.
+  run_unit: null
+  run_integration: null
+  run_e2e: null
+  run_coverage: null
+  run_watch: null
+
+# Testing conventions
+conventions:
+  naming: null  # describe/it | test_ prefix | Test suffix | etc.
+  mocking_strategy: null  # How mocks are handled
+  fixtures_location: null  # Where test fixtures are stored
+  factories_location: null  # Where test factories are stored
+
+# Known test issues or gaps
+gaps:
+  # - description: "Missing tests for auth module"
+  #   priority: high
+  #   related_files: [src/auth/]
+
+# CI/CD testing configuration
+ci:
+  runs_tests: false
+  test_matrix: []  # Different environments tests run in
+  required_for_merge: false
+
+# Notes
+notes: |
+  [Any additional context about testing in this project]

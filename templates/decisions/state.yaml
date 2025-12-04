@@ -1,0 +1,37 @@
+version: 1
+last_updated: "YYYY-MM-DDTHH:MM:SSZ"
+
+decisions:
+  # DEC-001:
+  #   title: "Example Decision Title"
+  #   status: accepted  # proposed | accepted | deprecated | superseded
+  #   category: architecture  # architecture | patterns | dependencies | testing | performance | security | infrastructure
+  #   created: "YYYY-MM-DD"
+  #   updated: "YYYY-MM-DD"
+  #   superseded_by: null  # DEC-XXX if superseded
+  #   related_plans: []  # [PLAN-001, PLAN-002]
+  #   tags: []  # [api, database, auth]
+
+# Index by category for quick lookup
+categories:
+  architecture: []
+  patterns: []
+  dependencies: []
+  testing: []
+  performance: []
+  security: []
+  infrastructure: []
+
+# Index by status
+by_status:
+  proposed: []
+  accepted: []
+  deprecated: []
+  superseded: []
+
+summary:
+  total: 0
+  proposed: 0
+  accepted: 0
+  deprecated: 0
+  superseded: 0

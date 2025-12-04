@@ -1,0 +1,85 @@
+version: 1
+last_updated: "YYYY-MM-DDTHH:MM:SSZ"
+
+# Project Context
+# This file provides deep understanding of the project beyond the basic summary
+
+# Project identity
+project:
+  name: null
+  description: null
+  purpose: null  # What problem does this solve?
+  domain: null  # e-commerce | fintech | devtools | etc.
+  stage: null  # prototype | mvp | production | legacy
+
+# Architecture overview
+architecture:
+  style: null  # monolith | microservices | serverless | modular-monolith
+  patterns: []  # [MVC, CQRS, Event-Driven, etc.]
+  diagram_file: null  # Path to architecture diagram if exists
+
+# Tech stack details
+stack:
+  languages:
+    primary: null
+    secondary: []
+  frameworks: []
+  databases: []
+  caching: []
+  messaging: []
+  cloud_provider: null
+
+# Key modules/domains
+modules:
+  # - name: auth
+  #   path: src/auth/
+  #   purpose: "User authentication and authorization"
+  #   dependencies: [database, cache]
+  #   owner: null
+
+# External integrations
+integrations:
+  # - name: "Payment Gateway"
+  #   type: api
+  #   provider: stripe
+  #   config_location: null
+  #   documentation: null
+
+# Data flow
+data_flow:
+  entry_points: []  # [REST API, GraphQL, CLI, etc.]
+  data_stores: []
+  event_sources: []
+  event_consumers: []
+
+# Environment configuration
+environments:
+  development:
+    config_file: null
+    special_setup: null
+  staging:
+    config_file: null
+    special_setup: null
+  production:
+    config_file: null
+    special_setup: null
+
+# Critical paths
+critical_paths:
+  # - name: "User checkout"
+  #   description: "The main purchase flow"
+  #   files: [src/checkout/, src/payment/]
+  #   importance: high
+
+# Known constraints
+constraints:
+  technical: []
+  business: []
+  regulatory: []
+
+# Team conventions (if known)
+conventions:
+  branching_strategy: null  # git-flow | trunk-based | github-flow
+  commit_format: null  # conventional-commits | etc.
+  pr_requirements: null
+  code_review_required: null
