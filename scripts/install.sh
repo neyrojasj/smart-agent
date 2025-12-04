@@ -74,6 +74,9 @@ create_directory_structure() {
     # Create .copilot directory structure
     mkdir -p "$COPILOT_DIR/plans"
     mkdir -p "$COPILOT_DIR/memory"
+    mkdir -p "$COPILOT_DIR/decisions"
+    mkdir -p "$COPILOT_DIR/testing"
+    mkdir -p "$COPILOT_DIR/context"
     mkdir -p "$COPILOT_DIR/tmp"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
@@ -153,6 +156,189 @@ tags_index: {}
 EOF
     
     print_success "memory/state.yaml initialized"
+}
+
+create_decisions_state_yaml() {
+    print_info "Initializing decisions/state.yaml..."
+    
+    cat > "$COPILOT_DIR/decisions/state.yaml" << EOF
+# Planning Copilot - Design Decisions State File
+# This file indexes all design decisions for quick lookup
+
+version: 1
+last_updated: "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+decisions: {}
+
+# Index by category for quick lookup
+categories:
+  architecture: []
+  patterns: []
+  dependencies: []
+  testing: []
+  performance: []
+  security: []
+  infrastructure: []
+
+# Index by status
+by_status:
+  proposed: []
+  accepted: []
+  deprecated: []
+  superseded: []
+
+summary:
+  total: 0
+  proposed: 0
+  accepted: 0
+  deprecated: 0
+  superseded: 0
+EOF
+    
+    print_success "decisions/state.yaml initialized"
+}
+
+create_testing_state_yaml() {
+    print_info "Initializing testing/state.yaml..."
+    
+    cat > "$COPILOT_DIR/testing/state.yaml" << 'EOF'
+# Planning Copilot - Testing State File
+# This file provides a comprehensive overview of the project's testing strategy
+
+version: 1
+last_updated: "YYYY-MM-DDTHH:MM:SSZ"
+
+testing_framework:
+  primary: null  # jest | vitest | pytest | cargo-test | go-test | etc.
+  secondary: []
+  coverage_tool: null
+  e2e_tool: null
+
+structure:
+  unit_tests:
+    location: null
+    pattern: null
+    count: 0
+  integration_tests:
+    location: null
+    pattern: null
+    count: 0
+  e2e_tests:
+    location: null
+    pattern: null
+    count: 0
+
+coverage:
+  target_percentage: 80
+  current_percentage: null
+  last_measured: null
+  excluded_paths: []
+
+commands:
+  run_all: null
+  run_unit: null
+  run_integration: null
+  run_e2e: null
+  run_coverage: null
+  run_watch: null
+
+project:
+  run_dev: null
+  run_build: null
+  run_start: null
+  run_lint: null
+  run_format: null
+  package_manager: null
+  runtime: null
+  version_file: null
+
+conventions:
+  naming: null
+  mocking_strategy: null
+  fixtures_location: null
+  factories_location: null
+
+gaps: []
+
+ci:
+  runs_tests: false
+  test_matrix: []
+  required_for_merge: false
+
+notes: null
+EOF
+    
+    print_success "testing/state.yaml initialized"
+}
+
+create_context_state_yaml() {
+    print_info "Initializing context/state.yaml..."
+    
+    cat > "$COPILOT_DIR/context/state.yaml" << 'EOF'
+# Planning Copilot - Project Context State File
+# This file provides deep understanding of the project beyond the basic summary
+
+version: 1
+last_updated: "YYYY-MM-DDTHH:MM:SSZ"
+
+project:
+  name: null
+  description: null
+  purpose: null
+  domain: null
+  stage: null
+
+architecture:
+  style: null
+  patterns: []
+  diagram_file: null
+
+stack:
+  languages:
+    primary: null
+    secondary: []
+  frameworks: []
+  databases: []
+  caching: []
+  messaging: []
+  cloud_provider: null
+
+modules: []
+
+integrations: []
+
+data_flow:
+  entry_points: []
+  data_stores: []
+  event_sources: []
+  event_consumers: []
+
+environments:
+  development:
+    config_file: null
+    special_setup: null
+  staging:
+    config_file: null
+    special_setup: null
+  production:
+    config_file: null
+    special_setup: null
+
+critical_paths: []
+
+constraints:
+  technical: []
+  business: []
+  regulatory: []
+
+conventions:
+  branching_strategy: null
+  commit_format: null
+  pr_requirements: null
+  code_review_required: null
+EOF
+    
+    print_success "context/state.yaml initialized"
 }
 
 install_planning_agent() {
@@ -727,6 +913,9 @@ main() {
     create_gitignore
     create_state_yaml
     create_memory_state_yaml
+    create_decisions_state_yaml
+    create_testing_state_yaml
+    create_context_state_yaml
     install_planning_agent
     install_copilot_instructions
     create_instructions_template
@@ -743,21 +932,26 @@ main() {
     echo "The following has been installed:"
     echo "  • Planning agent:       .github/agents/planning.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
-    echo "  • Memory system:        .copilot/memory/"
     echo "  • Copilot folder:       .copilot/"
     echo "  • Plans tracker:        .copilot/plans/state.yaml"
+    echo "  • Memory system:        .copilot/memory/state.yaml"
+    echo "  • Design decisions:     .copilot/decisions/state.yaml"
+    echo "  • Testing context:      .copilot/testing/state.yaml"
+    echo "  • Project context:      .copilot/context/state.yaml"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
-        echo "  • Standards:      .copilot/standards/"
+        echo "  • Standards:            .copilot/standards/"
     fi
     
     echo ""
     echo "Next steps:"
     echo "  1. Review .copilot/instructions.md and add project-specific rules"
     echo "  2. Use the @planning agent in GitHub Copilot to start planning"
-    echo "  3. The agent will analyze your project on first run"
+    echo "  3. Run 'Setup Project Context' handoff to auto-analyze your project"
+    echo "  4. The agent will populate testing, context, and decisions on first run"
     echo ""
     print_info "Note: .copilot/ contents are gitignored by default"
+    print_info "Tip: Use the 'Setup Project Context' handoff button to auto-configure!"
     echo ""
 }
 

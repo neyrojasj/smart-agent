@@ -93,9 +93,64 @@ This document describes the testing strategy and conventions for this project.
 
 ---
 
+## Project Commands
+
+### Development
+```bash
+# Start development server/environment
+[command]
+
+# Build the project
+[command]
+
+# Start production build
+[command]
+```
+
+### Code Quality
+```bash
+# Run linter
+[command]
+
+# Run formatter
+[command]
+
+# Type checking (if applicable)
+[command]
+```
+
+### Package Management
+- **Package Manager**: [npm | yarn | pnpm | cargo | pip | poetry | etc.]
+- **Runtime**: [node | deno | bun | python | rust | go | etc.]
+- **Version File**: `[package.json | Cargo.toml | pyproject.toml | etc.]`
+
+```bash
+# Install dependencies
+[command]
+
+# Add a new dependency
+[command]
+
+# Update dependencies
+[command]
+```
+
+---
+
 ## CI/CD Integration
 
 [Describe how tests run in CI/CD pipeline]
+
+### Pipeline Stages
+1. [Stage 1 - e.g., Lint & Format Check]
+2. [Stage 2 - e.g., Unit Tests]
+3. [Stage 3 - e.g., Integration Tests]
+4. [Stage 4 - e.g., Build]
+5. [Stage 5 - e.g., Deploy]
+
+### CI Configuration File
+- **Location**: `[.github/workflows/ | .gitlab-ci.yml | etc.]`
+- **Main Workflow**: `[filename]`
 
 ---
 

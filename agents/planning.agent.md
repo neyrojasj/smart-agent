@@ -15,6 +15,10 @@ handoffs:
     agent: agent
     prompt: "Read .copilot/plans/state.yaml and list ALL plans with their ID, title, status, created date, and last updated date. Format as a table."
     send: true
+  - label: Setup Project Context
+    agent: agent
+    prompt: "Initialize or update the project context for the Planning Agent. Perform these steps: (1) Analyze the project structure, tech stack, and architecture. (2) Create/update .copilot/context/state.yaml with project identity, architecture style, tech stack, and modules. (3) Create/update .copilot/context/architecture.md with system diagram and layers. (4) Create/update .copilot/context/codebase-map.md with directory structure and entry points. (5) Create/update .copilot/context/dependencies.md with all dependencies. (6) Analyze testing setup and create/update .copilot/testing/state.yaml with framework, commands, and coverage. (7) Create/update .copilot/testing/strategy.md with test types and conventions. (8) Initialize .copilot/decisions/state.yaml if not exists. (9) Report summary of what was discovered and configured."
+    send: false
 ---
 
 # Planning Agent

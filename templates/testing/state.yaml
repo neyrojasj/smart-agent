@@ -41,6 +41,17 @@ commands:
   run_coverage: null
   run_watch: null
 
+# Project run configuration
+project:
+  run_dev: null  # npm run dev | cargo run | python main.py | etc.
+  run_build: null  # npm run build | cargo build --release | etc.
+  run_start: null  # npm start | ./target/release/app | etc.
+  run_lint: null  # npm run lint | cargo clippy | ruff check | etc.
+  run_format: null  # npm run format | cargo fmt | ruff format | etc.
+  package_manager: null  # npm | yarn | pnpm | cargo | pip | poetry | etc.
+  runtime: null  # node | deno | bun | python | rust | go | etc.
+  version_file: null  # package.json | Cargo.toml | pyproject.toml | etc.
+
 # Testing conventions
 conventions:
   naming: null  # describe/it | test_ prefix | Test suffix | etc.
