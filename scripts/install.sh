@@ -19,7 +19,7 @@ COPILOT_DIR=".copilot"
 GITHUB_DIR=".github"
 
 # Flags
-INSTALL_STANDARDS=false
+INSTALL_STANDARDS=true
 INSTALL_MINIMAL=false
 
 # =============================================================================
@@ -54,13 +54,14 @@ show_help() {
     echo "Usage: $0 [options]"
     echo ""
     echo "Options:"
-    echo "  --with-standards    Install with language standards (Rust, Node.js)"
-    echo "  --minimal           Install only the agent, no standards"
+    echo "  --with-standards    Install with language standards (default)"
+    echo "  --no-standards      Skip language standards installation"
+    echo "  --minimal           Install only the agent, no standards or extras"
     echo "  --help              Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                      # Interactive installation"
-    echo "  $0 --with-standards     # Install with all standards"
+    echo "  $0                      # Full installation with standards (default)"
+    echo "  $0 --no-standards       # Install without standards"
     echo "  $0 --minimal            # Install only the planning agent"
 }
 
@@ -856,8 +857,13 @@ parse_arguments() {
                 INSTALL_STANDARDS=true
                 shift
                 ;;
+            --no-standards)
+                INSTALL_STANDARDS=false
+                shift
+                ;;
             --minimal)
                 INSTALL_MINIMAL=true
+                INSTALL_STANDARDS=false
                 shift
                 ;;
             --help)
@@ -874,20 +880,10 @@ parse_arguments() {
 }
 
 interactive_mode() {
-    if [ "$INSTALL_MINIMAL" = false ] && [ "$INSTALL_STANDARDS" = false ]; then
-        echo ""
-        echo "Would you like to install language standards (Rust, Node.js)?"
-        echo "These provide best practices that the planning agent will follow."
-        echo ""
-        read -p "Install standards? [y/N]: " response
-        case "$response" in
-            [yY][eE][sS]|[yY])
-                INSTALL_STANDARDS=true
-                ;;
-            *)
-                INSTALL_STANDARDS=false
-                ;;
-        esac
+    # Standards are installed by default unless --minimal or --no-standards was passed
+    # No interactive prompt needed - just proceed with defaults
+    if [ "$INSTALL_MINIMAL" = true ]; then
+        INSTALL_STANDARDS=false
     fi
 }
 

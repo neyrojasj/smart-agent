@@ -74,24 +74,24 @@ Choose your installation style:
 
 <table>
 <tr>
-<td width="30%" align="center"><strong>🎨 Interactive</strong></td>
+<td width="30%" align="center"><strong>🚀 Full Install</strong></td>
 <td width="70%">
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/neyrojasj/planning-copilot/main/scripts/install.sh | bash
 ```
-<sub>Prompts for options</sub>
+<sub>Includes standards (Rust & Node.js) by default</sub>
 
 </td>
 </tr>
 <tr>
-<td width="30%" align="center"><strong>📚 With Standards</strong></td>
+<td width="30%" align="center"><strong>📦 No Standards</strong></td>
 <td width="70%">
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/neyrojasj/planning-copilot/main/scripts/install.sh | bash -s -- --with-standards
+curl -sSL https://raw.githubusercontent.com/neyrojasj/planning-copilot/main/scripts/install.sh | bash -s -- --no-standards
 ```
-<sub>Includes Rust & Node.js best practices</sub>
+<sub>Agent without language standards</sub>
 
 </td>
 </tr>
