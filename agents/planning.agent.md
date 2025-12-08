@@ -17,7 +17,7 @@ handoffs:
     send: true
   - label: Setup Project Context
     agent: Planning
-    prompt: "Initialize or update the project context for the Planning Agent. Perform these steps: (1) Analyze the project structure, tech stack, and architecture. (2) Create/update .copilot/context/state.yaml with project identity, architecture style, tech stack, and modules. (3) Create/update .copilot/context/architecture.md with system diagram and layers. (4) Create/update .copilot/context/codebase-map.md with directory structure and entry points. (5) Create/update .copilot/context/dependencies.md with all dependencies. (6) Analyze testing setup and create/update .copilot/testing/state.yaml with framework, commands, and coverage. (7) Create/update .copilot/testing/strategy.md with test types and conventions. (8) Initialize .copilot/decisions/state.yaml if not exists. (9) Report summary of what was discovered and configured."
+    prompt: "Read and execute the setup prompt at .copilot/prompts/setup-project.md (or .github/prompts/setup-project.md if .copilot doesn't exist yet). This prompt contains detailed instructions for: (1) Analyzing project structure, (2) Creating project_summary.md, (3) Creating instructions.md, (4) Setting up context/ directory, (5) Setting up testing/ directory, (6) Initializing decisions/, memory/, and plans/. Execute ALL steps in the prompt file. If the prompt file doesn't exist, inform the user to reinstall Planning Copilot."
     send: false
 ---
 
@@ -701,6 +701,20 @@ PLAN-XXX has been successfully implemented.
 
 This plan has been marked as `completed`. Would you like me to archive it?
 ```
+
+### Post-Completion: Update Project Summary
+
+**After EVERY completed plan, update `.copilot/project_summary.md`:**
+
+1. Re-analyze any files that were created, modified, or deleted
+2. Update the relevant sections:
+   - **Project Structure** if directories/files changed
+   - **Tech Stack** if new dependencies were added
+   - **Entry Points** if new entry points were created
+   - **Scripts/Commands** if package.json/Cargo.toml scripts changed
+   - **External Integrations** if new APIs/services were integrated
+3. Update the `*Last analyzed:*` timestamp at the bottom
+4. Briefly note what triggered the update (e.g., "Updated after PLAN-XXX completion")
 
 ---
 

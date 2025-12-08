@@ -78,6 +78,7 @@ create_directory_structure() {
     mkdir -p "$COPILOT_DIR/decisions"
     mkdir -p "$COPILOT_DIR/testing"
     mkdir -p "$COPILOT_DIR/context"
+    mkdir -p "$COPILOT_DIR/prompts"
     mkdir -p "$COPILOT_DIR/tmp"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
@@ -817,6 +818,125 @@ install_standards() {
     fi
 }
 
+install_prompts() {
+    print_info "Installing prompt files..."
+    
+    # Download the setup-project prompt
+    if command -v curl &> /dev/null; then
+        curl -sSL "$REPO_URL/templates/prompts/setup-project.md" -o "$COPILOT_DIR/prompts/setup-project.md" 2>/dev/null || {
+            print_warning "Could not download setup-project.md from remote"
+            create_setup_prompt_local
+        }
+    else
+        create_setup_prompt_local
+    fi
+    
+    if [ -f "$COPILOT_DIR/prompts/setup-project.md" ]; then
+        print_success "Setup project prompt installed"
+    fi
+}
+
+create_setup_prompt_local() {
+    cat > "$COPILOT_DIR/prompts/setup-project.md" << 'PROMPT_EOF'
+# Setup Project Context
+
+Execute this prompt to fully initialize or update the Planning Copilot context for this project.
+
+## Instructions
+
+Perform ALL of the following steps in order. Do not skip any steps.
+
+---
+
+## Step 1: Analyze Project Structure
+
+Scan the entire project and identify:
+- Root directory structure
+- All programming languages used (by file extension and content)
+- Package/dependency files (package.json, Cargo.toml, pyproject.toml, go.mod, etc.)
+- Configuration files (.env.example, config files, etc.)
+- Build/bundler configuration (webpack, vite, tsconfig, etc.)
+- CI/CD configuration (.github/workflows, .gitlab-ci.yml, etc.)
+
+---
+
+## Step 2: Create/Update Project Summary
+
+Create or update `.copilot/project_summary.md` with:
+
+- Project Identity (name, description, version, license)
+- Tech Stack (languages, frameworks, runtime, tools)
+- Project Structure (directory tree)
+- Entry Points
+- Scripts/Commands
+- Environment Variables
+- External Integrations
+
+---
+
+## Step 3: Create/Update Instructions
+
+Create or update `.copilot/instructions.md` with:
+
+- GitHub Configuration (copilot-instructions, prompts, agents found)
+- Standards Applied (based on detected tech stack)
+- Project-Specific Rules (from code patterns)
+- Detected Conventions (commit format, branch naming, PR requirements)
+
+---
+
+## Step 4: Setup Context Directory
+
+- Create/Update `.copilot/context/state.yaml` with project identity and architecture
+- Create/Update `.copilot/context/architecture.md` with system diagram
+- Create/Update `.copilot/context/codebase-map.md` with navigation guide
+- Create/Update `.copilot/context/dependencies.md` with all dependencies
+
+---
+
+## Step 5: Setup Testing Directory
+
+- Create/Update `.copilot/testing/state.yaml` with detected testing framework
+- Create/Update `.copilot/testing/strategy.md` with test locations and commands
+
+---
+
+## Step 6: Initialize Decisions Directory
+
+Create `.copilot/decisions/state.yaml` if not exists.
+
+---
+
+## Step 7: Initialize Memory Directory
+
+Create `.copilot/memory/state.yaml` if not exists.
+
+---
+
+## Step 8: Initialize Plans Directory
+
+Create `.copilot/plans/state.yaml` if not exists.
+
+---
+
+## Step 9: Report Summary
+
+Provide a summary of:
+- Project name and tech stack
+- Files created/updated
+- Key findings and recommendations
+
+---
+
+## Important Notes
+
+1. **Use real data** - Do not use placeholder text. Analyze the actual codebase.
+2. **Be thorough** - Scan all relevant files, not just root level.
+3. **Detect patterns** - Look for coding conventions in existing code.
+4. **Document gaps** - Note missing tests, documentation, etc.
+PROMPT_EOF
+}
+
 create_instructions_template() {
     print_info "Creating instructions template..."
     
@@ -914,6 +1034,7 @@ main() {
     create_context_state_yaml
     install_planning_agent
     install_copilot_instructions
+    install_prompts
     create_instructions_template
     
     if [ "$INSTALL_STANDARDS" = true ]; then
@@ -928,6 +1049,7 @@ main() {
     echo "The following has been installed:"
     echo "  • Planning agent:       .github/agents/planning.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
+    echo "  • Setup prompt:         .copilot/prompts/setup-project.md"
     echo "  • Copilot folder:       .copilot/"
     echo "  • Plans tracker:        .copilot/plans/state.yaml"
     echo "  • Memory system:        .copilot/memory/state.yaml"
