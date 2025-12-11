@@ -25,7 +25,7 @@ handoffs:
     send: true
   - label: Run Code Audit
     agent: Smart
-    prompt: "Read and execute the code audit prompt at .copilot/prompts/code-audit.md. CRITICAL: First check if .copilot/standards/ exists and contains standard files. If NO standards are found, STOP IMMEDIATELY and inform the user they need to install standards first. If standards exist, perform a comprehensive code audit against those standards and generate an actionable report."
+    prompt: "Read and execute the code audit prompt at .copilot/prompts/code-audit.md. CRITICAL: First check if .copilot/standards/ exists and contains standard files. If NO standards are found, STOP IMMEDIATELY and inform the user they need to install standards first. If standards exist, perform a comprehensive code audit against those standards and generate an actionable report. Check the directory: <path>"
     send: false
 ---
 
