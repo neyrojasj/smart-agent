@@ -484,6 +484,18 @@ install_standards() {
         curl -sSL "$REPO_URL/standards/nodejs.md" -o "$COPILOT_DIR/standards/nodejs.md" 2>/dev/null || {
             print_warning "Could not download Node.js standards from remote"
         }
+        curl -sSL "$REPO_URL/standards/c.md" -o "$COPILOT_DIR/standards/c.md" 2>/dev/null || {
+            print_warning "Could not download C standards from remote"
+        }
+        curl -sSL "$REPO_URL/standards/cpp.md" -o "$COPILOT_DIR/standards/cpp.md" 2>/dev/null || {
+            print_warning "Could not download C++ standards from remote"
+        }
+        curl -sSL "$REPO_URL/standards/golang.md" -o "$COPILOT_DIR/standards/golang.md" 2>/dev/null || {
+            print_warning "Could not download Go standards from remote"
+        }
+        curl -sSL "$REPO_URL/standards/python.md" -o "$COPILOT_DIR/standards/python.md" 2>/dev/null || {
+            print_warning "Could not download Python standards from remote"
+        }
     fi
     
     # Check if files were created
@@ -497,6 +509,22 @@ install_standards() {
     
     if [ -f "$COPILOT_DIR/standards/nodejs.md" ]; then
         print_success "Node.js standards installed"
+    fi
+    
+    if [ -f "$COPILOT_DIR/standards/c.md" ]; then
+        print_success "C standards installed"
+    fi
+    
+    if [ -f "$COPILOT_DIR/standards/cpp.md" ]; then
+        print_success "C++ standards installed"
+    fi
+    
+    if [ -f "$COPILOT_DIR/standards/golang.md" ]; then
+        print_success "Go standards installed"
+    fi
+    
+    if [ -f "$COPILOT_DIR/standards/python.md" ]; then
+        print_success "Python standards installed"
     fi
 }
 

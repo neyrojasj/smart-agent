@@ -9,6 +9,10 @@
 [![AI Ready](https://img.shields.io/badge/AI-Ready-purple?logo=openai)](https://github.com/features/copilot)
 [![Rust](https://img.shields.io/badge/Rust-Standards-orange?logo=rust)](standards/rust.md)
 [![Node.js](https://img.shields.io/badge/Node.js-Standards-green?logo=node.js)](standards/nodejs.md)
+[![C](https://img.shields.io/badge/C-Standards-blue?logo=c)](standards/c.md)
+[![C++](https://img.shields.io/badge/C%2B%2B-Standards-blue?logo=c%2B%2B)](standards/cpp.md)
+[![Go](https://img.shields.io/badge/Go-Standards-00ADD8?logo=go)](standards/golang.md)
+[![Python](https://img.shields.io/badge/Python-Standards-3776AB?logo=python)](standards/python.md)
 
 **A docs-first smart agent for GitHub Copilot that brings intentionality to AI-assisted development.**  
 *Load index. Read docs. Plan first. Approve consciously. Implement with confidence. Update docs.*
@@ -38,7 +42,7 @@ Complete lifecycle management: `draft` → `pending_review` → `approved` → `
 <td width="33%" valign="top">
 
 ### 🛡️ Best Practices
-Built-in language standards for Rust and Node.js. Extensible for any language or framework.
+Built-in language standards for Rust, Node.js, C, C++, Go, and Python. Extensible for any language or framework.
 
 </td>
 </tr>
@@ -80,7 +84,7 @@ Choose your installation style:
 ```bash
 curl -sSL https://raw.githubusercontent.com/neyrojasj/planning-copilot/main/scripts/install.sh | bash
 ```
-<sub>Includes standards (Rust & Node.js) by default</sub>
+<sub>Includes standards (Rust, Node.js, C, C++, Go, Python) by default</sub>
 
 </td>
 </tr>
@@ -134,7 +138,11 @@ your-project/
     ├── standards/               # 🛡️ Best practices (optional)
     │   ├── general.md           # Universal principles
     │   ├── rust.md              # Rust standards
-    │   └── nodejs.md            # Node.js standards
+    │   ├── nodejs.md            # Node.js standards
+    │   ├── c.md                 # C standards
+    │   ├── cpp.md               # C++ standards
+    │   ├── golang.md            # Go standards
+    │   └── python.md            # Python standards
     ├── plans/
     │   ├── state.yaml           # 📈 Plan tracking
     │   └── PLAN-XXX.md          # 📋 Individual plans
@@ -449,32 +457,86 @@ When installed with `--with-standards`, enforce best practices automatically:
 </details>
 
 ### 💚 Node.js Standards (`standards/nodejs.md`)
-
-<details>
-<summary><strong>📦 TypeScript, ESLint, Security & Testing</strong></summary>
-
-- **TypeScript** strict configuration and best practices
-- **ESLint** and **Prettier** setup for code consistency
-- **Error handling** patterns for async operations
-- **Security** best practices (no eval, sanitize inputs, etc.)
-- **Testing** with Vitest/Jest, including coverage requirements
-- **Performance** optimization patterns
-
-</details>
+ 
+ <details>
+ <summary><strong>📦 TypeScript, ESLint, Security & Testing</strong></summary>
+ 
+ - **TypeScript** strict configuration and best practices
+ - **ESLint** and **Prettier** setup for code consistency
+ - **Error handling** patterns for async operations
+ - **Security** best practices (no eval, sanitize inputs, etc.)
+ - **Testing** with Vitest/Jest, including coverage requirements
+ - **Performance** optimization patterns
+ 
+ </details>
+ 
+ ### 🔵 C Standards (`standards/c.md`)
+ 
+ <details>
+ <summary><strong>📦 Memory Management, Pointer Safety & Error Handling</strong></summary>
+ 
+ - **Memory management** (malloc/free patterns, avoiding leaks)
+ - **Pointer safety** and NULL pointer checks
+ - **C23 standard** features and compatibility
+ - **Error handling** patterns (return codes, errno)
+ - **Header file** best practices and include guards
+ 
+ </details>
+ 
+ ### 🔵 C++ Standards (`standards/cpp.md`)
+ 
+ <details>
+ <summary><strong>📦 RAII, Smart Pointers, C++20/23 & STL</strong></summary>
+ 
+ - **RAII and Resource Management** (smart pointers, move semantics)
+ - **Modern C++ Features** (C++17, C++20, C++23)
+ - **STL Usage** (containers, algorithms, views)
+ - **Concepts** for template constraints
+ - **Concurrency** best practices
+ 
+ </details>
+ 
+ ### 🔵 Go Standards (`standards/golang.md`)
+ 
+ <details>
+ <summary><strong>📦 Effective Go, Error Handling & Concurrency</strong></summary>
+ 
+ - **Effective Go** principles (simplicity, readability)
+ - **Error handling** (explicit checks, wrapping)
+ - **Concurrency** (goroutines, channels, sync primitives)
+ - **Package design** and project structure
+ - **Testing patterns** (table-driven tests)
+ 
+ </details>
+ 
+ ### 🔵 Python Standards (`standards/python.md`)
+ 
+ <details>
+ <summary><strong>📦 PEP 8, Type Hints, Modern Tooling & Testing</strong></summary>
+ 
+ - **PEP 8** style guide and layout
+ - **Type hints** and static analysis with mypy
+ - **Modern tooling** (ruff, black, pydantic)
+ - **Error handling** and context managers
+ - **Testing** with pytest and coverage
+ 
+ </details>
 
 ### ➕ Extensible for Any Language
 
 Add your own standards in `.copilot/standards/`:
 
 ```
-.copilot/standards/
-├── general.md      # Universal principles
-├── rust.md         # Built-in
-├── nodejs.md       # Built-in
-├── python.md       # ← Add yours
-├── golang.md       # ← Add yours
-└── java.md         # ← Add yours
-```
+ .copilot/standards/
+ ├── general.md      # Universal principles
+ ├── rust.md         # Built-in
+ ├── nodejs.md       # Built-in
+ ├── c.md            # Built-in
+ ├── cpp.md          # Built-in
+ ├── golang.md       # Built-in
+ ├── python.md       # Built-in
+ └── java.md         # ← Add yours
+ ```
 
 ---
 
@@ -541,7 +603,11 @@ planning-copilot/
 ├── standards/
 │   ├── general.md               # 🌍 Universal principles
 │   ├── rust.md                  # 🦀 Rust best practices
-│   └── nodejs.md                # 💚 Node.js best practices
+│   ├── nodejs.md                # 💚 Node.js best practices
+│   ├── c.md                     # 🔵 C best practices
+│   ├── cpp.md                   # 🔵 C++ best practices
+│   ├── golang.md                # 🔵 Go best practices
+│   └── python.md                # 🔵 Python best practices
 ├── scripts/
 │   ├── install.sh               # 🚀 Main installer
 │   ├── install-with-standards.sh  # 📚 With standards
@@ -626,7 +692,7 @@ We welcome contributions! Here's how to get started:
 
 ### 💡 Ideas for Contributions
 
-- 📚 Add standards for more languages (Python, Go, Java, etc.)
+- 📚 Add standards for more languages (Java, PHP, Ruby, etc.)
 - 🎨 Improve installation scripts
 - 📖 Enhance documentation with examples
 - 🐛 Report bugs or suggest features

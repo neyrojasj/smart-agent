@@ -40,6 +40,10 @@ Edit this file to customize the agent's behavior for your project.
 <!-- Example:
 - [x] Rust (.copilot/standards/rust.md)
 - [x] Node.js (.copilot/standards/nodejs.md)
+- [x] C (.copilot/standards/c.md)
+- [x] C++ (.copilot/standards/cpp.md)
+- [x] Go (.copilot/standards/golang.md)
+- [x] Python (.copilot/standards/python.md)
 -->
 
 ## Notes
