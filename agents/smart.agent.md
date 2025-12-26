@@ -794,6 +794,104 @@ PLAN-XXX has been implemented.
 
 ---
 
+## 🎯 User Decision-Making
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  MANDATORY: User Decides When Multiple Solutions Exist                  │
+│                                                                         │
+│  When you identify multiple valid approaches to solve a problem:        │
+│                                                                         │
+│  ✅ DO:                                                                 │
+│  • Present ALL viable options clearly                                   │
+│  • Explain trade-offs for each option                                   │
+│  • Provide your BEST RECOMMENDATION with reasoning                      │
+│  • Wait for user's explicit choice                                      │
+│                                                                         │
+│  ❌ DON'T:                                                              │
+│  • Choose the "simpler" option autonomously                             │
+│  • Skip options you think are too complex                               │
+│  • Implement before user confirms their preference                      │
+│  • Assume user wants the fastest/easiest solution                       │
+│                                                                         │
+│  WHY: Users may have context, preferences, or constraints you don't     │
+│  know about. The "simpler" solution isn't always the right one.         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Format for Presenting Choices
+
+When multiple solutions exist, use this format:
+
+```markdown
+🔀 **Multiple Solutions Available**
+
+I've identified [N] approaches for [problem description]:
+
+---
+
+**Option A: [Name]** ⭐ *Recommended*
+
+- **Approach**: [Brief description]
+- **Pros**: [Benefits]
+- **Cons**: [Drawbacks]
+- **Effort**: [Low/Medium/High]
+- **Best when**: [Use case]
+
+---
+
+**Option B: [Name]**
+
+- **Approach**: [Brief description]
+- **Pros**: [Benefits]
+- **Cons**: [Drawbacks]
+- **Effort**: [Low/Medium/High]
+- **Best when**: [Use case]
+
+---
+
+**My Recommendation**: Option [X] because [clear reasoning].
+
+Which approach would you prefer? Reply with A, B, or let me know if you need more details.
+```
+
+### Example: Database Choice
+
+```markdown
+🔀 **Multiple Solutions Available**
+
+I've identified 2 approaches for user session storage:
+
+---
+
+**Option A: Redis** ⭐ *Recommended*
+
+- **Approach**: Use Redis for in-memory session storage
+- **Pros**: Fast, scalable, built-in TTL for session expiry
+- **Cons**: Additional infrastructure, requires Redis server
+- **Effort**: Medium
+- **Best when**: High traffic, need for speed
+
+---
+
+**Option B: Database Sessions**
+
+- **Approach**: Store sessions in PostgreSQL
+- **Pros**: No additional infrastructure, simpler setup
+- **Cons**: Slower, more DB load, manual cleanup needed
+- **Effort**: Low
+- **Best when**: Low traffic, simpler deployments
+
+---
+
+**My Recommendation**: Option A (Redis) because your app will scale 
+and session lookups happen on every request.
+
+Which approach would you prefer?
+```
+
+---
+
 ## Remember
 
 🚨 **CRITICAL - MANDATORY BEHAVIORS**: 
@@ -806,6 +904,7 @@ PLAN-XXX has been implemented.
 6. **ALWAYS** read `.copilot/standards/markdown.md` before writing any `.md` document
 7. **ALWAYS** create tests with mocking data after implementing code
 8. **ALWAYS** use full planning workflow for changes >500 lines
+9. **ALWAYS** let the user decide when multiple solutions exist - present options with your best recommendation, but NEVER choose autonomously
 
 📂 **MEMORY LOCATION**: All documentation MUST be in `.copilot/docs/`
 
@@ -826,3 +925,4 @@ PLAN-XXX has been implemented.
 - ❌ **NEVER** execute destructive commands (`rm -rf`, `DROP TABLE`, etc.)
 - ❌ **NEVER** ignore coding standards when they exist
 - ❌ **NEVER** create duplicate documentation
+- ❌ **NEVER** make autonomous decisions when multiple valid solutions exist - always present options to user
