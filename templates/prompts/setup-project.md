@@ -24,6 +24,17 @@ Scan the entire project and identify:
 - Build/bundler configuration (webpack, vite, tsconfig, etc.)
 - CI/CD configuration (.github/workflows, .gitlab-ci.yml, etc.)
 - Existing documentation (README.md, docs/, etc.)
+- Distinct project domains/capabilities (auth, billing, messaging, reporting, data pipeline, etc.)
+
+### 1.1 Build a Capability Map (NEW)
+
+From the scan, map project parts to capabilities and candidate skills:
+
+| Project Part | Evidence (files/dirs) | Capability | Candidate Skill | Confidence |
+|--------------|------------------------|------------|-----------------|------------|
+| [part] | [path examples] | [capability] | `[name]/SKILL.md` | [high/med/low] |
+
+This map is required and will drive both setup-time skill proposals and future on-demand skill creation.
 
 ---
 
@@ -303,6 +314,32 @@ cp .env.example .env
 *Last updated: [DATE]*
 ```
 
+### 2.8 Skill Opportunities (.copilot/docs/skills-opportunities.md) (NEW)
+
+```markdown
+# Skill Opportunities
+
+## Capability Map
+
+| Capability | Evidence | Existing Skill | Gap | Suggested Skill |
+|------------|----------|----------------|-----|-----------------|
+| [capability] | `[path]` | [yes/no + name] | [yes/no] | `[name]/SKILL.md` |
+
+## Proposed Project-Specific Skills
+
+| Skill | Why Needed | Primary Triggers | Priority |
+|-------|------------|------------------|----------|
+| `[name]/SKILL.md` | [reason] | [keywords/patterns] | [high/med/low] |
+
+## Notes
+
+- Skills listed as gaps should be generated now or on first matching change request.
+- Proposals should be specific to this project, not generic boilerplate.
+
+---
+*Last updated: [DATE]*
+```
+
 ---
 
 ## Step 3: Build Memory Index (.copilot/docs/index.yaml)
@@ -377,6 +414,15 @@ documents:
     title: "Code Conventions"
     summary: "[Key conventions]"
     keywords: [style, naming, patterns, linting, formatting, git]
+    last_updated: "[DATE]"
+
+  skill-opportunities:
+    file: "skills-opportunities.md"
+    title: "Skill Opportunities"
+    summary: "Capability map and project-specific skill proposals"
+    keywords: [skills, capabilities, routing, gaps, proposal]
+    gaps_count: [NUMBER]
+    proposed_skills_count: [NUMBER]
     last_updated: "[DATE]"
 
 decisions:
@@ -464,11 +510,13 @@ After completing all steps, provide a summary:
 - testing.md
 - development.md
 - conventions.md
+- skills-opportunities.md
 - decisions/index.yaml
 
 **Key Findings**:
 - [Notable patterns or conventions found]
 - [Potential issues or gaps]
+- [Proposed project-specific skills and rationale]
 - [Recommendations]
 
 The Smart Agent now has full context for this project.

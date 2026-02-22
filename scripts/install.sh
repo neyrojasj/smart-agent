@@ -151,8 +151,30 @@ create_directory_structure() {
     
     # Create .github directory if it doesn't exist
     mkdir -p "$GITHUB_DIR/agents"
+    mkdir -p "$GITHUB_DIR/skills"
     
     print_success "Directory structure created"
+}
+
+install_skills() {
+    print_info "Installing core skills to .github/skills/..."
+
+    copy_file_from_repo "templates/skills/index.yaml" "$GITHUB_DIR/skills/index.yaml"
+
+    local skills=(
+        "planning"
+        "coding"
+        "analysis"
+        "documentation"
+        "testing"
+        "setup"
+    )
+
+    for skill in "${skills[@]}"; do
+        mkdir -p "$GITHUB_DIR/skills/$skill"
+        copy_file_from_repo "templates/skills/$skill.skill.md" "$GITHUB_DIR/skills/$skill/SKILL.md"
+        print_success "Skill installed: $skill"
+    done
 }
 
 install_gitignore() {
@@ -301,6 +323,7 @@ main() {
     install_docs_decisions_index
     install_smart_agent
     install_copilot_instructions
+    install_skills
     install_prompts
     install_instructions_template
     
@@ -319,6 +342,7 @@ main() {
     echo "The following has been installed:"
     echo "  • Smart agent:          .github/agents/smart.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
+    echo "  • Agent skills:         .github/skills/"
     echo "  • Setup prompt:         .copilot/prompts/setup-project.md"
     echo "  • Code audit prompt:    .copilot/prompts/code-audit.md"
     echo "  • Copilot folder:       .copilot/"

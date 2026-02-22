@@ -1,0 +1,226 @@
+# Smart Agent - Skill Registry
+# ═══════════════════════════════════════════════════════════════════════════
+# This file defines all available skills and their routing rules.
+# The orchestrator reads this to determine which skill(s) to invoke.
+# ═══════════════════════════════════════════════════════════════════════════
+
+version: 1
+last_updated: "2026-02-01T00:00:00Z"
+
+skills:
+  planning:
+    file: "planning/SKILL.md"
+    name: "Planning"
+    description: "Creates implementation plans, architectural decisions, and strategy"
+    priority: 1
+    triggers:
+      keywords:
+        - plan
+        - design
+        - architect
+        - structure
+        - approach
+        - strategy
+        - roadmap
+        - proposal
+      patterns:
+        - "create a plan"
+        - "how should I"
+        - "design.*for"
+        - "plan.*implementation"
+        - "what's the best approach"
+        - "help me think through"
+    requires_approval: true
+    can_chain_to:
+      - coding
+      - testing
+
+  coding:
+    file: "coding/SKILL.md"
+    name: "Coding"
+    description: "Generates and modifies code following standards"
+    priority: 2
+    triggers:
+      keywords:
+        - implement
+        - code
+        - create
+        - add
+        - modify
+        - fix
+        - refactor
+        - build
+        - develop
+      patterns:
+        - "implement.*"
+        - "add.*feature"
+        - "fix.*bug"
+        - "refactor.*"
+        - "create.*function"
+        - "build.*"
+    requires_approval: true
+    can_chain_to:
+      - testing
+      - documentation
+
+  analysis:
+    file: "analysis/SKILL.md"
+    name: "Analysis"
+    description: "Analyzes code, performs audits, debugging, and explanations"
+    priority: 3
+    triggers:
+      keywords:
+        - analyze
+        - audit
+        - review
+        - debug
+        - explain
+        - why
+        - how
+        - understand
+        - investigate
+      patterns:
+        - "explain.*"
+        - "why does.*"
+        - "what.*doing"
+        - "audit.*"
+        - "review.*code"
+        - "help me understand"
+        - "what's wrong with"
+    requires_approval: false
+    can_chain_to:
+      - planning
+      - coding
+
+  documentation:
+    file: "documentation/SKILL.md"
+    name: "Documentation"
+    description: "Generates and updates project documentation"
+    priority: 4
+    triggers:
+      keywords:
+        - document
+        - docs
+        - readme
+        - api
+        - comments
+        - jsdoc
+        - docstring
+      patterns:
+        - "document.*"
+        - "update.*docs"
+        - "write.*readme"
+        - "add.*comments"
+        - "generate.*documentation"
+    requires_approval: false
+    can_chain_to:
+      - analysis
+
+  testing:
+    file: "testing/SKILL.md"
+    name: "Testing"
+    description: "Creates tests, manages coverage, and validates code"
+    priority: 5
+    triggers:
+      keywords:
+        - test
+        - coverage
+        - spec
+        - mock
+        - fixture
+        - unit
+        - integration
+        - e2e
+      patterns:
+        - "write.*test"
+        - "add.*tests"
+        - "test.*coverage"
+        - "create.*spec"
+        - "mock.*"
+    requires_approval: false
+    can_chain_to:
+      - coding
+
+  setup:
+    file: "setup/SKILL.md"
+    name: "Setup"
+    description: "Project initialization, configuration, and skill generation"
+    priority: 6
+    triggers:
+      keywords:
+        - setup
+        - initialize
+        - init
+        - configure
+        - install
+        - bootstrap
+        - scaffold
+      patterns:
+        - "setup.*project"
+        - "initialize.*"
+        - "configure.*"
+        - "scan.*project"
+        - "generate.*skills"
+    requires_approval: false
+    can_chain_to:
+      - documentation
+      - analysis
+
+# Routing configuration
+routing:
+  # Default skill when no clear match
+  default_skill: analysis
+  
+  # Allow invoking multiple skills for complex requests
+  multi_skill_enabled: true
+  
+  # Maximum skills per single request
+  max_skills_per_request: 3
+  
+  # Minimum confidence threshold for skill matching (0.0 - 1.0)
+  confidence_threshold: 0.3
+
+# Fallback behavior
+fallback:
+  # What to do when no skill matches
+  no_match: "analysis"
+
+  # For change/implementation requests with no match:
+  # generate_missing_skill => create and register project-specific skill, then reroute
+  no_match_for_change: "generate_missing_skill"
+
+  # Path used to track deferred skill gaps from setup/generation
+  skill_gap_registry: ".copilot/docs/skills-opportunities.md"
+  
+  # What to do when multiple skills match equally
+  ambiguous: "ask_user"
+  
+  # Message to show when asking user to clarify
+  ambiguous_message: |
+    I detected multiple possible intents. Which would you like me to focus on?
+    
+    1. **Planning** - Design the approach first
+    2. **Coding** - Jump straight to implementation
+    3. **Analysis** - Understand the current state first
+
+# Skill chaining rules
+chaining:
+  # Whether to automatically chain skills
+  auto_chain: true
+  
+  # Common chains (ordered sequences)
+  common_chains:
+    feature_development:
+      - planning
+      - coding
+      - testing
+      - documentation
+    
+    bug_fix:
+      - analysis
+      - coding
+      - testing
+    
+    code_review:
+      - analysis
+      - documentation
