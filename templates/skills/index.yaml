@@ -170,6 +170,9 @@ skills:
 routing:
   # Default skill when no clear match
   default_skill: analysis
+
+  # Require capability/context adequacy check even when a skill matches keywords
+  context_adequacy_required: true
   
   # Allow invoking multiple skills for complex requests
   multi_skill_enabled: true
@@ -188,6 +191,10 @@ fallback:
   # For change/implementation requests with no match:
   # generate_missing_skill => create and register project-specific skill, then reroute
   no_match_for_change: "generate_missing_skill"
+
+  # For requests where a skill matched keywords but lacks subtype/context coverage:
+  # enforce_skill_generation => create subtype-specific skill, then reroute
+  matched_but_inadequate: "enforce_skill_generation"
 
   # Path used to track deferred skill gaps from setup/generation
   skill_gap_registry: ".copilot/docs/skills-opportunities.md"

@@ -90,6 +90,33 @@ If no skills match:
   - For change/implementation requests → Generate missing skill first, then use it
 ```
 
+### Context Adequacy Gate (MANDATORY)
+
+A keyword match is not enough. Before routing to any matched skill, verify the skill has context and explicit capability coverage for the requested subtype.
+
+Run this gate after initial matching:
+
+```
+1. Extract requested subtype from user prompt
+  Examples: contract tests, mutation tests, load tests, webhook retries, tenant billing
+2. Read matched skill(s) and check "Capabilities" + "Project Context"
+3. Read .copilot/docs/index.yaml and related docs for project evidence
+4. If subtype is not explicitly covered OR project evidence is missing:
+  → Treat as missing capability (even if a core skill matched)
+  → Run Missing-Skill Generation Protocol
+5. If covered:
+  → Route normally
+```
+
+Special rule for testing requests:
+
+```
+If request asks for a specialized test type not covered by testing/SKILL.md
+(contract, mutation, chaos, load, stress, performance, security, fuzz, snapshot strategy, etc.)
+→ Create a dedicated skill first (for example test-contract/SKILL.md)
+→ Then execute the request through that new skill
+```
+
 ### Skill Coverage Gate (MANDATORY)
 
 Before selecting fallback behavior, classify request intent:
@@ -103,13 +130,14 @@ Before selecting fallback behavior, classify request intent:
 
 ```
 1. Read .copilot/docs/index.yaml and relevant docs to understand project domains
-2. Infer the missing capability from the request (e.g. billing, queue, auth, reporting)
+2. Infer the missing capability from the request (e.g. billing, queue, auth, reporting, mutation-testing)
 3. Check .github/skills/index.yaml to confirm no suitable skill exists
 4. Create a new project-specific skill in .github/skills/[domain]/SKILL.md
 5. Register it in .github/skills/index.yaml with focused triggers/patterns
-6. Re-run skill matching
-7. Route to the newly created skill and execute it
-8. Update context.md with the new skill and why it was added
+6. Add an entry to .copilot/docs/skills-opportunities.md under "Generated On Demand"
+7. Re-run skill matching
+8. Route to the newly created skill and execute it
+9. Update context.md with the new skill and why it was added
 ```
 
 Use this response snippet when triggered:

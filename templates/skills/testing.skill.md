@@ -46,6 +46,36 @@ What this skill can do:
 - `.copilot/docs/testing.md` - For test strategy
 - `coding.skill` - Chains from after implementation
 - Existing tests - For pattern matching
+- `.github/skills/index.yaml` - To verify specialized test skill coverage
+
+---
+
+## Coverage Boundary (MANDATORY)
+
+This core `testing` skill covers generic unit/integration/component/e2e workflows.
+
+Before executing, run a specialization check:
+
+```
+1. Extract requested test subtype from the user prompt
+2. Check if subtype is explicitly covered in this skill
+3. Check if a dedicated skill already exists in .github/skills/index.yaml
+4. If subtype is specialized and uncovered:
+  - STOP direct test generation
+  - Trigger missing-skill generation via setup workflow
+  - Create/register dedicated skill (example: test-contract/SKILL.md)
+  - Re-route execution to that new skill
+```
+
+Specialized subtypes that require dedicated skills when not already covered:
+
+- contract testing
+- mutation testing
+- load or stress testing
+- chaos testing
+- fuzz testing
+- security penetration testing
+- advanced snapshot governance
 
 ---
 
@@ -286,6 +316,7 @@ If exception applies, document it:
 - ❌ Leave flaky tests (random failures)
 - ❌ Ignore existing test patterns
 - ❌ Create tests without assertions
+- ❌ Handle specialized test requests with generic templates when no dedicated skill exists
 
 ---
 

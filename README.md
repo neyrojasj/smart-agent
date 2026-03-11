@@ -41,6 +41,9 @@ Setup skill scans your project and generates custom skills based on detected pat
 ### 🧩 Gap-Aware Skill Coverage
 For change requests, Smart first verifies a suitable skill exists. If none matches, it creates a project-specific skill, registers it, and then executes the request through that new skill.
 
+### 🧪 Specialized Task Guardrail
+If a request matches a broad skill but asks for an uncovered subtype (for example mutation or contract testing), Smart generates a dedicated subtype skill first, then executes through it.
+
 </td>
 </tr>
 <tr>
@@ -211,6 +214,7 @@ Run the skill generator:
 
 During setup, Smart also creates a capability map and a skill proposal file at `.copilot/docs/skills-opportunities.md`.
 Low-confidence skills are deferred as explicit gaps and generated later on first matching change request.
+Skills generated from real requests are recorded under `Generated On Demand` with the request summary, subtype, and evidence.
 
 ---
 

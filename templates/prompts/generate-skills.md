@@ -273,6 +273,21 @@ Update `.copilot/docs/skills-opportunities.md` with deferred entries:
 - `[name]/SKILL.md`: [reason], trigger phrases: [keywords/patterns]
 ```
 
+### 4.2 Record On-Demand Generated Skills (NEW)
+
+When a skill is generated because an active user request exposed a missing capability, append it under a separate section:
+
+```markdown
+## Generated On Demand
+
+- `[name]/SKILL.md`: generated for request "[user ask summary]", subtype: [capability], evidence: [paths]
+```
+
+Rules:
+- Include the original request summary in one sentence.
+- Include the concrete capability subtype (for example `mutation-testing`).
+- Prefer narrow, capability-specific skill names over generic names.
+
 ### Priority Guidelines
 
 | Priority Range | Skill Type |

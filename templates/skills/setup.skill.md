@@ -238,6 +238,21 @@ Required note format:
 - `[name]/SKILL.md`: [short reason], trigger when request mentions [keywords]
 ```
 
+### Step 7.2: Register Generated-On-Demand Skills (NEW)
+
+When invoked because a live request exposed missing capability context, append to `.copilot/docs/skills-opportunities.md`:
+
+```markdown
+## Generated On Demand
+
+- `[name]/SKILL.md`: generated for "[request summary]", subtype: [capability], detected evidence: [paths]
+```
+
+Rules:
+- Use narrow skill names that map to the subtype (example: `test-contract/SKILL.md`, not `advanced-testing/SKILL.md`).
+- Include request summary, subtype, and concrete evidence paths.
+- After registration, signal orchestrator to re-run skill matching.
+
 ### Step 8: Report Summary
 
 ```markdown
