@@ -132,6 +132,20 @@ copy_file_from_repo() {
     cp "$repo_dir/$source_path" "$dest_path"
 }
 
+copy_file_if_missing_from_repo() {
+    local source_path="$1"
+    local dest_path="$2"
+    local label="$3"
+
+    if [ -f "$dest_path" ]; then
+        print_warning "$label already exists, preserving current file"
+        return
+    fi
+
+    copy_file_from_repo "$source_path" "$dest_path"
+    print_success "$label initialized"
+}
+
 # =============================================================================
 # Installation Functions
 # =============================================================================
@@ -184,21 +198,18 @@ install_gitignore() {
 }
 
 install_state_yaml() {
-    print_info "Installing plans/state.yaml..."
-    copy_file_from_repo "templates/state.yaml" "$COPILOT_DIR/plans/state.yaml"
-    print_success "state.yaml installed"
+    print_info "Initializing plans/state.yaml (preserve if exists)..."
+    copy_file_if_missing_from_repo "templates/state.yaml" "$COPILOT_DIR/plans/state.yaml" "plans/state.yaml"
 }
 
 install_docs_index() {
-    print_info "Installing docs/index.yaml..."
-    copy_file_from_repo "templates/docs/index.yaml" "$COPILOT_DIR/docs/index.yaml"
-    print_success "docs/index.yaml installed"
+    print_info "Initializing docs/index.yaml (preserve if exists)..."
+    copy_file_if_missing_from_repo "templates/docs/index.yaml" "$COPILOT_DIR/docs/index.yaml" "docs/index.yaml"
 }
 
 install_docs_decisions_index() {
-    print_info "Installing docs/decisions/index.yaml..."
-    copy_file_from_repo "templates/docs/decisions/index.yaml" "$COPILOT_DIR/docs/decisions/index.yaml"
-    print_success "docs/decisions/index.yaml installed"
+    print_info "Initializing docs/decisions/index.yaml (preserve if exists)..."
+    copy_file_if_missing_from_repo "templates/docs/decisions/index.yaml" "$COPILOT_DIR/docs/decisions/index.yaml" "docs/decisions/index.yaml"
 }
 
 install_smart_agent() {
@@ -347,8 +358,8 @@ main() {
     echo "  • Code audit prompt:    .copilot/prompts/code-audit.md"
     echo "  • Copilot folder:       .copilot/"
     echo "  • Documentation:        .copilot/docs/"
-    echo "  • Search index:         .copilot/docs/index.yaml"
-    echo "  • Plans tracker:        .copilot/plans/state.yaml"
+    echo "  • Search index:         .copilot/docs/index.yaml (initialized if missing)"
+    echo "  • Plans tracker:        .copilot/plans/state.yaml (initialized if missing)"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
         echo "  • Standards:            .copilot/standards/"
