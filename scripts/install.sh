@@ -261,8 +261,32 @@ install_prompts() {
 
 install_instructions_template() {
     print_info "Installing instructions template..."
-    copy_file_from_repo "templates/instructions-template.md" "$COPILOT_DIR/instructions.md"
-    print_success "Instructions template installed"
+
+    local source_path="templates/instructions-template.md"
+    local repo_dir="$TEMP_DIR/${REPO_NAME}-${REPO_BRANCH}"
+
+    if [ -f "$repo_dir/$source_path" ]; then
+        copy_file_from_repo "$source_path" "$COPILOT_DIR/instructions.md"
+        print_success "Instructions template installed"
+        return
+    fi
+
+    print_warning "templates/instructions-template.md not found, creating default .copilot/instructions.md"
+    mkdir -p "$COPILOT_DIR"
+    cat > "$COPILOT_DIR/instructions.md" <<'EOF'
+# Project Instructions
+
+Use this file for project-specific guidance that complements `.github/copilot-instructions.md`.
+
+## What to add
+
+- Architecture constraints and module boundaries
+- Coding/testing conventions unique to this repository
+- Security, performance, and deployment guardrails
+- Documentation requirements for behavior/API/config changes
+
+EOF
+    print_success "Default instructions template created"
 }
 
 # =============================================================================
