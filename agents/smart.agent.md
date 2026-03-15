@@ -81,13 +81,19 @@ Always read `.github/skills/index.yaml` to understand available skills and their
 For each skill in index.yaml:
   1. Check if user request contains skill keywords
   2. Check if user request matches skill patterns
-  3. Calculate confidence score
+  3. Calculate confidence score (0-100%)
   
 Select skill(s) with highest confidence above threshold (0.3)
 If multiple skills match equally → Ask user to clarify
 If no skills match:
   - For analysis/explanation requests → Use analysis skill
   - For change/implementation requests → Generate missing skill first, then use it
+
+If selected/generated skill confidence < 70%:
+  - Notify user with exact confidence percentage
+  - Ask whether to proceed with the skill as-is
+  - If approved, record explicit acceptance in context.md
+  - If rejected, run missing-skill refinement before execution
 ```
 
 ### Context Adequacy Gate (MANDATORY)
@@ -132,12 +138,16 @@ Before selecting fallback behavior, classify request intent:
 1. Read .copilot/docs/index.yaml and relevant docs to understand project domains
 2. Infer the missing capability from the request (e.g. billing, queue, auth, reporting, mutation-testing)
 3. Check .github/skills/index.yaml to confirm no suitable skill exists
-4. Create a new project-specific skill in .github/skills/[domain]/SKILL.md
-5. Register it in .github/skills/index.yaml with focused triggers/patterns
-6. Add an entry to .copilot/docs/skills-opportunities.md under "Generated On Demand"
-7. Re-run skill matching
-8. Route to the newly created skill and execute it
-9. Update context.md with the new skill and why it was added
+4. Gather evidence from code and docs before generating skill:
+  - Read relevant source files for implementation patterns
+  - Read related documentation in .copilot/docs/ and README
+5. Create a new project-specific skill in .github/skills/[domain]/SKILL.md
+6. Register it in .github/skills/index.yaml with focused triggers/patterns
+7. Add an entry to .copilot/docs/skills-opportunities.md under "Generated On Demand"
+8. Re-run skill matching and compute confidence as percentage (0-100%)
+9. If confidence < 70%, ask user to approve using the skill as-is before execution
+10. Route to the newly created skill and execute it
+11. Update context.md with the new skill, confidence, and why it was added
 ```
 
 Use this response snippet when triggered:
@@ -167,7 +177,9 @@ When routing, announce your decision:
 🎯 **Routing to: [SKILL_NAME]**
 
 **Matched triggers**: [keywords/patterns that matched]
-**Confidence**: [High/Medium/Low]
+**Confidence**: [0-100%]
+
+If confidence is below 70%, ask for explicit approval before execution.
 
 [Then read and execute the skill file]
 ```
@@ -218,7 +230,10 @@ After EVERY skill execution, you MUST update `.copilot/context.md` following the
 
 ```markdown
 ### Recent Actions
-1. [TIMESTAMP] - Routed to [SKILL] - [RESULT_SUMMARY]
+1. [TIMESTAMP] [commit: abc1234 if available] - Routed to [SKILL] - [RESULT_SUMMARY]
+
+### Skill Confidence Log
+- [TIMESTAMP] [SKILL] - confidence: [NN%] - approved_by_user: [yes/no]
 
 ### Key Decisions (from this session)
 | Decision | Reason | Skill |
@@ -247,7 +262,7 @@ After EVERY skill execution, you MUST update `.copilot/context.md` following the
 - ✂️ Stale session data from previous days
 - ✂️ Redundant or duplicate entries
 - ✂️ Information that is no longer accurate
-- ✂️ Old actions beyond the last 10 entries
+- ✂️ Old actions beyond the last 20 entries
 
 ### 4.4 Compact Context (CRITICAL)
 
@@ -257,7 +272,8 @@ After EVERY skill execution, you MUST update `.copilot/context.md` following the
 │                                                                         │
 │  After EVERY execution, compress the context:                           │
 │                                                                         │
-│  • Recent Actions: Keep only last 10 entries                            │
+│  • Recent Actions: Keep only last 20 entries                            │
+│  • Recent Actions: Include git commit SHA when available                │
 │  • Pending Tasks: Remove completed, keep only active                    │
 │  • Key Decisions: Merge similar, remove superseded                      │
 │  • Learned Context: Consolidate, remove duplicates                      │
@@ -272,7 +288,7 @@ After EVERY skill execution, you MUST update `.copilot/context.md` following the
 
 | Section | Max Entries | Action When Exceeded |
 |---------|-------------|----------------------|
-| Recent Actions | 10 | Remove oldest |
+| Recent Actions | 20 | Remove oldest |
 | Pending Tasks | 20 | Archive completed to plans/ |
 | Key Decisions | 15 | Merge similar, archive old to decisions/ |
 | User Preferences | 10 | Consolidate similar |
@@ -294,8 +310,11 @@ After EVERY skill execution, you MUST update `.copilot/context.md` following the
 ### Pending Tasks
 [Only incomplete tasks - remove completed]
 
-### Recent Actions (last 10 only)
-[Newest first, delete beyond 10]
+### Recent Actions (last 20 only)
+[Newest first, include `[commit: <sha>]` when available, delete beyond 20]
+
+### Skill Confidence Log (last 20 only)
+[Newest first, include confidence percentage and user approval when <70%]
 
 ## Learned Context
 ### User Preferences
@@ -410,6 +429,20 @@ Which would you prefer? (or I'll use my best judgment)
 [Show what the skill wants to do]
 
 Reply with: ✅ approve | ❌ reject | 📝 revise [feedback]
+```
+
+### When Skill Confidence Is Low (<70%)
+
+```markdown
+⚠️ **Low confidence skill routing**
+
+Proposed skill: **[SKILL_NAME]**
+Confidence: **[NN%]** (below 70%)
+
+I can proceed with this skill as-is, but confidence is below the preferred threshold.
+Do you want to continue?
+
+Reply with: ✅ proceed | ❌ refine skill first
 ```
 
 ---

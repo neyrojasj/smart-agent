@@ -20,6 +20,14 @@ Markdown source should be readable even without rendering. Good formatting in th
 
 Not all Markdown parsers are created equal. Following these standards ensures your documents render correctly across different platforms (GitHub, VS Code, kramdown, CommonMark, etc.).
 
+### 4. Documentation Quality
+
+- Keep docs task-oriented: explain what to do, why, and expected outcomes
+- Keep code snippets accurate and synchronized with current implementation
+- Update related docs in the same change when behavior, APIs, or config change
+- Prefer short sections with clear headings over long narrative blocks
+- Remove stale references, dead links, and outdated examples promptly
+
 ---
 
 ## Headings

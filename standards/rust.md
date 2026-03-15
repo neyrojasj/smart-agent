@@ -6,6 +6,16 @@ This document contains best practices for Rust development that should be follow
 
 ---
 
+## Documentation Good Practices (Rust)
+
+- Document public items with rustdoc comments (`///`), including error behavior
+- Keep crate-level docs (`//!`) aligned with module boundaries and usage
+- Add examples to rustdoc for public APIs when practical
+- Update docs when feature flags, env vars, or CLI behavior change
+- Prefer comments that explain ownership/lifetime or performance trade-offs
+
+---
+
 ## General Programming Standards (Rust-Specific)
 
 These are the core principles from `general.md` applied specifically to Rust.

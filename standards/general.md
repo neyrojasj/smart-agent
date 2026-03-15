@@ -177,6 +177,17 @@ class UserRepository {
 }
 ```
 
+### 3. Documentation Is Part of the Code
+
+Documentation must be updated in the same change whenever behavior, API contracts, or configuration change.
+
+**Rules:**
+- Update docs when changing runtime behavior or requirements
+- Document public APIs with expected inputs, outputs, and failure modes
+- Prefer comments that explain intent and trade-offs, not obvious code mechanics
+- Keep examples and snippets executable and synchronized with real code
+- Remove outdated docs in the same PR/commit to avoid drift
+
 ---
 
 ## Clean Code Principles

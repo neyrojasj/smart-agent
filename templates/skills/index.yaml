@@ -171,6 +171,9 @@ routing:
   # Default skill when no clear match
   default_skill: analysis
 
+  # Confidence reported to users should be shown as a percentage (0-100)
+  confidence_scale: percentage
+
   # Require capability/context adequacy check even when a skill matches keywords
   context_adequacy_required: true
   
@@ -182,6 +185,10 @@ routing:
   
   # Minimum confidence threshold for skill matching (0.0 - 1.0)
   confidence_threshold: 0.3
+
+  # If selected/generated skill confidence is below this percentage,
+  # require explicit user confirmation before execution.
+  low_confidence_threshold_pct: 70
 
 # Fallback behavior
 fallback:
@@ -195,6 +202,10 @@ fallback:
   # For requests where a skill matched keywords but lacks subtype/context coverage:
   # enforce_skill_generation => create subtype-specific skill, then reroute
   matched_but_inadequate: "enforce_skill_generation"
+
+  # When confidence is below low_confidence_threshold_pct:
+  # ask_user_confirm_low_confidence => notify user, ask to proceed/refine, and log outcome
+  low_confidence: "ask_user_confirm_low_confidence"
 
   # Path used to track deferred skill gaps from setup/generation
   skill_gap_registry: ".copilot/docs/skills-opportunities.md"

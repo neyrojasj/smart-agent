@@ -6,6 +6,16 @@ This document contains best practices for Python development that should be foll
 
 ---
 
+## Documentation Good Practices (Python)
+
+- Add docstrings to public modules, classes, and functions (PEP 257 style)
+- Document function parameters, return values, and raised exceptions
+- Keep examples in docstrings runnable and synchronized with current behavior
+- Update docs when CLI flags, env vars, or config contracts change
+- Prefer concise comments that explain intent, edge cases, and trade-offs
+
+---
+
 ## General Programming Standards (Python-Specific)
 
 These are the core principles from `general.md` applied specifically to Python programming.

@@ -6,6 +6,16 @@ This document contains best practices for Go (Golang) development that should be
 
 ---
 
+## Documentation Good Practices (Go)
+
+- Write GoDoc comments for exported packages, types, funcs, and methods
+- Start exported symbol comments with the symbol name (GoDoc convention)
+- Document error conditions and zero-value behavior in public APIs
+- Update docs when flags, env vars, config, or endpoint behavior change
+- Keep examples aligned with package usage and run them as tests when possible
+
+---
+
 ## General Programming Standards (Go-Specific)
 
 These are the core principles from `general.md` applied specifically to Go programming.

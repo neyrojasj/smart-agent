@@ -6,6 +6,16 @@ This document contains best practices for Node.js/TypeScript development that sh
 
 ---
 
+## Documentation Good Practices (Node.js/TypeScript)
+
+- Document exported functions, classes, and interfaces with JSDoc/TSDoc
+- For API handlers, document request/response shapes and error codes
+- Update README or docs when env vars, scripts, or behavior change
+- Keep TypeScript types and docs aligned; avoid docs that contradict actual types
+- Include small usage examples for public modules when practical
+
+---
+
 ## General Programming Standards (Node.js/TypeScript-Specific)
 
 These are the core principles from `general.md` applied specifically to Node.js/TypeScript.

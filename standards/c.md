@@ -6,6 +6,16 @@ This document contains best practices for C programming that should be followed 
 
 ---
 
+## Documentation Good Practices (C)
+
+- Document public headers (`.h`) with function purpose, params, returns, and ownership rules
+- Clearly document memory allocation/freeing responsibilities for every API
+- Document thread-safety and reentrancy guarantees when applicable
+- Update docs when macros, compile flags, or config contracts change
+- Keep inline comments focused on invariants, safety, and non-obvious constraints
+
+---
+
 ## General Programming Standards (C-Specific)
 
 These are the core principles from `general.md` applied specifically to C programming.

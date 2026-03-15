@@ -6,6 +6,16 @@ This document contains best practices for modern C++ development that should be 
 
 ---
 
+## Documentation Good Practices (C++)
+
+- Document public APIs in headers with purpose, params, returns, and exception/error behavior
+- Document ownership and lifetime expectations for pointers/references
+- Call out complexity/performance characteristics for non-trivial algorithms
+- Update docs when build flags, ABI/API contracts, or behavior change
+- Use concise comments to explain invariants and RAII/resource ownership assumptions
+
+---
+
 ## General Programming Standards (C++-Specific)
 
 These are the core principles from `general.md` applied specifically to C++ programming.

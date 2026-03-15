@@ -8,7 +8,7 @@ description: Generate and modify code following project standards and approval f
 ## Identity
 
 - **Name**: coding
-- **Version**: 1.0
+- **Version**: 1.2
 - **Description**: Generates and modifies code following project standards, with mandatory approval for all changes.
 
 ---
@@ -36,6 +36,7 @@ What this skill can do:
 - ✅ Handle multi-file changes
 - ✅ Refactor code structures
 - ✅ Fix bugs with proper error handling
+- ✅ Document API and behavior changes
 
 ---
 
@@ -64,6 +65,25 @@ What this skill can do:
 │                                                                         │
 │  IF standards exist but not read → CODE QUALITY VIOLATION               │
 └─────────────────────────────────────────────────────────────────────────┘
+```
+
+If `.copilot/standards/` is missing, run this fallback before coding:
+
+```
+1. Search the repository for existing standards sources:
+  - **/standards/*.md
+  - **/*conventions*.md
+  - **/*styleguide*.md
+  - lint/format configs (eslint, prettier, ruff, clippy, golangci)
+2. Summarize what was found.
+3. Ask the user:
+  "I couldn't find .copilot/standards/. Do you want me to create coding standards from the files I found?"
+4. If user approves:
+  - Create `.copilot/standards/general.md`
+  - Create language-specific standards for detected languages
+  - Continue with Step 1 and apply them
+5. If user rejects:
+  - Pause implementation and explain standards are required by this skill
 ```
 
 ### Step 2: Check for Approved Plan
@@ -124,6 +144,15 @@ Constants:  SCREAMING_SNAKE (MAX_RETRIES)
 ✅ Meaningful variable names
 ```
 
+#### Documentation Good Practices
+```
+✅ Update user-facing docs when behavior changes
+✅ Add/update public API docs (docstrings, JSDoc, rustdoc, godoc, etc.)
+✅ Explain WHY for non-obvious decisions
+✅ Keep examples aligned with the implemented code
+❌ Do not leave stale docs after refactors or renames
+```
+
 ### Step 5: Present Changes for Approval
 
 ```markdown
@@ -172,11 +201,14 @@ After implementation:
 Before submitting code:
 
 - [ ] Standards file read for this language
+- [ ] If standards missing, repository search completed and user asked to create standards
 - [ ] Naming conventions followed
 - [ ] Error handling implemented (no defaults for runtime data)
 - [ ] No silent error swallowing
 - [ ] Functions are focused (single responsibility)
 - [ ] Comments only where necessary
+- [ ] Public API docs/docstrings updated when signatures or behavior changed
+- [ ] User-facing documentation updated for behavior/config/API changes
 - [ ] Imports organized
 - [ ] No hardcoded secrets/credentials
 

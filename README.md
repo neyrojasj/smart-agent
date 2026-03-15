@@ -156,6 +156,15 @@ your-project/
 | **Code Review** | analysis → documentation |
 | **Refactor** | planning → coding → testing |
 
+### Skill Generation Confidence Policy
+
+When a request needs a capability that is not covered, Smart creates a project-specific skill using evidence from code and documentation.
+
+- Smart inspects relevant source files and project docs before generating the skill
+- Smart reports routing confidence as a numeric percentage (0-100%)
+- If confidence is below 70%, Smart asks for explicit user confirmation before using the skill
+- If user approves low-confidence use, Smart records that acceptance in context for traceability
+
 ---
 
 ## 🧠 Unified Context Memory
@@ -259,6 +268,15 @@ When installed with standards, enforce best practices automatically:
 | `golang.md` | Go best practices |
 | `c.md` | C best practices |
 | `cpp.md` | C++ best practices |
+
+### Documentation Expectations
+
+Documentation is treated as part of the implementation.
+
+- Update user-facing docs when behavior, APIs, or configuration changes
+- Update public API docs/docstrings for signature or contract changes
+- Keep examples and snippets synchronized with the current code
+- Remove stale documentation in the same change that supersedes it
 
 ---
 
