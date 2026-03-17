@@ -137,7 +137,8 @@ copy_file_if_missing_from_repo() {
     local dest_path="$2"
     local label="$3"
 
-    if [ -f "$dest_path" ]; then
+    # Preserve any existing destination path, including symlinks.
+    if [ -e "$dest_path" ] || [ -L "$dest_path" ]; then
         print_warning "$label already exists, preserving current file"
         return
     fi
