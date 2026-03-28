@@ -8,6 +8,17 @@ Execute this prompt to fully initialize or update the Smart Agent's memory (docu
 
 This folder is the agent's persistent memory - the single source of truth for project understanding.
 
+## Pre-flight: Read Existing State
+
+Before generating anything:
+
+1. Read `.github/copilot/context.md` — if it has real project data (not template placeholders), preserve it.
+2. Read `.github/copilot/session.md` — note any pending tasks.
+3. Read `.github/copilot/docs/index.yaml` — if docs already exist, read them first and only update/fill gaps.
+4. If the project is large (>50 files or >5 top-level directories), delegate codebase scanning to the **Explore** subagent with `thorough` depth.
+
+**Rule**: Never overwrite existing docs with less information. Merge new findings into existing content.
+
 ## Instructions
 
 Perform ALL of the following steps in order. Do not skip any steps.
@@ -32,9 +43,67 @@ From the scan, map project parts to capabilities and candidate skills:
 
 | Project Part | Evidence (files/dirs) | Capability | Candidate Skill | Confidence |
 |--------------|------------------------|------------|-----------------|------------|
-| [part] | [path examples] | [capability] | `[name]/SKILL.md` | [high/med/low] |
+| [part] | [path examples] | [capability] | `[name]/SKILL.md` | [high/medium/low] |
 
 This map is required and will drive both setup-time skill proposals and future on-demand skill creation.
+
+---
+
+## Step 1.5: Initialize Context and Session
+
+Populate `.github/copilot/context.md` with detected project identity:
+
+```markdown
+# Project Context
+
+> Last updated: [CURRENT_TIMESTAMP]
+
+## Project Identity
+
+- **Name**: [detected project name from package file or directory]
+- **Type**: [web-api/cli/library/monorepo/etc]
+- **Stack**: [primary language + framework]
+- **Stage**: development
+
+## User Preferences
+
+(to be learned)
+
+## Project-Specific Rules
+
+[Any rules discovered from linter configs, contributing guides, etc.]
+
+## Key Decisions
+
+| Decision | Reason | Skill | Date |
+|----------|--------|-------|------|
+| (none)   | -      | -     | -    |
+```
+
+Initialize `.github/copilot/session.md`:
+
+```markdown
+# Session State
+
+> Last updated: [CURRENT_TIMESTAMP]
+> Active skill: setup
+> Current task: Project initialization
+
+## Pending Tasks
+
+- [ ] Review generated documentation
+- [ ] Run skill-generator for project-specific skills
+
+## Recent Actions (last 20)
+
+1. [TIMESTAMP] - Setup skill - Project initialization started
+
+## Skill Confidence Log
+
+(no entries)
+```
+
+**CRITICAL**: Replace template placeholders with real detected values. Do not leave `[Not initialized]`.
 
 ---
 
@@ -314,31 +383,16 @@ cp .env.example .env
 *Last updated: [DATE]*
 ```
 
-### 2.8 Skill Opportunities (.github/copilot/docs/skills-opportunities.md) (NEW)
+### 2.8 Skill Opportunities (.github/copilot/docs/skills-opportunities.md)
 
-```markdown
-# Skill Opportunities
+Read the existing template at `.github/copilot/docs/skills-opportunities.md` and populate it with real data from the Capability Map (Step 1.1).
 
-## Capability Map
+Fill in:
+- **Capability Map** table — one row per detected capability
+- **Proposed Project-Specific Skills** table — skills that should be generated
+- Use confidence tiers: `high`, `medium`, `low`
 
-| Capability | Evidence | Existing Skill | Gap | Suggested Skill |
-|------------|----------|----------------|-----|-----------------|
-| [capability] | `[path]` | [yes/no + name] | [yes/no] | `[name]/SKILL.md` |
-
-## Proposed Project-Specific Skills
-
-| Skill | Why Needed | Primary Triggers | Priority |
-|-------|------------|------------------|----------|
-| `[name]/SKILL.md` | [reason] | [keywords/patterns] | [high/med/low] |
-
-## Notes
-
-- Skills listed as gaps should be generated now or on first matching change request.
-- Proposals should be specific to this project, not generic boilerplate.
-
----
-*Last updated: [DATE]*
-```
+Do not replace the template structure — fill in the tables with real data.
 
 ---
 
@@ -491,7 +545,15 @@ summary:
 
 ---
 
-## Step 5: Report Summary
+## Step 5: Review Project Instructions
+
+Read `.github/copilot/instructions.md`. If the project scan revealed project-specific rules that should always apply (e.g., "always use strict TypeScript", "never import from internal packages directly", "use repository pattern for data access"), add them to instructions.md.
+
+Only add rules with clear evidence from the codebase (linter configs, contributing guides, existing patterns). Do not invent rules.
+
+---
+
+## Step 6: Report Summary
 
 After completing all steps, provide a summary:
 
@@ -499,7 +561,12 @@ After completing all steps, provide a summary:
 ✅ **Agent Memory Initialized**
 
 **Project**: [name]
+**Type**: [type]
 **Tech Stack**: [primary language] + [framework]
+
+**Context Files:**
+- context.md — populated with project identity
+- session.md — initialized
 
 **Memory Files Created/Updated in .github/copilot/docs/:**
 - index.yaml (Memory Index)
@@ -512,6 +579,11 @@ After completing all steps, provide a summary:
 - conventions.md
 - skills-opportunities.md
 - decisions/index.yaml
+
+**Project Rules Added to instructions.md:**
+- [rule 1, if any]
+- [rule 2, if any]
+- (none discovered)
 
 **Key Findings**:
 - [Notable patterns or conventions found]
@@ -532,3 +604,6 @@ Use the index.yaml to quickly navigate documentation.
 3. **No duplication** - Each piece of information lives in ONE place only
 4. **Update index** - The index.yaml must reflect all documentation accurately
 5. **Be thorough** - Scan all relevant files, not just root level
+6. **Context.md is mandatory** - Must be populated with real project identity, not template placeholders
+7. **Preserve existing data** - Read existing docs before writing. Merge, don't overwrite.
+8. **Large projects** - Delegate scanning to Explore subagent with `thorough` depth
