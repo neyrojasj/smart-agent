@@ -1,2 +1,5 @@
 # Ephemeral per-developer state (not committed)
 .github/copilot/tmp/
+
+# External skill repositories (cloned locally, not committed)
+.github/copilot/external/

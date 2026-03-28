@@ -210,6 +210,52 @@ skills:
       - coding
       - testing
 
+  ui-ux:
+    file: "ui-ux/SKILL.md"
+    name: "UI/UX"
+    description: "Generate a project design system and produce a persistent ui-style skill for all future UI coding. Runs once per project unless the user requests a style change."
+    priority: 9
+    triggers:
+      keywords:
+        - web page
+        - webpage
+        - landing page
+        - ui
+        - ux
+        - design
+        - style
+        - frontend
+        - layout
+        - component
+        - redesign
+        - restyle
+        - color palette
+        - typography
+        - design system
+      patterns:
+        - "create.*page"
+        - "build.*page"
+        - "build.*ui"
+        - "design.*app"
+        - "create.*component"
+        - "style.*application"
+        - "change.*style"
+        - "update.*design"
+        - "set.*style"
+        - "define.*design"
+    requires_approval: true
+    idempotent: true
+    idempotency_check: ".github/skills/ui-style/SKILL.md"
+    produces: "ui-style"
+    can_chain_to:
+      - coding
+      - planning
+    notes: >
+      Runs ONCE per project. On subsequent UI requests, checks for existing
+      ui-style/SKILL.md and skips re-generation unless user explicitly requests
+      a style change. Requires user to authorize use of the external
+      ui-ux-pro-max library (cloned at .github/copilot/external/ui-ux-pro-max-skill/).
+
 # Routing configuration
 routing:
   # Default skill when no clear match
