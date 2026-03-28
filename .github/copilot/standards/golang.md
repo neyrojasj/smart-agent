@@ -16,95 +16,12 @@ This document contains best practices for Go (Golang) development that should be
 
 ---
 
-## General Programming Standards (Go-Specific)
+## General Standards
 
-These are the core principles from `general.md` applied specifically to Go programming.
-
-### 🚫 FORBIDDEN: Default Values for Environment Variables
-
-**Never provide default values for required environment variables.**
-
-```go
-// ❌ FORBIDDEN - Silent fallback
-port := os.Getenv("PORT")
-if port == "" {
-    port = "3000"  // Silent default
-}
-
-// ✅ REQUIRED - Fail if not defined
-port := os.Getenv("PORT")
-if port == "" {
-    log.Fatal("PORT environment variable must be set")
-}
-
-// ✅ REQUIRED - Validation function
-func mustGetenv(key string) string {
-    value := os.Getenv(key)
-    if value == "" {
-        log.Fatalf("%s environment variable must be set", key)
-    }
-    return value
-}
-
-port := mustGetenv("PORT")
-apiKey := mustGetenv("API_KEY")
-
-// ✅ ACCEPTABLE - Only for truly optional features
-debug := os.Getenv("DEBUG") == "true"
-```
-
-### 🚫 FORBIDDEN: Silent Error Swallowing
-
-**Never ignore returned errors.**
-
-```go
-// ❌ FORBIDDEN - Ignoring error
-result, _ := riskyOperation()
-
-// ❌ FORBIDDEN - Checking error but not handling
-result, err := riskyOperation()
-if err != nil {
-    // Do nothing - error is lost!
-}
-
-// ✅ REQUIRED - Handle or return errors
-result, err := riskyOperation()
-if err != nil {
-    return fmt.Errorf("risky operation failed: %w", err)
-}
-
-// ✅ REQUIRED - Log and return for top-level handlers
-result, err := riskyOperation()
-if err != nil {
-    log.Printf("risky operation failed: %v", err)
-    return err
-}
-```
-
-### 🚫 FORBIDDEN: Panic in Libraries
-
-**Never panic in library code. Return errors instead.**
-
-```go
-// ❌ FORBIDDEN - Panicking in library
-func ParseConfig(path string) Config {
-    data, err := os.ReadFile(path)
-    if err != nil {
-        panic(fmt.Sprintf("failed to read config: %v", err))
-    }
-    // ...
-}
-
-// ✅ REQUIRED - Return errors
-func ParseConfig(path string) (Config, error) {
-    data, err := os.ReadFile(path)
-    if err != nil {
-        return Config{}, fmt.Errorf("failed to read config: %w", err)
-    }
-    // ...
-    return config, nil
-}
-```
+> All FORBIDDEN patterns from `general.md` apply. Adapt to idiomatic Go:
+> - **Env vars**: Fail at startup. Use `log.Fatal` or `log.Fatalf` for missing required vars
+> - **Errors**: Never `_ =` ignore errors. Use `fmt.Errorf("context: %w", err)` for wrapping
+> - **Panics**: Never `panic()` in library code — return `error` instead. Reserve panic for truly unrecoverable states
 
 ---
 
@@ -477,6 +394,60 @@ func NewUserService(repo UserRepository) *UserService {
 // - Easy mocking in tests
 // - Flexibility in implementations
 // - Clear, concrete return types
+```
+
+---
+
+## Go 1.22+ Features
+
+### Range Over Integers
+
+```go
+// ❌ Old - Classic C-style for loop
+for i := 0; i < 10; i++ {
+    fmt.Println(i)
+}
+
+// ✅ Go 1.22+ - Range over integers
+for i := range 10 {
+    fmt.Println(i)
+}
+```
+
+### Loop Variable Fix (Go 1.22)
+
+```go
+// Pre-1.22: loop variable was captured by reference — required manual copy
+// Go 1.22+: each iteration gets its own variable — this is now safe:
+for _, item := range items {
+    go func() {
+        process(item) // Safe in Go 1.22+, no need for `item := item`
+    }()
+}
+```
+
+### Iterators (`iter` package, Go 1.23+)
+
+```go
+import "iter"
+
+// ✅ Use iter.Seq for custom iteration
+func Filter[T any](seq iter.Seq[T], pred func(T) bool) iter.Seq[T] {
+    return func(yield func(T) bool) {
+        for v := range seq {
+            if pred(v) {
+                if !yield(v) {
+                    return
+                }
+            }
+        }
+    }
+}
+
+// Usage with range-over-function
+for v := range Filter(slices.Values(items), isValid) {
+    process(v)
+}
 ```
 
 ---

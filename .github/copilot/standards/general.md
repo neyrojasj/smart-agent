@@ -719,6 +719,19 @@ try {
 }
 ```
 
+### Error Lifecycle Model
+
+Errors behave differently depending on **when** they occur. Choose the right strategy:
+
+| Phase | Strategy | Rationale |
+|-------|----------|-----------|
+| **Startup / Init** | Fail fast — crash the process | Missing config or broken dependencies should prevent launch |
+| **Request / Task** | Propagate with context — return error to caller | Caller decides retry, fallback, or user-facing message |
+| **Background / Async** | Log + alert — do not crash | A failed cron job should not take down the service |
+| **Cleanup / Shutdown** | Log warning — continue shutdown sequence | Failing to close a socket should not block graceful exit |
+
+**Key rule**: Never use the same error strategy for all phases. Startup errors that are silently logged hide fatal misconfiguration. Background errors that crash the process cause unnecessary downtime.
+
 ---
 
 ## Pattern Matching & Switch Statements
@@ -820,7 +833,7 @@ fn parse_external_status(s: &str) -> Status {
 
 ### ❌ FORBIDDEN: Ignoring Optional Values
 
-**Never use `.unwrap()`, `!`, or force-unwrapping without explicit justification.**
+**Never force-unwrap nullable values without explicit justification.** This includes `.unwrap()` (Rust), `!` non-null assertions (TypeScript), force-unwrap (Swift), and unchecked dereferences (C/C++).
 
 #### Examples
 

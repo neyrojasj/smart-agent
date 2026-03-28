@@ -16,102 +16,12 @@ This document contains best practices for modern C++ development that should be 
 
 ---
 
-## General Programming Standards (C++-Specific)
+## General Standards
 
-These are the core principles from `general.md` applied specifically to C++ programming.
-
-### 🚫 FORBIDDEN: Default Values for Environment Variables
-
-**Never provide default values for required environment variables.**
-
-```cpp
-// ❌ FORBIDDEN - Silent fallback
-const char* port = std::getenv("PORT");
-int port_num = port ? std::stoi(port) : 3000;  // Silent default
-
-// ✅ REQUIRED - Fail if not defined
-const char* port = std::getenv("PORT");
-if (port == nullptr) {
-    throw std::runtime_error("PORT environment variable must be set");
-}
-int port_num = std::stoi(port);
-
-// ✅ ACCEPTABLE - Only for truly optional features
-const char* debug = std::getenv("DEBUG");
-bool debug_enabled = debug != nullptr && std::string_view(debug) == "true";
-```
-
-### 🚫 FORBIDDEN: Silent Error Swallowing
-
-**Never catch exceptions without handling them properly.**
-
-```cpp
-// ❌ FORBIDDEN - Empty catch block
-try {
-    riskyOperation();
-} catch (...) {
-    // Exception silently swallowed!
-}
-
-// ❌ FORBIDDEN - Catch and ignore
-try {
-    saveToDatabase(data);
-} catch (const std::exception&) {
-    // "It's fine, we'll try again later" - NO!
-}
-
-// ✅ REQUIRED - Handle, log, and/or rethrow
-try {
-    riskyOperation();
-} catch (const std::exception& e) {
-    logger.error("Risky operation failed: {}", e.what());
-    throw;  // Re-throw or handle appropriately
-}
-
-// ✅ REQUIRED - Catch specific exceptions
-try {
-    parseConfig(filename);
-} catch (const ConfigParseError& e) {
-    logger.error("Config parse failed: {} at line {}", e.what(), e.line());
-    throw InitializationError("Failed to load configuration", e);
-}
-```
-
-### 🚫 FORBIDDEN: Catch-All Defaults in Switch Statements
-
-**Never use default cases to hide known enum values.**
-
-```cpp
-// ❌ FORBIDDEN - Default hiding known cases
-enum class Status { Active, Inactive, Pending, Suspended };
-
-std::string getStatusLabel(Status status) {
-    switch (status) {
-        case Status::Active:
-            return "Active";
-        case Status::Inactive:
-            return "Inactive";
-        default:
-            return "Unknown";  // FORBIDDEN: Hides Pending and Suspended!
-    }
-}
-
-// ✅ REQUIRED - Exhaustive switch (enable -Wswitch-enum)
-std::string getStatusLabel(Status status) {
-    switch (status) {
-        case Status::Active:
-            return "Active";
-        case Status::Inactive:
-            return "Inactive";
-        case Status::Pending:
-            return "Pending";
-        case Status::Suspended:
-            return "Suspended";
-    }
-    // Compiler warns if a case is missing with -Wswitch-enum
-    std::unreachable();  // C++23, or throw for earlier standards
-}
-```
+> All FORBIDDEN patterns from `general.md` apply. Adapt to idiomatic C++:
+> - **Env vars**: Fail at startup. Check `std::getenv()` for `nullptr`, throw `std::runtime_error` if missing
+> - **Errors**: Never empty `catch` blocks. Catch specific exceptions, log, and rethrow. Use `throw;` to preserve stack
+> - **Switch**: Exhaustive cases for `enum class` — enable `-Wswitch-enum`. Use `std::unreachable()` (C++23) as final guard
 
 ---
 

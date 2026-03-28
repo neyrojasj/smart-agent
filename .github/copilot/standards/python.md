@@ -16,136 +16,12 @@ This document contains best practices for Python development that should be foll
 
 ---
 
-## General Programming Standards (Python-Specific)
+## General Standards
 
-These are the core principles from `general.md` applied specifically to Python programming.
-
-### 🚫 FORBIDDEN: Default Values for Environment Variables
-
-**Never provide default values for required environment variables.**
-
-```python
-import os
-
-# ❌ FORBIDDEN - Silent fallback with .get()
-port = os.getenv("PORT", "3000")  # Silent default
-database_url = os.environ.get("DATABASE_URL", "localhost")
-
-# ✅ REQUIRED - Fail if not defined
-port = os.environ["PORT"]  # Raises KeyError if not set
-
-# ✅ REQUIRED - Explicit check with clear error
-port = os.getenv("PORT")
-if port is None:
-    raise RuntimeError("PORT environment variable must be set")
-
-# ✅ REQUIRED - Validation with pydantic (recommended)
-from pydantic_settings import BaseSettings
-
-class Settings(BaseSettings):
-    PORT: int
-    DATABASE_URL: str
-    API_KEY: str
-    
-    class Config:
-        env_file = ".env"
-
-settings = Settings()  # Raises ValidationError if missing
-
-# ✅ ACCEPTABLE - Only for truly optional features
-debug = os.getenv("DEBUG", "").lower() == "true"
-```
-
-### 🚫 FORBIDDEN: Silent Error Swallowing
-
-**Never catch exceptions without handling them properly.**
-
-```python
-# ❌ FORBIDDEN - Bare except
-try:
-    risky_operation()
-except:
-    pass
-
-# ❌ FORBIDDEN - Empty except block
-try:
-    save_to_database(data)
-except Exception:
-    pass  # Error silently swallowed!
-
-# ❌ FORBIDDEN - Catch and ignore
-try:
-    risky_operation()
-except Exception as e:
-    # Do nothing - error is lost!
-    ...
-
-# ✅ REQUIRED - Handle, log, and/or re-raise
-import logging
-
-logger = logging.getLogger(__name__)
-
-try:
-    risky_operation()
-except DatabaseError as e:
-    logger.error("Database operation failed", exc_info=True)
-    raise ServiceError("Failed to save data") from e
-
-# ✅ REQUIRED - Specific exceptions
-try:
-    config = json.loads(data)
-except json.JSONDecodeError as e:
-    logger.error(f"Invalid JSON at position {e.pos}: {e.msg}")
-    raise ConfigError("Invalid configuration format") from e
-```
-
-### 🚫 FORBIDDEN: Catch-All Defaults in Match/If Statements
-
-**Never use catch-all patterns to hide known enum values.**
-
-```python
-from enum import Enum
-
-class Status(Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING = "pending"
-    SUSPENDED = "suspended"
-
-# ❌ FORBIDDEN - Catch-all hiding known cases (Python 3.10+)
-def get_status_label(status: Status) -> str:
-    match status:
-        case Status.ACTIVE:
-            return "Active"
-        case Status.INACTIVE:
-            return "Inactive"
-        case _:
-            return "Unknown"  # FORBIDDEN: Hides PENDING and SUSPENDED!
-
-# ✅ REQUIRED - Handle all cases explicitly
-def get_status_label(status: Status) -> str:
-    match status:
-        case Status.ACTIVE:
-            return "Active"
-        case Status.INACTIVE:
-            return "Inactive"
-        case Status.PENDING:
-            return "Pending"
-        case Status.SUSPENDED:
-            return "Suspended"
-    # No default needed - type checker ensures exhaustiveness
-
-# ✅ Alternative - Dictionary mapping
-STATUS_LABELS: dict[Status, str] = {
-    Status.ACTIVE: "Active",
-    Status.INACTIVE: "Inactive",
-    Status.PENDING: "Pending",
-    Status.SUSPENDED: "Suspended",
-}
-
-def get_status_label(status: Status) -> str:
-    return STATUS_LABELS[status]  # KeyError if missing
-```
+> All FORBIDDEN patterns from `general.md` apply. Adapt to idiomatic Python:
+> - **Env vars**: Fail at startup. Use `os.environ["KEY"]` (raises `KeyError`) or `pydantic_settings.BaseSettings`
+> - **Errors**: Never bare `except:` or empty `except` blocks. Catch specific exceptions, log with `exc_info=True`, re-raise with `from e`
+> - **Pattern matching**: Exhaustive `match` (3.10+) or dict mapping. No catch-all `_` for known enum values
 
 ---
 
@@ -567,6 +443,42 @@ output_path.write_text(result)
 # Iterate files
 for file in data_dir.glob("*.json"):
     process(file)
+```
+
+### Async Concurrency (Python 3.11+)
+
+```python
+import asyncio
+
+# ✅ Good - TaskGroup for structured concurrency (3.11+)
+async def fetch_all(urls: list[str]) -> list[Response]:
+    async with asyncio.TaskGroup() as tg:
+        tasks = [tg.create_task(fetch(url)) for url in urls]
+    return [t.result() for t in tasks]
+    # If any task fails, all others are cancelled and
+    # errors are raised as an ExceptionGroup
+
+# ✅ Good - Handle ExceptionGroup (3.11+)
+try:
+    results = await fetch_all(urls)
+except* ConnectionError as eg:
+    for exc in eg.exceptions:
+        logger.error(f"Connection failed: {exc}")
+except* TimeoutError as eg:
+    logger.warning(f"{len(eg.exceptions)} requests timed out")
+```
+
+### Package Management
+
+```bash
+# ✅ Preferred - uv (fast Rust-based resolver)
+uv init myproject          # New project with pyproject.toml
+uv add requests pydantic   # Add dependencies
+uv sync                    # Install from lockfile
+uv run pytest              # Run in managed environment
+
+# ✅ Also acceptable - pip with constraints
+pip install -r requirements.txt
 ```
 
 ---
