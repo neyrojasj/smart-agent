@@ -141,12 +141,40 @@ Reply with:
 
 ## Step 4: Execute
 
+### Pre-Execution Checks
+
+Before writing any code, verify the workspace is clean:
+
+```
+1. Run get_errors() — check for existing compile/lint errors
+2. Note any pre-existing failures (do not count against QA later)
+3. If workspace has uncommitted changes from a prior failed iteration,
+   confirm with user before overwriting
+```
+
+### Implementation
+
 Read `.github/skills/coding/SKILL.md` and execute it with:
 - The approved plan (PLAN-XXX.md)
-- Evaluator feedback from prior iteration (if iteration > 1)
-- Instruction to ONLY address failed checklist items (if iteration > 1)
+- **If iteration > 1**: Extract the `Feedback for Next Iteration` section from the latest verdict in QA-XXX.md and pass it as the primary instruction. Tell the coding skill to ONLY address the failed checklist items listed in that feedback — do not re-implement passing items.
 
 Then read `.github/skills/testing/SKILL.md` and run tests.
+
+### Session Checkpoint
+
+After each execution, update `session.md` with:
+
+```yaml
+current_loop:
+  plan: PLAN-XXX
+  qa: QA-XXX
+  iteration: [N]
+  passed: [list of passed item IDs]
+  failed: [list of failed item IDs]
+  status: evaluating
+```
+
+This ensures progress survives if the conversation hits token limits.
 
 ---
 
@@ -166,8 +194,13 @@ The evaluator will:
 
 ```
 IF verdict == PASS:
+  → Run planning skill Step 8 (Decision Capture Gate)
+    — Check if the plan produced architectural/pattern/dependency decisions
+    — If yes, create docs/decisions/DEC-XXX.md entries
+  → Check if plan changed APIs or architecture
+    — If yes, read & execute documentation skill to update docs/
   → Report success to user
-  → Update session.md
+  → Update session.md (clear current_loop)
   → Done
 
 IF verdict == FAIL AND iteration < max_iterations:
@@ -257,8 +290,10 @@ Summary of changes:
 4. ✅ Report progress after every iteration
 5. ✅ Narrow scope each iteration (only re-check failed items)
 6. ✅ Respect max iteration limit
-7. ✅ Update session.md after each iteration
+7. ✅ Update session.md after each iteration (including loop checkpoint)
 8. ✅ Apply project standards from `.github/copilot/standards/`
+9. ✅ Run decision capture gate after successful completion
+10. ✅ Check for pre-existing errors before first execution
 
 ### NEVER Do
 
@@ -268,6 +303,8 @@ Summary of changes:
 4. ❌ Loop beyond max iterations without user consent
 5. ❌ Modify the QA checklist after user approval (suggest only)
 6. ❌ Skip reading skill files before execution
+7. ❌ Start coding without checking for pre-existing workspace errors
+8. ❌ Complete successfully without capturing decisions in docs/decisions/
 
 ---
 
@@ -275,8 +312,9 @@ Summary of changes:
 
 ```
 .github/skills/
-├── planning/SKILL.md      # Step 1: Create plan
-├── evaluator/SKILL.md     # Step 2 & 5: QA checklist + evaluation
-├── coding/SKILL.md        # Step 4: Implementation
-└── testing/SKILL.md       # Step 4: Test creation
+├── planning/SKILL.md        # Step 1: Create plan (+ Step 8 decision capture)
+├── evaluator/SKILL.md       # Step 2 & 5: QA checklist + evaluation
+├── coding/SKILL.md          # Step 4: Implementation
+├── testing/SKILL.md         # Step 4: Test creation
+└── documentation/SKILL.md   # Post-completion: Update docs if APIs/architecture changed
 ```
