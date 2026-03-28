@@ -29,20 +29,14 @@ Requests are automatically routed to specialized skills based on intent. Each sk
 </td>
 <td width="33%" valign="top">
 
-### 🧠 Unified Context
-Single `context.md` file maintains all project memory, session state, and user preferences.
+### 🧠 Context Memory
+Persistent `context.md` stores project identity and preferences. Ephemeral `session.md` tracks actions and tasks per conversation.
 
 </td>
 <td width="33%" valign="top">
 
 ### 🔧 Auto-Generated Skills
 Setup skill scans your project and generates custom skills based on detected patterns.
-
-### 🧩 Gap-Aware Skill Coverage
-For change requests, Smart first verifies a suitable skill exists. If none matches, it creates a project-specific skill, registers it, and then executes the request through that new skill.
-
-### 🧪 Specialized Task Guardrail
-If a request matches a broad skill but asks for an uncovered subtype (for example mutation or contract testing), Smart generates a dedicated subtype skill first, then executes through it.
 
 </td>
 </tr>
@@ -66,6 +60,26 @@ Planning and coding skills require explicit approval before implementation.
 
 </td>
 </tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🧩 Gap-Aware Skill Coverage
+For change requests, Smart verifies a suitable skill exists. If none matches, it creates one and routes through it.
+
+</td>
+<td width="33%" valign="top">
+
+### 🔄 Auto-Improve Mode
+Smart Manager agent runs a quality-gated loop: plan → QA → execute → evaluate → iterate until all checks pass.
+
+</td>
+<td width="33%" valign="top">
+
+### 🧪 Specialized Task Guardrail
+If a request asks for an uncovered subtype (e.g. mutation testing), Smart generates a dedicated skill first.
+
+</td>
+</tr>
 </table>
 
 ---
@@ -77,19 +91,28 @@ Planning and coding skills require explicit approval before implementation.
 │                        SMART ORCHESTRATOR                                │
 │                                                                         │
 │  1. Receive user request                                                │
-│  2. Load context from .github/copilot/context.md                               │
+│  2. Load context.md + session.md                                        │
 │  3. Match request → Determine skill(s) needed                           │
 │  4. Delegate to skill(s)                                                │
-│  5. Update context.md with results                                      │
+│  5. Update context/session with results                                 │
 │  6. Return response to user                                             │
 └─────────────────────────────────────────────────────────────────────────┘
-                                │
-        ┌───────────┬───────────┼───────────┬───────────┐
-        ▼           ▼           ▼           ▼           ▼
-┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐
-│ Planning  │ │  Coding   │ │ Analysis  │ │   Docs    │ │  Testing  │
-│   Skill   │ │   Skill   │ │   Skill   │ │   Skill   │ │   Skill   │
-└───────────┘ └───────────┘ └───────────┘ └───────────┘ └───────────┘
+            │                                           │
+  ┌─────────┼─────────┬───────────┬───────────┐        │
+  ▼         ▼         ▼           ▼           ▼        ▼
+┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌──────────────┐
+│Planning││ Coding ││Analysis││  Docs  ││Testing ││ + Setup,     │
+│ Skill  ││ Skill  ││ Skill  ││ Skill  ││ Skill  ││ Skill-Gen,   │
+│        ││        ││        ││        ││        ││ Evaluator    │
+└────────┘└────────┘└────────┘└────────┘└────────┘└──────────────┘
+                                                         │
+                                                         ▼
+                                              ┌──────────────────┐
+                                              │  Smart Manager   │
+                                              │  (Auto-Improve)  │
+                                              │  plan → QA →     │
+                                              │  execute → eval  │
+                                              └──────────────────┘
 ```
 
 ---
@@ -117,7 +140,8 @@ your-project/
 ├── .github/
 │   ├── copilot-instructions.md  # 🤖 Auto-loads smart agent
 │   ├── agents/
-│   │   └── smart.agent.md       # 🎯 Orchestrator
+│   │   ├── smart.agent.md       # 🎯 Orchestrator
+│   │   └── smart-manager.agent.md  # 🔄 Auto-improve agent
 │   └── skills/
 │       ├── index.yaml           # Skill registry
 │       ├── planning/SKILL.md
@@ -149,6 +173,7 @@ your-project/
 | **testing** | Create tests with mocking | test, coverage, mock | ❌ None |
 | **setup** | Project initialization, docs generation | setup, initialize, configure | ❌ None |
 | **skill-generator** | Detect patterns, generate custom skills | generate skills, rescan, create skill | ❌ None |
+| **evaluator** | QA checklists, implementation assessment | evaluate, qa, auto-improve, iterate | ❌ None |
 
 ### Skill Chaining
 
@@ -158,28 +183,34 @@ your-project/
 | **Bug Fix** | analysis → coding → testing |
 | **Code Review** | analysis → documentation |
 | **Refactor** | planning → coding → testing |
+| **Auto-Improve** | planning → evaluator(QA) → [approve] → coding → evaluator(assess) → ↺ |
 
 ### Skill Generation Confidence Policy
 
 When a request needs a capability that is not covered, Smart creates a project-specific skill using evidence from code and documentation.
 
 - Smart inspects relevant source files and project docs before generating the skill
-- Smart reports routing confidence as a numeric percentage (0-100%)
-- If confidence is below 70%, Smart asks for explicit user confirmation before using the skill
-- If user approves low-confidence use, Smart records that acceptance in context for traceability
+- Smart assigns routing confidence as a tier: **high**, **medium**, or **low**
+- If confidence is **low**, Smart asks for explicit user confirmation before using the skill
+- If user approves low-confidence use, Smart records that acceptance in session for traceability
 
 ---
 
-## 🧠 Unified Context Memory
+## 🧠 Context Memory
 
-All context is maintained in a single `.github/copilot/context.md` file:
+Project memory is split into two files:
+
+| File | Purpose | Persistence |
+|------|---------|-------------|
+| `context.md` | Project identity, preferences, key decisions | Persistent (commit to git) |
+| `session.md` | Pending tasks, recent actions, confidence log | Ephemeral (per conversation) |
+
+**context.md** example:
 
 ```markdown
-# Agent Context Memory
+# Project Context
 
-> Last updated: 2026-02-01T10:00:00Z
-> Active skill: coding
-> Current task: Implementing user authentication
+> Last updated: 2026-03-28T10:00:00Z
 
 ## Project Identity
 - **Name**: my-api
@@ -187,20 +218,33 @@ All context is maintained in a single `.github/copilot/context.md` file:
 - **Stack**: Node.js + Express
 - **Stage**: development
 
-## Current Session
-### Pending Tasks
-- [ ] Add JWT middleware (coding.skill)
-- [ ] Write auth tests (testing.skill)
-
-### Recent Actions
-1. 10:00 - Routed to planning.skill - Created PLAN-001
-2. 10:15 - User approved PLAN-001
-3. 10:20 - Routed to coding.skill - Implementing...
-
-## Learned Context
-### User Preferences
+## User Preferences
 - Prefers TypeScript strict mode
 - Wants comprehensive error handling
+
+## Key Decisions
+| Decision | Reason | Skill | Date |
+|----------|--------|-------|------|
+| Use JWT for auth | Stateless, scalable | planning | 2026-03-28 |
+```
+
+**session.md** example:
+
+```markdown
+# Session State
+
+> Last updated: 2026-03-28T10:20:00Z
+> Active skill: coding
+> Current task: Implementing user authentication
+
+## Pending Tasks
+- [ ] Add JWT middleware (coding)
+- [ ] Write auth tests (testing)
+
+## Recent Actions (last 20)
+1. 10:00 - Routed to planning - Created PLAN-001
+2. 10:15 - User approved PLAN-001
+3. 10:20 - Routed to coding - Implementing...
 ```
 
 ---
@@ -234,7 +278,7 @@ Skills generated from real requests are recorded under `Generated On Demand` wit
 
 ```mermaid
 graph TD
-    A[User Request] --> B[Load context.md]
+    A[User Request] --> B[Load context.md + session.md]
     B --> C[Read skills/index.yaml]
     C --> D{Match Skill}
     D -->|planning| E[planning.skill]
@@ -242,15 +286,21 @@ graph TD
     D -->|analysis| G[analysis.skill]
     D -->|docs| H[documentation.skill]
     D -->|testing| I[testing.skill]
+    D -->|setup| S[setup.skill]
+    D -->|skills| SG[skill-generator.skill]
+    D -->|evaluate| EV[evaluator.skill]
     E --> J{Needs Approval?}
     F --> J
     G --> K[Execute]
     H --> K
     I --> K
+    S --> K
+    SG --> K
+    EV --> K
     J -->|Yes| L[User Approval]
     J -->|No| K
     L -->|Approved| K
-    K --> M[Update context.md]
+    K --> M[Update context.md + session.md]
     M --> N[Chain to Next Skill?]
     N -->|Yes| D
     N -->|No| O[Respond to User]
@@ -305,7 +355,8 @@ planning-copilot/
 ├── .github/
 │   ├── copilot-instructions.md
 │   ├── agents/
-│   │   └── smart.agent.md       # 🎯 Orchestrator
+│   │   ├── smart.agent.md                # 🎯 Orchestrator
+│   │   └── smart-manager.agent.md  # 🔄 Auto-improve agent
 │   ├── skills/                  # 📚 Canonical skills
 │   │   ├── index.yaml
 │   │   ├── planning/SKILL.md
@@ -314,7 +365,8 @@ planning-copilot/
 │   │   ├── documentation/SKILL.md
 │   │   ├── testing/SKILL.md
 │   │   ├── setup/SKILL.md
-│   │   └── skill-generator/SKILL.md
+│   │   ├── skill-generator/SKILL.md
+│   │   └── evaluator/SKILL.md
 │   └── copilot/                 # 📋 Templates (at destination paths)
 │       ├── context.md           # 🧠 Project memory template
 │       ├── session.md           # 📋 Session state template

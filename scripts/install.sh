@@ -182,6 +182,7 @@ install_skills() {
         "testing"
         "setup"
         "skill-generator"
+        "evaluator"
     )
 
     for skill in "${skills[@]}"; do
@@ -224,9 +225,11 @@ install_docs() {
 }
 
 install_smart_agent() {
-    print_info "Installing smart agent to .github/agents/..."
+    print_info "Installing smart agents to .github/agents/..."
     copy_file_from_repo ".github/agents/smart.agent.md" "$GITHUB_DIR/agents/smart.agent.md"
-    print_success "Smart agent installed"
+    print_success "Smart orchestrator installed"
+    copy_file_from_repo ".github/agents/smart-manager.agent.md" "$GITHUB_DIR/agents/smart-manager.agent.md"
+    print_success "Smart Manager agent installed"
 }
 
 install_copilot_instructions() {
@@ -276,6 +279,10 @@ install_prompts() {
     copy_file_if_missing_from_repo ".github/copilot/prompts/setup-project.md" "$COPILOT_DIR/prompts/setup-project.md" "prompts/setup-project.md"
     
     copy_file_if_missing_from_repo ".github/copilot/prompts/code-audit.md" "$COPILOT_DIR/prompts/code-audit.md" "prompts/code-audit.md"
+    
+    copy_file_if_missing_from_repo ".github/copilot/prompts/generate-skills.md" "$COPILOT_DIR/prompts/generate-skills.md" "prompts/generate-skills.md"
+    
+    copy_file_if_missing_from_repo ".github/copilot/prompts/setup-rust-web-app.md" "$COPILOT_DIR/prompts/setup-rust-web-app.md" "prompts/setup-rust-web-app.md"
 }
 
 install_instructions_template() {
@@ -371,11 +378,11 @@ main() {
     echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
     echo "The following has been installed:"
-    echo "  • Smart agent:          .github/agents/smart.agent.md"
+    echo "  • Smart orchestrator:   .github/agents/smart.agent.md"
+    echo "  • Smart Manager:        .github/agents/smart-manager.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
-    echo "  • Agent skills:         .github/skills/"
-    echo "  • Setup prompt:         .github/copilot/prompts/setup-project.md"
-    echo "  • Code audit prompt:    .github/copilot/prompts/code-audit.md"
+    echo "  • Agent skills (8):     .github/skills/ (includes evaluator)"
+    echo "  • Prompts:              .github/copilot/prompts/"
     echo "  • Copilot folder:       .github/copilot/"
     echo "  • Documentation:        .github/copilot/docs/"
     echo "  • Search index:         .github/copilot/docs/index.yaml (initialized if missing)"

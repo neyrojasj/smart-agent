@@ -2,21 +2,23 @@
 
 # Session State
 
-> Last updated: [TIMESTAMP]
-> Active skill: none
-> Current task: none
+> Last updated: 2026-03-28
+> Active skill: analysis
+> Current task: Project improvement audit
 
 ## Pending Tasks
 
-(no pending tasks)
+- [ ] Fix issues found in audit (pending user approval)
 
 ## Recent Actions (last 20)
 
-(no recent actions)
+1. 2026-03-28 - Routed to analysis skill - Full project audit with 12 findings
 
 ## Skill Confidence Log
 
-(no entries)
+| Skill | Confidence | Reason |
+|-------|-----------|--------|
+| analysis | high | "how can we improve" matches audit/review triggers |
 
 ---
 

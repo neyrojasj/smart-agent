@@ -20,6 +20,10 @@ handoffs:
     agent: Smart
     prompt: "Scan the project and generate custom skills based on detected patterns. Read .github/skills/skill-generator/SKILL.md and execute its workflow."
     send: false
+  - label: 🔄 Auto-Improve
+    agent: Smart Manager
+    prompt: ""
+    send: false
 ---
 
 # Smart Orchestrator
@@ -242,6 +246,7 @@ I will first create a project-specific skill for this capability, register it, a
 | **testing** | User wants to test, add coverage | ❌ No |
 | **setup** | User wants to initialize, configure | ❌ No |
 | **skill-generator** | User wants to generate/rescan skills, or orchestrator detects missing skill | ❌ No |
+| **evaluator** | Auto-improve mode, QA checklist generation, implementation assessment | ❌ No |
 
 ### Routing Decision Format
 
@@ -387,6 +392,9 @@ Common skill chains (execute in order):
 | **Bug Fix** | analysis → coding → testing |
 | **Code Review** | analysis → documentation |
 | **Refactor** | planning → coding → testing |
+| **Auto-Improve** | planning → evaluator(generate QA) → [user approval] → coding → evaluator(assess) → ↺ |
+
+> **Note**: Auto-Improve runs in the **Smart Manager** (`@smart-manager`). Use the 🔄 Auto-Improve handoff button to switch to it.
 
 ---
 
@@ -403,7 +411,8 @@ Common skill chains (execute in order):
 ├── documentation/SKILL.md        # Docs generation
 ├── testing/SKILL.md              # Test creation
 ├── setup/SKILL.md                # Project initialization
-└── skill-generator/SKILL.md      # Custom skill generation
+├── skill-generator/SKILL.md      # Custom skill generation
+└── evaluator/SKILL.md            # QA checklist & auto-improve evaluation
 ```
 
 ### Context File Location

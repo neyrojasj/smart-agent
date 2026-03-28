@@ -30,7 +30,9 @@ If `context.md` doesn't exist → Run the **Setup Project** handoff first.
 └── prompts/             # 🎯 Setup prompts
 
 .github/
-├── agents/smart.agent.md   # 🎯 Orchestrator (all routing logic)
+├── agents/
+│   ├── smart.agent.md          # 🎯 Orchestrator (all routing logic)
+│   └── smart-manager.agent.md  # 🔄 Auto-improve (quality-gated loop)
 └── skills/
     ├── index.yaml           # Skill registry
     └── <skill>/SKILL.md     # Individual skill files

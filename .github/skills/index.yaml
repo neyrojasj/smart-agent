@@ -186,6 +186,30 @@ skills:
     can_chain_to:
       - documentation
 
+  evaluator:
+    file: "evaluator/SKILL.md"
+    name: "Evaluator"
+    description: "Generate QA checklists from plans and evaluate implementations against them"
+    priority: 8
+    triggers:
+      keywords:
+        - evaluate
+        - assess
+        - qa
+        - quality check
+        - auto-improve
+        - iterate
+      patterns:
+        - "evaluate.*implementation"
+        - "check.*quality"
+        - "auto.?improve"
+        - "iterate.*until"
+        - "improve.*until.*pass"
+    requires_approval: false
+    can_chain_to:
+      - coding
+      - testing
+
 # Routing configuration
 routing:
   # Default skill when no clear match
