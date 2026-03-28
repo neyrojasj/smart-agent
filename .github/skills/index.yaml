@@ -1,0 +1,252 @@
+# Smart Agent - Skill Registry
+# ═══════════════════════════════════════════════════════════════════════════
+# This file defines all available skills and their routing rules.
+# The orchestrator reads this to determine which skill(s) to invoke.
+# ═══════════════════════════════════════════════════════════════════════════
+
+version: 2
+last_updated: "2026-03-28T00:00:00Z"
+
+skills:
+  planning:
+    file: "planning/SKILL.md"
+    name: "Planning"
+    description: "Creates implementation plans, architectural decisions, and strategy"
+    priority: 1
+    triggers:
+      keywords:
+        - plan
+        - design
+        - architect
+        - structure
+        - approach
+        - strategy
+        - roadmap
+        - proposal
+      patterns:
+        - "create a plan"
+        - "how should I"
+        - "design.*for"
+        - "plan.*implementation"
+        - "what's the best approach"
+        - "help me think through"
+    requires_approval: true
+    can_chain_to:
+      - coding
+      - testing
+
+  coding:
+    file: "coding/SKILL.md"
+    name: "Coding"
+    description: "Generates and modifies code following standards"
+    priority: 2
+    triggers:
+      keywords:
+        - implement
+        - code
+        - create
+        - add
+        - modify
+        - fix
+        - refactor
+        - build
+        - develop
+      patterns:
+        - "implement.*"
+        - "add.*feature"
+        - "fix.*bug"
+        - "refactor.*"
+        - "create.*function"
+        - "build.*"
+    requires_approval: true
+    can_chain_to:
+      - testing
+      - documentation
+
+  analysis:
+    file: "analysis/SKILL.md"
+    name: "Analysis"
+    description: "Analyzes code, performs audits, debugging, and explanations"
+    priority: 3
+    triggers:
+      keywords:
+        - analyze
+        - audit
+        - review
+        - debug
+        - explain
+        - why
+        - how
+        - understand
+        - investigate
+      patterns:
+        - "explain.*"
+        - "why does.*"
+        - "what.*doing"
+        - "audit.*"
+        - "review.*code"
+        - "help me understand"
+        - "what's wrong with"
+    requires_approval: false
+    can_chain_to:
+      - planning
+      - coding
+
+  documentation:
+    file: "documentation/SKILL.md"
+    name: "Documentation"
+    description: "Generates and updates project documentation"
+    priority: 4
+    triggers:
+      keywords:
+        - document
+        - docs
+        - readme
+        - api
+        - comments
+        - jsdoc
+        - docstring
+      patterns:
+        - "document.*"
+        - "update.*docs"
+        - "write.*readme"
+        - "add.*comments"
+        - "generate.*documentation"
+    requires_approval: false
+    can_chain_to:
+      - analysis
+
+  testing:
+    file: "testing/SKILL.md"
+    name: "Testing"
+    description: "Creates tests, manages coverage, and validates code"
+    priority: 5
+    triggers:
+      keywords:
+        - test
+        - coverage
+        - spec
+        - mock
+        - fixture
+        - unit
+        - integration
+        - e2e
+      patterns:
+        - "write.*test"
+        - "add.*tests"
+        - "test.*coverage"
+        - "create.*spec"
+        - "mock.*"
+    requires_approval: false
+    can_chain_to:
+      - coding
+
+  setup:
+    file: "setup/SKILL.md"
+    name: "Setup"
+    description: "Project initialization — scan codebase, create context, generate docs"
+    priority: 6
+    triggers:
+      keywords:
+        - setup
+        - initialize
+        - init
+        - configure
+        - install
+        - bootstrap
+        - scaffold
+      patterns:
+        - "setup.*project"
+        - "initialize.*"
+        - "configure.*"
+        - "scan.*project"
+    requires_approval: false
+    can_chain_to:
+      - skill-generator
+      - documentation
+
+  skill-generator:
+    file: "skill-generator/SKILL.md"
+    name: "Skill Generator"
+    description: "Detect project patterns and generate custom skills on demand"
+    priority: 7
+    triggers:
+      keywords:
+        - generate skills
+        - create skill
+        - rescan
+        - regenerate skills
+        - skill opportunities
+      patterns:
+        - "generate.*skills"
+        - "create.*skill"
+        - "rescan.*project"
+        - "regenerate.*skills"
+    requires_approval: false
+    can_chain_to:
+      - documentation
+
+# Routing configuration
+routing:
+  # Default skill when no clear match
+  default_skill: analysis
+
+  # Minimum skill version compatible with this orchestrator
+  min_skill_version: "1.0"
+
+  # Confidence tiers: high (clear match), medium (partial), low (weak - ask user)
+  confidence_model: "tiered"
+
+  # Require capability/context adequacy check even when a skill matches keywords
+  context_adequacy_required: true
+  
+  # Allow invoking multiple skills for complex requests
+  multi_skill_enabled: true
+  
+  # Maximum skills per single request
+  max_skills_per_request: 3
+
+# Fallback behavior
+fallback:
+  # What to do when no skill matches
+  no_match: "analysis"
+
+  # For change/implementation requests with no match:
+  # generate_missing_skill => route to skill-generator, then reroute
+  no_match_for_change: "generate_missing_skill"
+
+  # For requests where a skill matched keywords but lacks subtype/context coverage:
+  # enforce_skill_generation => route to skill-generator, then reroute
+  matched_but_inadequate: "enforce_skill_generation"
+
+  # When confidence tier is LOW:
+  # ask_user => notify user, ask to proceed or refine, log outcome in session.md
+  low_confidence: "ask_user"
+
+  # Path used to track deferred skill gaps
+  skill_gap_registry: ".github/copilot/docs/skills-opportunities.md"
+  
+  # What to do when multiple skills match equally
+  ambiguous: "ask_user"
+
+# Skill chaining rules
+chaining:
+  # Whether to automatically chain skills
+  auto_chain: true
+  
+  # Common chains (ordered sequences)
+  common_chains:
+    feature_development:
+      - planning
+      - coding
+      - testing
+      - documentation
+    
+    bug_fix:
+      - analysis
+      - coding
+      - testing
+    
+    code_review:
+      - analysis
+      - documentation

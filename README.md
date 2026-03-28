@@ -77,7 +77,7 @@ Planning and coding skills require explicit approval before implementation.
 │                        SMART ORCHESTRATOR                                │
 │                                                                         │
 │  1. Receive user request                                                │
-│  2. Load context from .copilot/context.md                               │
+│  2. Load context from .github/copilot/context.md                               │
 │  3. Match request → Determine skill(s) needed                           │
 │  4. Delegate to skill(s)                                                │
 │  5. Update context.md with results                                      │
@@ -125,9 +125,11 @@ your-project/
 │       ├── analysis/SKILL.md
 │       ├── documentation/SKILL.md
 │       ├── testing/SKILL.md
-│       └── setup/SKILL.md
-└── .copilot/
-    ├── context.md               # 🧠 Unified memory
+│       ├── setup/SKILL.md
+│       └── skill-generator/SKILL.md
+└── .github/copilot/
+    ├── context.md               # 🧠 Project memory
+    ├── session.md               # 📋 Session state
     ├── docs/                    # 📖 Project documentation
     ├── standards/               # 🛡️ Language standards
     ├── plans/                   # 📋 Implementation plans
@@ -145,7 +147,8 @@ your-project/
 | **analysis** | Code review, debugging, explanations | analyze, explain, debug, why | ❌ None |
 | **documentation** | Generate and update docs | document, docs, readme | ❌ None |
 | **testing** | Create tests with mocking | test, coverage, mock | ❌ None |
-| **setup** | Project initialization, skill generation | setup, initialize, configure | ❌ None |
+| **setup** | Project initialization, docs generation | setup, initialize, configure | ❌ None |
+| **skill-generator** | Detect patterns, generate custom skills | generate skills, rescan, create skill | ❌ None |
 
 ### Skill Chaining
 
@@ -169,7 +172,7 @@ When a request needs a capability that is not covered, Smart creates a project-s
 
 ## 🧠 Unified Context Memory
 
-All context is maintained in a single `.copilot/context.md` file:
+All context is maintained in a single `.github/copilot/context.md` file:
 
 ```markdown
 # Agent Context Memory
@@ -221,7 +224,7 @@ Run the skill generator:
 @smart Generate skills for this project
 ```
 
-During setup, Smart also creates a capability map and a skill proposal file at `.copilot/docs/skills-opportunities.md`.
+During setup, Smart also creates a capability map and a skill proposal file at `.github/copilot/docs/skills-opportunities.md`.
 Low-confidence skills are deferred as explicit gaps and generated later on first matching change request.
 Skills generated from real requests are recorded under `Generated On Demand` with the request summary, subtype, and evidence.
 
@@ -299,35 +302,53 @@ Documentation is treated as part of the implementation.
 ```
 planning-copilot/
 ├── README.md                    # You are here
-├── agents/
-│   └── smart.agent.md           # 🎯 Orchestrator
-├── standards/                   # 🛡️ Language standards
-│   ├── general.md
-│   ├── rust.md
-│   ├── nodejs.md
-│   ├── python.md
-│   ├── golang.md
-│   ├── c.md
-│   └── cpp.md
-├── scripts/
-│   ├── install.sh               # Main installer
-│   ├── install-with-standards.sh
-│   └── install-minimal.sh
-└── templates/
-    ├── context.md               # 🧠 Context memory template
-    ├── copilot-instructions.md
-    ├── skills/                  # 📚 Skill templates
-    │   ├── index.yaml
-    │   ├── planning.skill.md
-    │   ├── coding.skill.md
-    │   ├── analysis.skill.md
-    │   ├── documentation.skill.md
-    │   ├── testing.skill.md
-    │   └── setup.skill.md
-    ├── docs/                    # 📖 Doc templates
-    └── prompts/                 # 🎯 Setup prompts
-        ├── setup-project.md
-        └── generate-skills.md
+├── .github/
+│   ├── copilot-instructions.md
+│   ├── agents/
+│   │   └── smart.agent.md       # 🎯 Orchestrator
+│   ├── skills/                  # 📚 Canonical skills
+│   │   ├── index.yaml
+│   │   ├── planning/SKILL.md
+│   │   ├── coding/SKILL.md
+│   │   ├── analysis/SKILL.md
+│   │   ├── documentation/SKILL.md
+│   │   ├── testing/SKILL.md
+│   │   ├── setup/SKILL.md
+│   │   └── skill-generator/SKILL.md
+│   └── copilot/                 # 📋 Templates (at destination paths)
+│       ├── context.md           # 🧠 Project memory template
+│       ├── session.md           # 📋 Session state template
+│       ├── instructions.md      # 📝 Project instructions template
+│       ├── gitignore.txt        # 🚫 Gitignore template
+│       ├── docs/                # 📖 Documentation templates
+│       │   ├── index.yaml
+│       │   ├── overview.md
+│       │   ├── architecture.md
+│       │   ├── tech-stack.md
+│       │   ├── conventions.md
+│       │   ├── development.md
+│       │   ├── testing.md
+│       │   ├── api.md
+│       │   └── decisions/
+│       ├── plans/
+│       │   └── state.yaml       # 📊 Plan tracking template
+│       ├── prompts/             # 🎯 Setup prompts
+│       │   ├── setup-project.md
+│       │   ├── code-audit.md
+│       │   └── generate-skills.md
+│       └── standards/           # 🛡️ Language standards
+│           ├── general.md
+│           ├── markdown.md
+│           ├── rust.md
+│           ├── nodejs.md
+│           ├── python.md
+│           ├── golang.md
+│           ├── c.md
+│           └── cpp.md
+└── scripts/
+    ├── install.sh               # Main installer
+    ├── install-with-standards.sh
+    └── install-minimal.sh
 ```
 
 ---

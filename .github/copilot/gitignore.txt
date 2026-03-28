@@ -1,0 +1,11 @@
+# Planning Copilot - Gitignore
+# Only ephemeral per-developer state is ignored
+
+# Temporary files
+tmp/
+
+# Plans directory (local planning state)
+plans/
+
+# Session state (per-developer, ephemeral)
+session.md

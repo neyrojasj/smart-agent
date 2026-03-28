@@ -1,0 +1,38 @@
+# TEMPLATE: Replace this file with real project information. Run the Setup skill (@smart setup project) to auto-generate.
+
+# Decision Index
+
+version: 1
+last_updated: "YYYY-MM-DDTHH:MM:SSZ"
+next_id: 1
+
+decisions: {}
+  # DEC-001:
+  #   title: "Decision title"
+  #   status: accepted
+  #   category: architecture
+  #   created: "YYYY-MM-DD"
+  #   updated: "YYYY-MM-DD"
+
+by_category:
+  architecture: []
+  api: []
+  security: []
+  testing: []
+  infrastructure: []
+  dependencies: []
+  patterns: []
+  other: []
+
+by_status:
+  proposed: []
+  accepted: []
+  deprecated: []
+  superseded: []
+
+summary:
+  total: 0
+  proposed: 0
+  accepted: 0
+  deprecated: 0
+  superseded: 0

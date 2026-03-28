@@ -19,7 +19,7 @@ REPO_NAME="smart-agent"
 REPO_BRANCH="main"
 REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/refs/heads/${REPO_BRANCH}.tar.gz"
 TEMP_DIR=".smart-agent-temp"
-COPILOT_DIR=".copilot"
+COPILOT_DIR=".github/copilot"
 GITHUB_DIR=".github"
 
 # Flags
@@ -154,7 +154,9 @@ copy_file_if_missing_from_repo() {
 create_directory_structure() {
     print_info "Creating directory structure..."
     
-    # Create .copilot directory structure
+    # Create .github directory structure
+    mkdir -p "$GITHUB_DIR/agents"
+    mkdir -p "$GITHUB_DIR/skills"
     mkdir -p "$COPILOT_DIR/docs/decisions"
     mkdir -p "$COPILOT_DIR/plans"
     mkdir -p "$COPILOT_DIR/prompts"
@@ -164,17 +166,13 @@ create_directory_structure() {
         mkdir -p "$COPILOT_DIR/standards"
     fi
     
-    # Create .github directory if it doesn't exist
-    mkdir -p "$GITHUB_DIR/agents"
-    mkdir -p "$GITHUB_DIR/skills"
-    
     print_success "Directory structure created"
 }
 
 install_skills() {
     print_info "Installing core skills to .github/skills/..."
 
-    copy_file_from_repo "templates/skills/index.yaml" "$GITHUB_DIR/skills/index.yaml"
+    copy_file_from_repo ".github/skills/index.yaml" "$GITHUB_DIR/skills/index.yaml"
 
     local skills=(
         "planning"
@@ -183,46 +181,68 @@ install_skills() {
         "documentation"
         "testing"
         "setup"
+        "skill-generator"
     )
 
     for skill in "${skills[@]}"; do
         mkdir -p "$GITHUB_DIR/skills/$skill"
-        copy_file_from_repo "templates/skills/$skill.skill.md" "$GITHUB_DIR/skills/$skill/SKILL.md"
+        copy_file_from_repo ".github/skills/$skill/SKILL.md" "$GITHUB_DIR/skills/$skill/SKILL.md"
         print_success "Skill installed: $skill"
     done
 }
 
 install_gitignore() {
-    print_info "Installing .copilot/.gitignore..."
-    copy_file_from_repo "templates/copilot-gitignore.txt" "$COPILOT_DIR/.gitignore"
+    print_info "Installing .github/copilot/.gitignore..."
+    copy_file_from_repo ".github/copilot/gitignore.txt" "$COPILOT_DIR/.gitignore"
     print_success ".gitignore installed"
 }
 
 install_state_yaml() {
     print_info "Initializing plans/state.yaml (preserve if exists)..."
-    copy_file_if_missing_from_repo "templates/state.yaml" "$COPILOT_DIR/plans/state.yaml" "plans/state.yaml"
+    copy_file_if_missing_from_repo ".github/copilot/plans/state.yaml" "$COPILOT_DIR/plans/state.yaml" "plans/state.yaml"
 }
 
-install_docs_index() {
-    print_info "Initializing docs/index.yaml (preserve if exists)..."
-    copy_file_if_missing_from_repo "templates/docs/index.yaml" "$COPILOT_DIR/docs/index.yaml" "docs/index.yaml"
-}
-
-install_docs_decisions_index() {
-    print_info "Initializing docs/decisions/index.yaml (preserve if exists)..."
-    copy_file_if_missing_from_repo "templates/docs/decisions/index.yaml" "$COPILOT_DIR/docs/decisions/index.yaml" "docs/decisions/index.yaml"
+install_docs() {
+    print_info "Initializing docs/ templates (preserve existing)..."
+    
+    local docs=(
+        "docs/index.yaml"
+        "docs/overview.md"
+        "docs/architecture.md"
+        "docs/tech-stack.md"
+        "docs/conventions.md"
+        "docs/development.md"
+        "docs/testing.md"
+        "docs/api.md"
+        "docs/decisions/index.yaml"
+        "docs/decisions/template.md"
+    )
+    
+    for doc in "${docs[@]}"; do
+        copy_file_if_missing_from_repo ".github/copilot/$doc" "$COPILOT_DIR/$doc" "$doc"
+    done
 }
 
 install_smart_agent() {
     print_info "Installing smart agent to .github/agents/..."
-    copy_file_from_repo "agents/smart.agent.md" "$GITHUB_DIR/agents/smart.agent.md"
+    copy_file_from_repo ".github/agents/smart.agent.md" "$GITHUB_DIR/agents/smart.agent.md"
     print_success "Smart agent installed"
 }
 
 install_copilot_instructions() {
     print_info "Installing copilot-instructions.md..."
-    copy_file_from_repo "templates/copilot-instructions.md" "$GITHUB_DIR/copilot-instructions.md"
+    copy_file_from_repo ".github/copilot-instructions.md" "$GITHUB_DIR/copilot-instructions.md"
     print_success "copilot-instructions.md installed"
+}
+
+install_session_template() {
+    print_info "Initializing session.md (preserve if exists)..."
+    copy_file_if_missing_from_repo ".github/copilot/session.md" "$COPILOT_DIR/session.md" "session.md"
+}
+
+install_context_template() {
+    print_info "Initializing context.md (preserve if exists)..."
+    copy_file_if_missing_from_repo ".github/copilot/context.md" "$COPILOT_DIR/context.md" "context.md"
 }
 
 install_standards() {
@@ -245,49 +265,23 @@ install_standards() {
     
     for item in "${standards[@]}"; do
         IFS=':' read -r file desc <<< "$item"
-        copy_file_from_repo "standards/$file" "$COPILOT_DIR/standards/$file"
+        copy_file_from_repo ".github/copilot/standards/$file" "$COPILOT_DIR/standards/$file"
         print_success "$desc installed"
     done
 }
 
 install_prompts() {
-    print_info "Installing prompt files..."
+    print_info "Installing prompt files (preserve if exists)..."
     
-    copy_file_from_repo "templates/prompts/setup-project.md" "$COPILOT_DIR/prompts/setup-project.md"
-    print_success "Setup project prompt installed"
+    copy_file_if_missing_from_repo ".github/copilot/prompts/setup-project.md" "$COPILOT_DIR/prompts/setup-project.md" "prompts/setup-project.md"
     
-    copy_file_from_repo "templates/prompts/code-audit.md" "$COPILOT_DIR/prompts/code-audit.md"
-    print_success "Code audit prompt installed"
+    copy_file_if_missing_from_repo ".github/copilot/prompts/code-audit.md" "$COPILOT_DIR/prompts/code-audit.md" "prompts/code-audit.md"
 }
 
 install_instructions_template() {
-    print_info "Installing instructions template..."
+    print_info "Installing instructions template (preserve if exists)..."
 
-    local source_path="templates/instructions-template.md"
-    local repo_dir="$TEMP_DIR/${REPO_NAME}-${REPO_BRANCH}"
-
-    if [ -f "$repo_dir/$source_path" ]; then
-        copy_file_from_repo "$source_path" "$COPILOT_DIR/instructions.md"
-        print_success "Instructions template installed"
-        return
-    fi
-
-    print_warning "templates/instructions-template.md not found, creating default .copilot/instructions.md"
-    mkdir -p "$COPILOT_DIR"
-    cat > "$COPILOT_DIR/instructions.md" <<'EOF'
-# Project Instructions
-
-Use this file for project-specific guidance that complements `.github/copilot-instructions.md`.
-
-## What to add
-
-- Architecture constraints and module boundaries
-- Coding/testing conventions unique to this repository
-- Security, performance, and deployment guardrails
-- Documentation requirements for behavior/API/config changes
-
-EOF
-    print_success "Default instructions template created"
+    copy_file_if_missing_from_repo ".github/copilot/instructions.md" "$COPILOT_DIR/instructions.md" "instructions.md"
 }
 
 # =============================================================================
@@ -338,7 +332,7 @@ main() {
     
     # Check if we're in a git repository
     if [ ! -d ".git" ]; then
-        print_warning "Not in a git repository. The .copilot folder will still be created."
+        print_warning "Not in a git repository. The .github/copilot folder will still be created."
     fi
     
     # Interactive mode if no flags provided
@@ -355,10 +349,11 @@ main() {
     create_directory_structure
     install_gitignore
     install_state_yaml
-    install_docs_index
-    install_docs_decisions_index
+    install_docs
     install_smart_agent
     install_copilot_instructions
+    install_session_template
+    install_context_template
     install_skills
     install_prompts
     install_instructions_template
@@ -379,25 +374,25 @@ main() {
     echo "  • Smart agent:          .github/agents/smart.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
     echo "  • Agent skills:         .github/skills/"
-    echo "  • Setup prompt:         .copilot/prompts/setup-project.md"
-    echo "  • Code audit prompt:    .copilot/prompts/code-audit.md"
-    echo "  • Copilot folder:       .copilot/"
-    echo "  • Documentation:        .copilot/docs/"
-    echo "  • Search index:         .copilot/docs/index.yaml (initialized if missing)"
-    echo "  • Plans tracker:        .copilot/plans/state.yaml (initialized if missing)"
+    echo "  • Setup prompt:         .github/copilot/prompts/setup-project.md"
+    echo "  • Code audit prompt:    .github/copilot/prompts/code-audit.md"
+    echo "  • Copilot folder:       .github/copilot/"
+    echo "  • Documentation:        .github/copilot/docs/"
+    echo "  • Search index:         .github/copilot/docs/index.yaml (initialized if missing)"
+    echo "  • Plans tracker:        .github/copilot/plans/state.yaml (initialized if missing)"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
-        echo "  • Standards:            .copilot/standards/"
+        echo "  • Standards:            .github/copilot/standards/"
     fi
     
     echo ""
     echo "Next steps:"
-    echo "  1. Review .copilot/instructions.md and add project-specific rules"
+    echo "  1. Review .github/copilot/instructions.md and add project-specific rules"
     echo "  2. Use the @smart agent in GitHub Copilot to start planning"
     echo "  3. Run 'Setup Project' handoff to auto-analyze and document your project"
     echo "  4. The agent will populate docs/ with comprehensive documentation"
     echo ""
-    print_info "Note: .copilot/ contents are gitignored by default"
+    print_info "Note: .github/copilot/ contents are gitignored by default"
     print_info "Tip: Use the 'Setup Project' handoff button to auto-configure!"
     echo ""
 }

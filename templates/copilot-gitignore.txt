@@ -1,8 +1,0 @@
-# Planning Copilot - Gitignore Template
-# These files are local and should not be committed
-
-# Temporary files
-tmp/
-
-# Plans directory (local planning state)
-plans/

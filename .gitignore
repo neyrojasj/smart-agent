@@ -1,2 +1,2 @@
-.copilot
-.github
+# Ephemeral per-developer state (not committed)
+.github/copilot/tmp/
