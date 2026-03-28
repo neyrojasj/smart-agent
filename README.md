@@ -150,7 +150,8 @@ your-project/
 │       ├── documentation/SKILL.md
 │       ├── testing/SKILL.md
 │       ├── setup/SKILL.md
-│       └── skill-generator/SKILL.md
+│       ├── skill-generator/SKILL.md
+│       └── evaluator/SKILL.md
 └── .github/copilot/
     ├── context.md               # 🧠 Project memory
     ├── session.md               # 📋 Session state
@@ -281,14 +282,14 @@ graph TD
     A[User Request] --> B[Load context.md + session.md]
     B --> C[Read skills/index.yaml]
     C --> D{Match Skill}
-    D -->|planning| E[planning.skill]
-    D -->|coding| F[coding.skill]
-    D -->|analysis| G[analysis.skill]
-    D -->|docs| H[documentation.skill]
-    D -->|testing| I[testing.skill]
-    D -->|setup| S[setup.skill]
-    D -->|skills| SG[skill-generator.skill]
-    D -->|evaluate| EV[evaluator.skill]
+    D -->|planning| E[planning/SKILL.md]
+    D -->|coding| F[coding/SKILL.md]
+    D -->|analysis| G[analysis/SKILL.md]
+    D -->|docs| H[documentation/SKILL.md]
+    D -->|testing| I[testing/SKILL.md]
+    D -->|setup| S[setup/SKILL.md]
+    D -->|skills| SG[skill-generator/SKILL.md]
+    D -->|evaluate| EV[evaluator/SKILL.md]
     E --> J{Needs Approval?}
     F --> J
     G --> K[Execute]

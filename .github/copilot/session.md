@@ -1,24 +1,24 @@
-<!-- TEMPLATE: Replace this file with real project information. Run the Setup skill (@smart setup project) to auto-generate. -->
+<!-- TEMPLATE: Auto-generated and updated each conversation by Smart Orchestrator. -->
 
 # Session State
 
-> Last updated: 2026-03-28
-> Active skill: analysis
-> Current task: Project improvement audit
+> Last updated: [TIMESTAMP]
+> Active skill: [none]
+> Current task: [none]
 
 ## Pending Tasks
 
-- [ ] Fix issues found in audit (pending user approval)
+(none)
 
 ## Recent Actions (last 20)
 
-1. 2026-03-28 - Routed to analysis skill - Full project audit with 12 findings
+(none)
 
 ## Skill Confidence Log
 
 | Skill | Confidence | Reason |
 |-------|-----------|--------|
-| analysis | high | "how can we improve" matches audit/review triggers |
+| (none) | - | - |
 
 ---
 

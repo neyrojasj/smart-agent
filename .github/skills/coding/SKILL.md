@@ -9,7 +9,7 @@ version: "1.0"
 ## Identity
 
 - **Name**: coding
-- **Version**: 1.2
+- **Version**: 1.0
 - **Description**: Generates and modifies code following project standards, with mandatory approval for all changes.
 
 ---

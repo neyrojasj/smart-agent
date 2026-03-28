@@ -1,4 +1,4 @@
-<!-- TEMPLATE: Replace this file with real project information. Run the Setup skill (@smart setup project) to auto-generate. -->
+<!-- ⚠️ REQUIRED: This file drives the Smart Orchestrator. Run the Setup skill (@smart setup project) to auto-generate. -->
 
 # Project Context
 
