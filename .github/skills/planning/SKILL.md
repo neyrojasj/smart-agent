@@ -250,6 +250,34 @@ Reply with: ✅ approve | ❌ reject | 📝 revise [feedback]
 
 ---
 
+## Step 8: Capture Decisions (After Completion)
+
+When a plan reaches `completed` status, extract key architectural or design decisions into `docs/decisions/`:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  DECISION CAPTURE GATE                                                  │
+│                                                                         │
+│  After plan completion, check:                                          │
+│  1. Did the plan choose between multiple approaches?         → DEC      │
+│  2. Did the plan introduce a new pattern or convention?      → DEC      │
+│  3. Did the plan add/replace a dependency?                   → DEC      │
+│  4. Did the plan change the project structure?               → DEC      │
+│                                                                         │
+│  If ANY are true → Create docs/decisions/DEC-XXX.md                     │
+│  If NONE        → Skip (not every plan produces a decision)             │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+For each captured decision:
+1. Create `docs/decisions/DEC-XXX.md` using the decision template
+2. Update `docs/decisions/index.yaml` with new entry
+3. Update `context.md` Key Decisions table if it affects project identity
+
+This ensures plan rationale survives in git after the `plans/` directory is cleaned up.
+
+---
+
 ## Output Format
 
 Return to orchestrator:
@@ -279,6 +307,7 @@ user_message: "[Message to show user]"
 - ❌ Skip the size analysis
 - ❌ Create PLAN files for small changes
 - ❌ Forget to update state.yaml
+- ❌ Complete a plan without checking if decisions should be captured in `docs/decisions/`
 
 ---
 
