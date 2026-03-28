@@ -161,6 +161,7 @@ create_directory_structure() {
     mkdir -p "$COPILOT_DIR/plans"
     mkdir -p "$COPILOT_DIR/prompts"
     mkdir -p "$COPILOT_DIR/tmp"
+    mkdir -p ".vscode"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
         mkdir -p "$COPILOT_DIR/standards"
@@ -183,6 +184,7 @@ install_skills() {
         "setup"
         "skill-generator"
         "evaluator"
+        "ui-ux"
     )
 
     for skill in "${skills[@]}"; do
@@ -291,6 +293,11 @@ install_instructions_template() {
     copy_file_if_missing_from_repo ".github/copilot/instructions.md" "$COPILOT_DIR/instructions.md" "instructions.md"
 }
 
+install_vscode_settings() {
+    print_info "Installing .vscode/settings.json (preserve if exists)..."
+    copy_file_if_missing_from_repo ".vscode/settings.json" ".vscode/settings.json" ".vscode/settings.json"
+}
+
 # =============================================================================
 # Main Installation Flow
 # =============================================================================
@@ -364,6 +371,7 @@ main() {
     install_skills
     install_prompts
     install_instructions_template
+    install_vscode_settings
     
     if [ "$INSTALL_STANDARDS" = true ]; then
         install_standards
@@ -381,12 +389,13 @@ main() {
     echo "  • Smart orchestrator:   .github/agents/smart.agent.md"
     echo "  • Smart Manager:        .github/agents/smart-manager.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
-    echo "  • Agent skills (8):     .github/skills/ (includes evaluator)"
+    echo "  • Agent skills (9):     .github/skills/ (includes evaluator, ui-ux)"
     echo "  • Prompts:              .github/copilot/prompts/"
     echo "  • Copilot folder:       .github/copilot/"
     echo "  • Documentation:        .github/copilot/docs/"
     echo "  • Search index:         .github/copilot/docs/index.yaml (initialized if missing)"
-    echo "  • Plans tracker:        .github/copilot/plans/state.yaml (initialized if missing)"
+    echo "  • Plans tracker:        .github/copilot/plans/state.yaml (initialized if missing)
+  • VS Code settings:     .vscode/settings.json (initialized if missing)"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
         echo "  • Standards:            .github/copilot/standards/"
