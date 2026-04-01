@@ -4,35 +4,61 @@ These are fundamental programming principles that apply across all languages. Th
 
 ---
 
-## Anti-Hallucination: Ask, Don't Invent
+## Anti-Hallucination: Investigate First, Ask Second
 
-> **When information is missing or ambiguous, ASK the user — never invent, assume, or fill in placeholder values.**
+> **When information is missing or unclear: INVESTIGATE the codebase first. Only ask the user if investigation doesn't yield an answer. NEVER invent.**
 
 This is the single most important rule for AI-assisted coding. Violating it produces plausible-looking code that is silently wrong.
 
-### NEVER invent
+### Investigation Before Action
 
-- Color hex values, font names, or design tokens not defined in a project style guide
-- API endpoints, URL paths, or service names not found in existing code
-- Environment variable names or configuration keys not present in `.env.example` or config files
-- Business logic, domain rules, or validation constraints the user hasn't stated
-- Database table names, column names, or schema details not visible in migrations/models
-- Third-party library APIs — if unsure about a method signature, look it up in the codebase or docs first
+Before implementing anything ambiguous, investigate:
+
+1. **Search the codebase** for existing patterns, configuration, or precedent
+   - Look for `.env.example`, `config.*.ts`, `constants.ts`, `types.d.ts`
+   - Search for similar features already implemented
+   - Check git history for related changes or decisions
+   - Look for test files that show expected behavior
+
+2. **Check project documentation** (`.github/copilot/docs/`)
+   - Architecture decisions may explain naming conventions or patterns
+   - API docs show endpoint/parameter naming
+   - Development guide shows env var naming patterns
+
+3. **Examine related code** — don't just look at isolated files
+   - If implementing an API route, check similar routes for patterns
+   - If adding a component, look at existing components in the same folder
+   - If adding error handling, see how other errors are handled
+
+4. **Ask for clarification ONLY if investigation is inconclusive**
+   - After checking the codebase thoroughly and finding no evidence
+   - Present what you found vs. what you're unsure about
+   - Propose 2-3 options based on the patterns you did find
+   - Ask the user to confirm which direction to take
+
+### NEVER invent without investigation
+
+- Color hex values, font names, or design tokens — check `.github/skills/ui-style/SKILL.md` first
+- API endpoints, URL paths, or service names — search for existing routes/clients
+- Environment variable names — check `.env.example`, config files, or Docker/deployment docs
+- Database table names or schema details — check migrations or model files
+- Business logic or validation constraints — look for existing validations or tests
+- Third-party library APIs — **always** read actual code or look up the docs, never assume
 
 ### ALWAYS ask when
 
-- A plan or specification is incomplete — list what's missing and ask before proceeding
-- You're choosing between two valid approaches — present 2–3 options with tradeoffs
-- The user's request is ambiguous — restate your interpretation and confirm before coding
-- A required value (secret name, port, domain, config key) isn't in the codebase — ask for it explicitly
-- You need to name something user-facing (routes, error messages, labels) — propose and confirm
+- Investigation is complete but inconclusive — multiple valid patterns exist and you can't determine which
+- A required value is genuinely not in the codebase or docs — don't make up env var names
+- The user's intent is ambiguous after reading related code — restate what you found and what's unclear
+- Naming something user-facing (routes, error messages, labels) — confirm your proposal matches project style
 
-### Evidence-based answers
+### Evidence-based workflow
 
-- Reference actual file paths and line numbers when explaining existing code
-- When suggesting a fix, show what you found vs. what you expected
-- If you cannot find evidence in the codebase for a claim, say so: *"I couldn't find X in the codebase. Can you confirm...?"*
-- Prefer reading a file over recalling from memory when the file is available
+1. State what you're investigating: *"I need to understand the color naming convention in this project..."*
+2. Show what you found: *"I found these colors in .github/skills/ui-style/SKILL.md: PRIMARY=#3B82F6..."*
+3. If conclusive: implement based on evidence
+4. If inconclusive: propose options: *"I found two patterns in the codebase. Option A uses..., Option B uses... Which should I follow?"*
+5. Ask for missing pieces: *"I don't see the auth service endpoint in the codebase. Where should the login POST go?"*
 
 ---
 
