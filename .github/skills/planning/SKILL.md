@@ -1,7 +1,7 @@
 ---
 name: planning
-description: Create implementation plans, architectural options, and phased execution strategy.
-version: "1.0"
+description: Create implementation plans, architectural options, and phased execution strategy. All plans are written to disk as markdown files.
+version: "2.0"
 ---
 
 # Planning Skill
@@ -9,8 +9,8 @@ version: "1.0"
 ## Identity
 
 - **Name**: planning
-- **Version**: 1.0
-- **Description**: Creates implementation plans, architectural decisions, and strategic approaches for complex tasks.
+- **Version**: 2.0
+- **Description**: Creates implementation plans, architectural decisions, and strategic approaches for complex tasks. All plans — regardless of size — are persisted to disk as `.md` files in `.github/copilot/plans/`.
 
 ---
 
@@ -63,24 +63,20 @@ Read from context.md:
 
 ### Step 2: Analyze Change Size
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  AUTOMATIC SIZE DETECTION                                               │
-│                                                                         │
-│  📏 SMALL (<100 lines):                                                 │
-│     → Quick inline plan, implement directly                             │
-│                                                                         │
-│  📐 MEDIUM (100-500 lines):                                             │
-│     → Brief implementation plan                                         │
-│     → 2-3 phases max                                                    │
-│                                                                         │
-│  📊 BIG (>500 lines):                                                   │
-│     → Full PLAN-XXX.md document                                         │
-│     → Multiple phases with milestones                                   │
-│     → Risk assessment                                                   │
-│     → Rollback strategy                                                 │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+**SMALL** (<100 lines)
+- Brief PLAN-XXX.md with summary, scope, and tasks
+- Still written to disk (all plans go to disk)
+
+**MEDIUM** (100-500 lines)
+- Standard PLAN-XXX.md with phases and risks
+- 2-3 phases max
+
+**BIG** (>500 lines)
+- Full PLAN-XXX.md document
+- Multiple phases with milestones
+- Risk assessment + rollback strategy
+
+ALL sizes → Written to `.github/copilot/plans/PLAN-XXX.md`
 
 ### Step 3: Ask Clarifying Questions (MANDATORY)
 
@@ -140,7 +136,10 @@ Which approach would you prefer?
 
 ### Step 5: Create Plan Document
 
-For MEDIUM and BIG changes, create `.github/copilot/plans/PLAN-XXX.md`:
+**ALL plans are written to disk** in `.github/copilot/plans/PLAN-XXX.md`. No inline-only plans.
+
+For SMALL changes, use a simplified version (summary, scope, tasks, testing, learning checklist).
+For MEDIUM and BIG changes, use the full template:
 
 ```markdown
 # PLAN-XXX: [Title]
@@ -199,9 +198,35 @@ Tasks:
 - [ ] Update `architecture.md` if structure changes
 - [ ] Update `api.md` if endpoints change
 
+## Post-Execution Learning Checklist
+
+> Reviewed by the evaluator (learning mode) after this plan completes.
+
+- [ ] **Skills used**: [list skills invoked] — review for missing context or workflow gaps
+- [ ] **Docs referenced**: [list docs read] — check if still accurate after changes
+- [ ] **Context relied on**: [list context.md sections used] — verify/update if changed
+- [ ] **Discoveries**: [note any new patterns, conventions, or architecture insights]
+- [ ] **Skill updates needed**: [flag if any skill lacked workflow steps for this task]
+
 ---
 *Created: [DATE] | Status: pending_review*
 ```
+
+### Step 5b: Revise Plan from Plan-Reviewer Feedback
+
+When the plan-reviewer (curate mode) returns a REVISE verdict, the planning skill receives structured feedback and revises the plan:
+
+1. Receive evaluator feedback (issues table + suggestions)
+2. Read the current PLAN-XXX.md
+3. Address EACH issue from the evaluator's feedback:
+   - Completeness gaps → Add missing sections/detail
+   - Feasibility issues → Reorder phases or adjust scope
+   - Risk gaps → Add to risk assessment
+   - Scope creep → Trim to what was requested
+4. Update PLAN-XXX.md in place (same file, same ID)
+5. Return to evaluator for re-critique
+
+**Rules**: Preserve plan ID across revisions. Address ALL issues. Don't add scope beyond what evaluator requested. Fix issues without bloating.
 
 ### Step 6: Update State
 
@@ -254,20 +279,15 @@ Reply with: ✅ approve | ❌ reject | 📝 revise [feedback]
 
 When a plan reaches `completed` status, extract key architectural or design decisions into `docs/decisions/`:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  DECISION CAPTURE GATE                                                  │
-│                                                                         │
-│  After plan completion, check:                                          │
-│  1. Did the plan choose between multiple approaches?         → DEC      │
-│  2. Did the plan introduce a new pattern or convention?      → DEC      │
-│  3. Did the plan add/replace a dependency?                   → DEC      │
-│  4. Did the plan change the project structure?               → DEC      │
-│                                                                         │
-│  If ANY are true → Create docs/decisions/DEC-XXX.md                     │
-│  If NONE        → Skip (not every plan produces a decision)             │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+When a plan reaches `completed` status, check:
+
+1. Did the plan choose between multiple approaches? → DEC
+2. Did the plan introduce a new pattern or convention? → DEC
+3. Did the plan add/replace a dependency? → DEC
+4. Did the plan change the project structure? → DEC
+
+If ANY are true → Create `docs/decisions/DEC-XXX.md`
+If NONE → Skip (not every plan produces a decision)
 
 For each captured decision:
 1. Create `docs/decisions/DEC-XXX.md` using the decision template
@@ -305,9 +325,11 @@ user_message: "[Message to show user]"
 - ❌ Choose an approach autonomously when multiple valid options exist
 - ❌ Implement anything without explicit approval
 - ❌ Skip the size analysis
-- ❌ Create PLAN files for small changes
+- ❌ Keep a plan only in the conversation — ALL plans go to disk as `.md` files
+- ❌ Create a plan without the Post-Execution Learning Checklist section
 - ❌ Forget to update state.yaml
 - ❌ Complete a plan without checking if decisions should be captured in `docs/decisions/`
+- ❌ Ignore evaluator feedback during revision — address every issue
 
 ---
 

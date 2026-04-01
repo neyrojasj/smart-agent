@@ -1,17 +1,19 @@
-# Smart Agent - Skill Registry
+# Smart Manager - Skill Registry
 # ═══════════════════════════════════════════════════════════════════════════
 # This file defines all available skills and their routing rules.
-# The orchestrator reads this to determine which skill(s) to invoke.
+# The unified Smart Manager reads this to route requests in Light or Full mode.
+# Light mode: analysis, documentation, setup, skill-generator (direct execution)
+# Full mode: planning → evaluator → coding → testing → evaluator (iterative loop)
 # ═══════════════════════════════════════════════════════════════════════════
 
-version: 2
-last_updated: "2026-03-28T00:00:00Z"
+version: 3
+last_updated: "2026-03-31T00:00:00Z"
 
 skills:
   planning:
     file: "planning/SKILL.md"
     name: "Planning"
-    description: "Creates implementation plans, architectural decisions, and strategy"
+    description: "Creates implementation plans, architectural decisions, and strategy. All plans written to disk. Supports revision from evaluator feedback."
     priority: 1
     triggers:
       keywords:
@@ -34,6 +36,27 @@ skills:
     can_chain_to:
       - coding
       - testing
+
+  plan-reviewer:
+    file: "plan-reviewer/SKILL.md"
+    name: "Plan Reviewer"
+    description: "Reviews plans via adversarial critique and generates QA checklists. Pre-execution quality gate."
+    priority: 2
+    triggers:
+      keywords:
+        - review plan
+        - critique plan
+        - curate plan
+        - qa checklist
+      patterns:
+        - "review.*plan"
+        - "critique.*plan"
+        - "generate.*qa"
+        - "generate.*checklist"
+    requires_approval: false
+    can_chain_to:
+      - planning
+      - evaluator
 
   coding:
     file: "coding/SKILL.md"
@@ -189,7 +212,7 @@ skills:
   evaluator:
     file: "evaluator/SKILL.md"
     name: "Evaluator"
-    description: "Generate QA checklists from plans and evaluate implementations against them"
+    description: "Evaluate implementations against QA checklists (evaluate mode) and extract post-execution learnings (learning mode)"
     priority: 8
     triggers:
       keywords:
