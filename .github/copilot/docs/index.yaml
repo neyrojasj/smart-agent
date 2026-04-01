@@ -4,8 +4,15 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # 🚨 CRITICAL: ALWAYS READ THIS FILE FIRST ON EVERY EXECUTION!
 # 
-# This is the agent's MEMORY - your navigation map to project knowledge.
-# All documentation lives in .github/copilot/docs/ - this index helps you find it.
+# This is the agent's MEMORY MAP — a lightweight index to project knowledge.
+# All documentation lives in .github/copilot/docs/ — this index helps you
+# find the right file WITHOUT reading them all.
+#
+# CONTEXT WINDOW RULE:
+#   1. Read THIS file first (small, ~80 lines)
+#   2. Match keywords/summary to the user's request
+#   3. Read ONLY the matching doc file(s)
+#   4. NEVER load all docs/*.md at once — that wastes context
 # ═══════════════════════════════════════════════════════════════════════════
 
 version: 1

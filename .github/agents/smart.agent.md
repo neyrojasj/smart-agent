@@ -70,6 +70,8 @@ On EVERY user request, follow this exact sequence:
 
 ## Step 1: Load Context (MANDATORY FIRST)
 
+### 1a. Read Memory Files
+
 Read both memory files:
 
 ```
@@ -89,6 +91,53 @@ Read both memory files:
 │  IF session.md doesn't exist → Create from template                     │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 1b. Hierarchical Context Loading (Context Window Optimization)
+
+> **Goal**: Minimize context window usage. Only load what the current task needs.
+
+The project filesystem is organized in layers. Each layer has an **index** (small, always safe to read) and **detail files** (larger, read only when needed).
+
+**Loading protocol — follow this order:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  LAYER 1: INDEXES ONLY (always read — lightweight)                      │
+│                                                                         │
+│  • .github/copilot/context.md           ~30 lines │ who/what/stack      │
+│  • .github/copilot/session.md           ~40 lines │ current tasks       │
+│  • .github/copilot/docs/index.yaml      ~80 lines │ doc MAP, not docs   │
+│  • .github/skills/index.yaml            ~80 lines │ skill MAP, not code │
+│                                                                         │
+│  STOP HERE. Analyze the request. Decide what detail files you need.     │
+│                                                                         │
+│  LAYER 2: TARGETED DETAIL FILES (read only what the task requires)      │
+│                                                                         │
+│  • Standards:   .github/copilot/standards/general.md (always for coding)│
+│  •              .github/copilot/standards/[lang].md  (if coding in lang)│
+│  • Skill:       .github/skills/[matched]/SKILL.md    (only the matched) │
+│  • Docs:        .github/copilot/docs/[topic].md      (only if relevant) │
+│  • Plans:       .github/copilot/plans/[plan].md      (only if executing)│
+│  • UI Style:    .github/skills/ui-style/SKILL.md     (only if UI work)  │
+│                                                                         │
+│  LAYER 3: SOURCE CODE (read only specific files, never bulk-scan)       │
+│                                                                         │
+│  • Read the specific files you need to modify                           │
+│  • Use grep/search for targeted lookups, not directory walks            │
+│  • For broad exploration, delegate to the Explore subagent              │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Rules for context-efficient loading:**
+
+| Rule | Why |
+|------|-----|
+| Read indexes before detail files | Indexes tell you what exists; detail files consume tokens |
+| Never read all docs/*.md at once | Use index.yaml keywords/summary to pick the one you need |
+| Never read all skills at once | Match first via index.yaml, then read only the matched SKILL.md |
+| For 3+ file explorations, use Explore subagent | It returns a summary, not raw file contents |
+| Prefer targeted `grep_search` over full `read_file` | Find the exact section instead of loading 500 lines |
+| After reading a file, extract what you need and move on | Don't re-read the same file in the same execution |
 
 ---
 

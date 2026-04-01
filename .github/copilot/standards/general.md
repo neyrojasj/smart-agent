@@ -4,6 +4,38 @@ These are fundamental programming principles that apply across all languages. Th
 
 ---
 
+## Anti-Hallucination: Ask, Don't Invent
+
+> **When information is missing or ambiguous, ASK the user — never invent, assume, or fill in placeholder values.**
+
+This is the single most important rule for AI-assisted coding. Violating it produces plausible-looking code that is silently wrong.
+
+### NEVER invent
+
+- Color hex values, font names, or design tokens not defined in a project style guide
+- API endpoints, URL paths, or service names not found in existing code
+- Environment variable names or configuration keys not present in `.env.example` or config files
+- Business logic, domain rules, or validation constraints the user hasn't stated
+- Database table names, column names, or schema details not visible in migrations/models
+- Third-party library APIs — if unsure about a method signature, look it up in the codebase or docs first
+
+### ALWAYS ask when
+
+- A plan or specification is incomplete — list what's missing and ask before proceeding
+- You're choosing between two valid approaches — present 2–3 options with tradeoffs
+- The user's request is ambiguous — restate your interpretation and confirm before coding
+- A required value (secret name, port, domain, config key) isn't in the codebase — ask for it explicitly
+- You need to name something user-facing (routes, error messages, labels) — propose and confirm
+
+### Evidence-based answers
+
+- Reference actual file paths and line numbers when explaining existing code
+- When suggesting a fix, show what you found vs. what you expected
+- If you cannot find evidence in the codebase for a claim, say so: *"I couldn't find X in the codebase. Can you confirm...?"*
+- Prefer reading a file over recalling from memory when the file is available
+
+---
+
 ## Core Principles
 
 ### 1. Fail Fast, Fail Loud
