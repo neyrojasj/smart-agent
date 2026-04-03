@@ -266,12 +266,81 @@ install_copilot_instructions() {
 
 install_session_template() {
     print_info "Initializing session.md (preserve if exists)..."
-    copy_file_if_missing_from_repo ".github/copilot/session.md" "$COPILOT_DIR/session.md" "session.md"
+    local dest="$COPILOT_DIR/session.md"
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+        print_warning "session.md already exists, preserving current file"
+        return
+    fi
+    mkdir -p "$(dirname "$dest")"
+    cat > "$dest" <<'EOF'
+<!-- TEMPLATE: Auto-generated and updated each conversation by Smart Orchestrator. -->
+
+# Session State
+
+> Last updated: ""
+> Active skill: ""
+> Current task: ""
+
+## Pending Tasks
+
+(none)
+
+## Recent Actions (last 20)
+
+(none)
+
+## Skill Confidence Log
+
+| Skill | Confidence | Reason |
+|-------|-----------|--------|
+
+---
+
+*Auto-updated by Smart Orchestrator. Overwritten each session.*
+EOF
+    print_success "session.md initialized"
 }
 
 install_context_template() {
     print_info "Initializing context.md (preserve if exists)..."
-    copy_file_if_missing_from_repo ".github/copilot/context.md" "$COPILOT_DIR/context.md" "context.md"
+    local dest="$COPILOT_DIR/context.md"
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+        print_warning "context.md already exists, preserving current file"
+        return
+    fi
+    mkdir -p "$(dirname "$dest")"
+    cat > "$dest" <<'EOF'
+<!-- ⚠️ REQUIRED: This file drives the Smart Orchestrator. Run the Setup skill (@smart setup project) to auto-generate. -->
+
+# Project Context
+
+> Last updated: ""
+
+## Project Identity
+
+- **Name**: ""
+- **Type**: ""
+- **Stack**: ""
+- **Stage**: ""
+
+## User Preferences
+
+(none yet)
+
+## Project-Specific Rules
+
+(none yet)
+
+## Key Decisions
+
+| Decision | Reason | Skill | Date |
+|----------|--------|-------|------|
+
+---
+
+*Auto-updated by Smart Orchestrator*
+EOF
+    print_success "context.md initialized"
 }
 
 install_standards() {
