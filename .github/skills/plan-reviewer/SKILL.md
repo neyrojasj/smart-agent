@@ -10,7 +10,7 @@ version: "1.0"
 
 - **Name**: plan-reviewer
 - **Version**: 1.0
-- **Description**: Reviews plans via adversarial critique (curate mode) and generates QA checklists (QA mode). Runs before execution as a pre-execution quality gate. The Smart Manager orchestrates the critique→revise loop.
+- **Description**: Reviews plans via adversarial critique (curate mode) and generates QA checklists (QA mode). Runs before execution as a pre-execution quality gate. Smart orchestrates the critique→revise loop.
 
 ---
 
@@ -49,7 +49,7 @@ When to activate this skill:
 **CURATE MODE** (runs after plan creation, before user sees it)
 - Input: PLAN-XXX.md (draft)
 - Output: PASS → plan ready for QA generation | REVISE → feedback to planner
-- Loop: Smart Manager orchestrates critique ↔ revise (max 2 rounds)
+- Loop: Smart orchestrates critique ↔ revise (max 2 rounds)
 
 **QA MODE** (runs after plan curation passes)
 - Input: PLAN-XXX.md (curated)
@@ -62,14 +62,15 @@ When to activate this skill:
 
 ### Purpose
 
-Before the user sees a plan, the plan-reviewer critiques it to ensure quality. The planning skill revises based on feedback. The Smart Manager orchestrates this loop up to `max_curation_rounds` (default: 2) times.
+Before the user sees a plan, the plan-reviewer critiques it to ensure quality. The planning skill revises based on feedback. Smart orchestrates this loop up to `max_curation_rounds` (default: 2) times.
 
 ### Step 1: Read the Draft Plan
 
 ```
 1. Read PLAN-XXX.md from .github/copilot/plans/
-2. Read .github/copilot/docs/ for architecture context
-3. Read .github/copilot/context.md for project identity and decisions
+2. Read KNOWLEDGE-XXX.md from .github/copilot/plans/
+3. Read .github/copilot/docs/ for architecture context
+4. Read .github/copilot/context.md for project identity and decisions
 ```
 
 ### Step 2: Critique the Plan
@@ -84,6 +85,9 @@ Evaluate against this checklist:
 - [ ] Rollback strategy is actionable
 - [ ] Testing requirements are specific (not generic)
 - [ ] Post-execution learning checklist is present
+- [ ] KNOWLEDGE-XXX.md exists and contains real code snippets (not placeholders)
+- [ ] KNOWLEDGE-XXX.md key files table matches plan's files affected
+- [ ] KNOWLEDGE-XXX.md code patterns match project standards
 
 **Feasibility**
 - [ ] Phases ordered correctly (dependencies respected)
@@ -148,16 +152,18 @@ IF result == REVISE AND round >= max_curation_rounds:
 
 ## QA Mode: Generate QA Checklist
 
-### Step 1: Read the Plan
+### Step 1: Read the Plan and Knowledge File
 
 ```
 1. Read PLAN-XXX.md from .github/copilot/plans/
-2. Extract:
+2. Read KNOWLEDGE-XXX.md from .github/copilot/plans/
+3. Extract:
    - Summary and scope (in-scope / out-of-scope)
    - Implementation phases and tasks
    - Risk assessment
    - Testing requirements
    - Files affected
+   - Code patterns and constraints from knowledge file
 ```
 
 ### Step 2: Read Standards
@@ -254,8 +260,9 @@ I've created **QA-XXX.md** with [N] checks across these categories:
 - Risk Mitigations ([count])
 - Documentation ([count])
 
-**Review both files before approving:**
+**Review all files before approving:**
 - 📝 `PLAN-XXX.md` — the implementation plan
+- 📖 `KNOWLEDGE-XXX.md` — the execution context cheat sheet
 - ✅ `QA-XXX.md` — the quality checklist
 
 Edit the checklist to add/remove/adjust any checks.

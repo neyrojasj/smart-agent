@@ -19,13 +19,14 @@
 
 ## Project-Specific Rules
 
-- Smart Manager is the unified agent; Smart Agent is a backward-compat redirect
+- Smart is the unified agent handling all requests
 - Standards files are human-curated only — never auto-updated by the agent
 
 ## Key Decisions
 
 | Decision | Reason | Skill | Date |
 |----------|--------|-------|------|
+| Consolidated Smart agent (merged Smart + Smart Manager into single smart.agent.md) | Eliminate routing-only redirect, single file of truth | planning | 2026-04-03 |
 | Unified Smart Manager (merged Smart + Smart Manager) | Eliminate routing-only agent, make all flows iterative | planning | 2026-03-31 |
 | Adversarial plan curation (plan-reviewer) | Improve plan quality before user sees it | planning | 2026-03-31 |
 | Post-execution learning (evaluator learning mode) | Auto-improve skills/docs/context after every plan | planning | 2026-03-31 |

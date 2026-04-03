@@ -1,4 +1,6 @@
-<!-- TEMPLATE: Replace this file with real project information. Run the Setup skill (@smart setup project) to auto-generate. -->
+<!-- USER-OWNED FILE: This file defines project-specific rules enforced on every task.
+     It is separate from `.github/copilot-instructions.md` (agent behavior config).
+     Run "@smart setup project" to auto-populate from your codebase, then edit freely. -->
 
 # Project Instructions
 

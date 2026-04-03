@@ -157,9 +157,8 @@ create_directory_structure() {
     # Create .github directory structure
     mkdir -p "$GITHUB_DIR/agents"
     mkdir -p "$GITHUB_DIR/skills"
-    mkdir -p "$COPILOT_DIR/docs/decisions"
+    mkdir -p "$COPILOT_DIR/docs"
     mkdir -p "$COPILOT_DIR/plans"
-    mkdir -p "$COPILOT_DIR/prompts"
     mkdir -p "$COPILOT_DIR/tmp"
     mkdir -p ".vscode"
     
@@ -177,6 +176,7 @@ install_skills() {
 
     local skills=(
         "planning"
+        "plan-reviewer"
         "coding"
         "analysis"
         "documentation"
@@ -185,6 +185,7 @@ install_skills() {
         "skill-generator"
         "evaluator"
         "ui-ux"
+        "rust-web-app"
     )
 
     for skill in "${skills[@]}"; do
@@ -229,33 +230,10 @@ EOF
     print_success "plans/state.yaml initialized"
 }
 
-install_docs() {
-    print_info "Initializing docs/ templates (preserve existing)..."
-    
-    local docs=(
-        "docs/index.yaml"
-        "docs/overview.md"
-        "docs/architecture.md"
-        "docs/tech-stack.md"
-        "docs/conventions.md"
-        "docs/development.md"
-        "docs/testing.md"
-        "docs/api.md"
-        "docs/decisions/index.yaml"
-        "docs/decisions/template.md"
-    )
-    
-    for doc in "${docs[@]}"; do
-        copy_file_if_missing_from_repo ".github/copilot/$doc" "$COPILOT_DIR/$doc" "$doc"
-    done
-}
-
 install_smart_agent() {
     print_info "Installing smart agents to .github/agents/..."
     copy_file_from_repo ".github/agents/smart.agent.md" "$GITHUB_DIR/agents/smart.agent.md"
-    print_success "Smart orchestrator installed"
-    copy_file_from_repo ".github/agents/smart-manager.agent.md" "$GITHUB_DIR/agents/smart-manager.agent.md"
-    print_success "Smart Manager agent installed"
+    print_success "Smart agent installed"
 }
 
 install_copilot_instructions() {
@@ -368,18 +346,6 @@ install_standards() {
     done
 }
 
-install_prompts() {
-    print_info "Installing prompt files (preserve if exists)..."
-    
-    copy_file_if_missing_from_repo ".github/copilot/prompts/setup-project.md" "$COPILOT_DIR/prompts/setup-project.md" "prompts/setup-project.md"
-    
-    copy_file_if_missing_from_repo ".github/copilot/prompts/code-audit.md" "$COPILOT_DIR/prompts/code-audit.md" "prompts/code-audit.md"
-    
-    copy_file_if_missing_from_repo ".github/copilot/prompts/generate-skills.md" "$COPILOT_DIR/prompts/generate-skills.md" "prompts/generate-skills.md"
-    
-    copy_file_if_missing_from_repo ".github/copilot/prompts/setup-rust-web-app.md" "$COPILOT_DIR/prompts/setup-rust-web-app.md" "prompts/setup-rust-web-app.md"
-}
-
 install_instructions_template() {
     print_info "Installing instructions template (preserve if exists)..."
 
@@ -456,13 +422,11 @@ main() {
     create_directory_structure
     install_gitignore
     install_state_yaml
-    install_docs
     install_smart_agent
     install_copilot_instructions
     install_session_template
     install_context_template
     install_skills
-    install_prompts
     install_instructions_template
     install_vscode_settings
     
@@ -479,16 +443,12 @@ main() {
     echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
     echo "The following has been installed:"
-    echo "  • Smart orchestrator:   .github/agents/smart.agent.md"
-    echo "  • Smart Manager:        .github/agents/smart-manager.agent.md"
+    echo "  • Smart agent:          .github/agents/smart.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
-    echo "  • Agent skills (9):     .github/skills/ (includes evaluator, ui-ux)"
-    echo "  • Prompts:              .github/copilot/prompts/"
+    echo "  • Agent skills (11):    .github/skills/"
     echo "  • Copilot folder:       .github/copilot/"
-    echo "  • Documentation:        .github/copilot/docs/"
-    echo "  • Search index:         .github/copilot/docs/index.yaml (initialized if missing)"
-    echo "  • Plans tracker:        .github/copilot/plans/state.yaml (initialized if missing)
-  • VS Code settings:     .vscode/settings.json (initialized if missing)"
+    echo "  • Plans tracker:        .github/copilot/plans/state.yaml"
+    echo "  • VS Code settings:     .vscode/settings.json"
     
     if [ "$INSTALL_STANDARDS" = true ]; then
         echo "  • Standards:            .github/copilot/standards/"
@@ -496,10 +456,10 @@ main() {
     
     echo ""
     echo "Next steps:"
-    echo "  1. Review .github/copilot/instructions.md and add project-specific rules"
-    echo "  2. Use the @smart agent in GitHub Copilot to start planning"
-    echo "  3. Run 'Setup Project' handoff to auto-analyze and document your project"
-    echo "  4. The agent will populate docs/ with comprehensive documentation"
+    echo "  1. Use the @smart agent in GitHub Copilot Chat"
+    echo "  2. Run 'Setup Project' handoff — scans your code and generates docs + instructions"
+    echo "  3. The agent creates only the docs your project needs (no empty templates)"
+    echo "  4. Then run 'Generate Skills' to create project-specific skills"
     echo ""
     print_info "Note: .github/copilot/ contents are gitignored by default"
     print_info "Tip: Use the 'Setup Project' handoff button to auto-configure!"

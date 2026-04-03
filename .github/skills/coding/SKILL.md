@@ -93,8 +93,10 @@ If implementing a plan:
 ```
 1. Read .github/copilot/plans/state.yaml
 2. Find plan with status: approved
-3. Read full plan document
-4. Follow phases in order
+3. Read full plan document (PLAN-XXX.md)
+4. Read knowledge file (KNOWLEDGE-XXX.md) — this is your execution context cheat sheet
+5. Follow phases in order
+6. Re-read KNOWLEDGE-XXX.md whenever you lose context on patterns, file roles, or constraints
 ```
 
 If no plan (small change):

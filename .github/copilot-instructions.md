@@ -1,16 +1,14 @@
 # Copilot Instructions
 
-## Default Agent Mode — ALWAYS @smart-manager
+## Default Agent Mode — ALWAYS @smart
 
-When starting a new chat session or when no specific agent is selected, **automatically load the Smart Manager** (`@smart-manager`).
+When starting a new chat session or when no specific agent is selected, **automatically load Smart** (`@smart`).
 
-The Smart Manager is defined in `.github/agents/smart-manager.agent.md`. It is the **unified agent** that handles all requests:
+Smart is defined in `.github/agents/smart.agent.md`. It is the **unified agent** that handles all requests:
 - **Light mode**: analysis, docs, setup → direct skill execution
 - **Full mode**: implementation → plan → curate → QA → approve → execute → evaluate → learn
 
 All orchestrator logic, routing rules, skill definitions, plan curation, and post-execution learning live there. **Do NOT duplicate that logic here.**
-
-> `@smart` still exists for backward compatibility but redirects to Smart Manager.
 
 ## First Step — Read Context
 
@@ -24,15 +22,14 @@ If `context.md` doesn't exist → Run the **Setup Project** handoff first.
 .github/copilot/
 ├── context.md           # 🧠 Project memory (READ FIRST)
 ├── session.md           # 📋 Session state (actions, tasks)
-├── docs/                # 📖 Project documentation
+├── instructions.md      # 📝 User-defined project rules (populated by setup skill)
+├── docs/                # 📖 Project documentation (created by setup skill, not pre-installed)
 ├── standards/           # 🛡️ Coding standards (optional)
-├── plans/               # 📋 Implementation plans (ALL plans go to disk)
-└── prompts/             # 🎯 Setup prompts
+└── plans/               # 📋 Implementation plans (ALL plans go to disk)
 
 .github/
 ├── agents/
-│   ├── smart-manager.agent.md  # 🎯 Unified agent (routing + execution + learning)
-│   └── smart.agent.md          # ↪️ Redirect to Smart Manager
+│   └── smart.agent.md          # 🎯 Unified agent (routing + execution + learning)
 └── skills/
     ├── index.yaml           # Skill registry
     └── <skill>/SKILL.md     # Individual skill files

@@ -1,7 +1,7 @@
-# Smart Manager - Skill Registry
-# ═══════════════════════════════════════════════════════════════════════════
+# Smart - Skill Registry
+# ═════════════════════════════════════════════════════════════════════════
 # This file defines all available skills and their routing rules.
-# The unified Smart Manager reads this to route requests in Light or Full mode.
+# Smart reads this to route requests in Light or Full mode.
 # Light mode: analysis, documentation, setup, skill-generator (direct execution)
 # Full mode: planning → evaluator → coding → testing → evaluator (iterative loop)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -278,6 +278,28 @@ skills:
       ui-style/SKILL.md and skips re-generation unless user explicitly requests
       a style change. Requires user to authorize use of the external
       ui-ux-pro-max library (cloned at .github/copilot/external/ui-ux-pro-max-skill/).
+
+  rust-web-app:
+    file: "rust-web-app/SKILL.md"
+    name: "Rust Web App"
+    description: "Scaffold a production-ready Rust web application with Axum, Tokio, SQLx, and PostgreSQL."
+    priority: 10
+    triggers:
+      keywords:
+        - rust web app
+        - axum
+        - scaffold rust
+        - new rust
+      patterns:
+        - "new rust.*api"
+        - "scaffold.*rust"
+        - "setup.*rust.*project"
+        - "create.*rust.*web"
+        - "rust.*web.*app"
+    requires_approval: false
+    can_chain_to:
+      - setup
+      - coding
 
 # Routing configuration
 routing:

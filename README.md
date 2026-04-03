@@ -70,7 +70,7 @@ For change requests, Smart verifies a suitable skill exists. If none matches, it
 <td width="33%" valign="top">
 
 ### 🔄 Auto-Improve Mode
-Smart Manager agent runs a quality-gated loop: plan → QA → execute → evaluate → iterate until all checks pass.
+Smart agent runs a quality-gated loop: plan → QA → execute → evaluate → iterate until all checks pass.
 
 </td>
 <td width="33%" valign="top">
@@ -108,7 +108,7 @@ If a request asks for an uncovered subtype (e.g. mutation testing), Smart genera
                                                          │
                                                          ▼
                                               ┌──────────────────┐
-                                              │  Smart Manager   │
+                                              │     Smart        │
                                               │  (Auto-Improve)  │
                                               │  plan → QA →     │
                                               │  execute → eval  │
@@ -140,8 +140,7 @@ your-project/
 ├── .github/
 │   ├── copilot-instructions.md  # 🤖 Auto-loads smart agent
 │   ├── agents/
-│   │   ├── smart.agent.md       # 🎯 Orchestrator
-│   │   └── smart-manager.agent.md  # 🔄 Auto-improve agent
+│   │   └── smart.agent.md       # 🎯 Unified agent
 │   └── skills/
 │       ├── index.yaml           # Skill registry
 │       ├── planning/SKILL.md
@@ -356,8 +355,7 @@ planning-copilot/
 ├── .github/
 │   ├── copilot-instructions.md
 │   ├── agents/
-│   │   ├── smart.agent.md                # 🎯 Orchestrator
-│   │   └── smart-manager.agent.md  # 🔄 Auto-improve agent
+│   │   └── smart.agent.md                # 🎯 Unified agent
 │   ├── skills/                  # 📚 Canonical skills
 │   │   ├── index.yaml
 │   │   ├── planning/SKILL.md

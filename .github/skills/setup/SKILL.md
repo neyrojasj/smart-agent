@@ -32,7 +32,7 @@ What this skill can do:
 
 - ✅ Scan entire project structure
 - ✅ Identify languages and frameworks
-- ✅ Generate initial documentation
+- ✅ Select and generate relevant documentation from catalog
 - ✅ Create context.md with project identity
 - ✅ Create session.md for session state
 - ✅ Build documentation index
@@ -42,7 +42,7 @@ What this skill can do:
 ## Dependencies
 
 - None (this is the initialization skill)
-- Creates: `context.md`, `session.md`, `.github/copilot/docs/`
+- Creates: `context.md`, `session.md`, `.github/copilot/docs/` (selective)
 - Chains to: `skill-generator` (for custom skill creation)
 
 ---
@@ -61,6 +61,19 @@ Analyze:
 - CI/CD configuration (.github/workflows)
 - Existing documentation
 ```
+
+### Step 1.1: Build Capability Map
+
+From the scan, produce a capability map before generating any docs or skills:
+
+| Project Part | Evidence (files/dirs) | Capability | Candidate Skill | Confidence |
+|--------------|----------------------|------------|-----------------|------------|
+| [part] | [path examples] | [capability] | `[name]/SKILL.md` | high/medium/low |
+
+Rules:
+- `high` confidence + clear evidence → propose skill creation to user
+- `medium` / `low` → record as deferred gap in `docs/skills-opportunities.md`
+- This map drives both documentation scope and skill-generator proposals
 
 ### Step 2: Initialize Context Memory
 
@@ -122,24 +135,117 @@ Create `.github/copilot/session.md`:
 *Auto-updated by Smart Orchestrator. Overwritten each session.*
 ```
 
-### Step 3: Generate Documentation
+### Step 3: Select and Generate Documentation from Catalog
 
-Create all documentation files in `.github/copilot/docs/`:
+Do NOT create all docs blindly. Use this catalog to decide which docs to generate based on scan evidence:
 
-1. `overview.md` - From README or analysis
-2. `architecture.md` - From directory structure
-3. `tech-stack.md` - From package files
-4. `api.md` - From routes/endpoints found
-5. `testing.md` - From test files/configs
-6. `development.md` - From scripts/configs
-7. `conventions.md` - From existing patterns
-8. `decisions/index.yaml` - Empty decision registry
+#### Document Catalog
+
+| Document | Create When | Evidence Required |
+|----------|-------------|-------------------|
+| `overview.md` | **Always** | README or package description exists |
+| `architecture.md` | >5 source dirs OR explicit layers (routes/, handlers/, models/) | Directory structure scan |
+| `tech-stack.md` | Multiple languages or frameworks detected | Package files, config files |
+| `api.md` | Routes, endpoints, OpenAPI/Swagger files detected | `routes/`, `controllers/`, `*.openapi.*`, `swagger.*` |
+| `testing.md` | Test files or test config exists | `tests/`, `__tests__/`, `*.test.*`, `*.spec.*`, jest/pytest/cargo-test config |
+| `development.md` | Docker, Makefile, dev scripts detected | `Dockerfile`, `docker-compose.*`, `Makefile`, `scripts/` |
+| `conventions.md` | Linter/formatter configs OR strong patterns found | `.eslintrc`, `.prettierrc`, `rustfmt.toml`, `.editorconfig` |
+| `decisions/index.yaml` | **Defer** — created on first architectural decision, not upfront | (none at setup time) |
+
+#### Selection Process
+
+```
+1. For each document in the catalog:
+   a. Check if evidence exists from the scan
+   b. If YES → mark for creation
+   c. If NO → skip (do not create empty templates)
+2. Log which docs were created and which were skipped (and why)
+```
+
+#### Generation Rules
+
+- Generate docs with **real content** derived from the scan — not placeholder templates
+- If a doc would be mostly empty, skip it
+- `overview.md` is the only mandatory doc (always created)
+- For each generated doc, fill it with actual project data (file paths, detected patterns, real commands)
 
 ### Step 4: Build Documentation Index
 
-Create `.github/copilot/docs/index.yaml` with accurate summaries.
+Create `.github/copilot/docs/index.yaml` listing **only the docs that were actually created**.
 
-### Step 5: Report Summary
+```yaml
+version: 1
+last_updated: "[TIMESTAMP]"
+
+project:
+  name: "[detected]"
+  type: "[detected]"
+  primary_language: "[detected]"
+  framework: "[detected]"
+  stage: development
+
+documents:
+  # Only list docs that were created — omit skipped docs
+  overview:
+    file: "overview.md"
+    summary: "[real summary]"
+    keywords: [...]
+  # ... (only created docs)
+
+skipped:
+  # Record what was NOT created and why
+  - doc: "api.md"
+    reason: "No routes or endpoints detected"
+  # ...
+```
+
+> The index must reflect reality. Do not list docs that don't exist.
+
+### Step 5: Populate Project Instructions
+
+Write `.github/copilot/instructions.md` with real content derived from the scan.
+
+This file is **user-owned** — it is separate from `.github/copilot-instructions.md` (which governs agent behavior). This file captures **project-specific rules** that the project owner wants enforced on every task.
+
+Generate from what was discovered:
+
+```markdown
+# Project Instructions
+
+> Auto-generated by Setup skill on [TIMESTAMP]. Edit freely — this file is yours.
+
+## Project Goals
+
+- [Derived from README/package description]
+
+## Architecture Constraints
+
+- [Derived from directory structure and module boundaries]
+- [Derived from forbidden patterns observed in code or config]
+
+## Coding Rules
+
+- [Language/framework-specific rules derived from existing code style]
+- [Error handling and logging patterns found in codebase]
+
+## Testing Rules
+
+- [Test levels found (unit/integration/e2e)]
+- [Naming conventions observed in test files]
+
+## Documentation Rules
+
+- Keep docs in sync with behavior and API/config changes.
+- Update examples/snippets in the same change as code updates.
+
+---
+
+Last updated: [TIMESTAMP]
+```
+
+> If the codebase is empty or a brand-new project, generate sensible defaults based on the detected stack and leave `[TBD]` markers where no evidence exists.
+
+### Step 6: Report Summary
 
 ```markdown
 ✅ **Project Setup Complete**
@@ -150,18 +256,19 @@ Create `.github/copilot/docs/index.yaml` with accurate summaries.
 - **Stack**: [stack]
 
 ## Documentation Created
+[List only docs that were actually generated]
 - overview.md
-- architecture.md
-- tech-stack.md
-- api.md
-- testing.md
-- development.md
-- conventions.md
-- decisions/index.yaml
+- [other docs based on evidence]
+
+## Documentation Skipped
+[List skipped docs with reason]
+- api.md — no routes/endpoints detected
+- [other skipped docs]
 
 ## Context Memory
 - `.github/copilot/context.md` — initialized
 - `.github/copilot/session.md` — initialized
+- `.github/copilot/instructions.md` — populated with project-specific rules (user-editable)
 
 ## Next Steps
 1. Review generated documentation

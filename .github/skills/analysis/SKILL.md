@@ -174,9 +174,153 @@ Always end with actionable next steps:
 
 ---
 
-## Audit Checklist
+## Audit Mode — Full Workflow
 
-When performing audits, check for:
+When the request is `audit` type, execute this expanded workflow.
+
+### Audit Pre-Requisite Check (MANDATORY)
+
+```
+CHECK if .github/copilot/standards/ exists AND contains at least one .md file.
+
+IF no standards found:
+  ❌ STOP. Do not proceed.
+
+  Display:
+  "⛔ Code Audit Cannot Proceed
+
+  No standards found in `.github/copilot/standards/`.
+
+  Fix options:
+  1. Run the installer with standards: `./install-with-standards.sh`
+  2. Add standard files manually to `.github/copilot/standards/`
+
+  Available standards: general.md, nodejs.md, rust.md"
+```
+
+### Audit Step 1: Load Standards
+
+Read ALL `.md` files from `.github/copilot/standards/`. Build a checklist of rules per category.
+
+### Audit Step 2: Load Project Context
+
+Read `.github/copilot/docs/index.yaml`. Derive primary language and key modules to audit. Only apply standards relevant to the detected stack.
+
+### Audit Step 3: Scan Codebase Against Categories
+
+For each applicable standard category:
+
+**1. Security**
+- Hardcoded secrets or credentials
+- Input validation patterns
+- SQL injection risks
+- XSS and CSRF exposure (if web)
+- Authentication/authorization correctness
+
+**2. Code Quality**
+- Naming consistency
+- DRY violations (duplicate logic)
+- Error handling — no silent failures
+- Function/file length violations
+- Missing documentation on public APIs
+
+**3. Architecture**
+- Layer separation violations
+- Circular dependencies
+- Single Responsibility Principle adherence
+- Dependency injection patterns
+
+**4. Testing**
+- Test coverage presence
+- Naming conventions in test files
+- Missing edge case coverage
+
+**5. Performance**
+- N+1 query patterns
+- Async/await misuse
+- Memory leak risks
+- Unnecessary recomputation
+
+**6. Dependencies**
+- Outdated packages
+- Unused dependencies
+- Known vulnerable packages
+
+Skip: `node_modules/`, `vendor/`, `dist/`, `build/`, `.git/`, `.github/copilot/tmp/`
+
+### Audit Step 4: Generate Report
+
+Write audit report to `.github/copilot/tmp/audit-report-[TIMESTAMP].md`:
+
+```markdown
+# Code Audit Report
+
+**Project:** [project name]
+**Date:** [current date]
+**Standards Applied:** [list of standard files used]
+
+## Summary
+
+| Category | Issues | Severity |
+|----------|--------|----------|
+| Security | X | 🔴 Critical / 🟡 Warning |
+| Code Quality | X | 🟡 Warning / 🟢 Info |
+| Architecture | X | ... |
+| Testing | X | ... |
+| Performance | X | ... |
+| Dependencies | X | ... |
+
+**Total**: X issues — Critical: X | Warning: X | Info: X
+
+## Critical Issues (Fix Immediately)
+
+### [ISSUE-001] [Title]
+- **Category**: Security
+- **Severity**: 🔴 Critical
+- **Location**: `path/to/file.ts:LINE`
+- **Standard Violated**: [reference]
+- **Description**: [what's wrong]
+- **Fix**: [actionable fix with code example]
+
+## Warnings (Fix Soon)
+
+### [ISSUE-XXX] ...
+
+## Passed Checks ✅
+
+- [Standard checks that passed]
+
+## Recommendations
+
+1. [ ] [Critical action]
+2. [ ] [Warning action]
+```
+
+### Audit Step 5: Output Summary
+
+```
+📊 Code Audit Complete
+
+Standards Applied: [N] files from .github/copilot/standards/
+
+Results:
+- 🔴 Critical: X
+- 🟡 Warning: X
+- 🟢 Info: X
+
+Full report: .github/copilot/tmp/audit-report-[TIMESTAMP].md
+
+Top Priority:
+1. [Most critical issue]
+2. [Second]
+3. [Third]
+
+To fix: ask @smart "fix audit issue [ISSUE-ID]"
+```
+
+---
+
+## Audit Checklist (Quick Reference)
 
 ### Security
 - [ ] No hardcoded secrets/credentials
@@ -197,7 +341,7 @@ When performing audits, check for:
 ### Performance
 - [ ] No N+1 queries
 - [ ] Proper indexing considered
-- [ ] No memory leaks risks
+- [ ] No memory leak risks
 - [ ] Async operations handled correctly
 - [ ] Caching considered
 
