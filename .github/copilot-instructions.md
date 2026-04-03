@@ -1,9 +1,3 @@
-````instructions
----
-description: 'Central Copilot instructions for projects using Smart Agent (Skill-Based Architecture)'
-applyTo: '**/*'
----
-
 # Copilot Instructions
 
 ## Default Agent Mode — ALWAYS @smart-manager
@@ -53,6 +47,4 @@ When `.github/copilot/standards/` exists, skills automatically apply:
 | `general.md` | All skills |
 | `[language].md` | coding, testing |
 | `markdown.md` | documentation |
-
-````
 
