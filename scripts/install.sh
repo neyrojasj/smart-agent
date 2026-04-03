@@ -202,7 +202,31 @@ install_gitignore() {
 
 install_state_yaml() {
     print_info "Initializing plans/state.yaml (preserve if exists)..."
-    copy_file_if_missing_from_repo ".github/copilot/plans/state.yaml" "$COPILOT_DIR/plans/state.yaml" "plans/state.yaml"
+    local dest="$COPILOT_DIR/plans/state.yaml"
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+        print_warning "plans/state.yaml already exists, preserving current file"
+        return
+    fi
+    mkdir -p "$(dirname "$dest")"
+    cat > "$dest" <<'EOF'
+# Smart Agent - Plans State File
+# Tracks all plans and their statuses. Auto-updated by the planning skill.
+
+version: 1
+last_updated: ""
+
+plans: {}
+
+summary:
+  draft: 0
+  pending_review: 0
+  approved: 0
+  in_progress: 0
+  completed: 0
+  archived: 0
+  rejected: 0
+EOF
+    print_success "plans/state.yaml initialized"
 }
 
 install_docs() {
