@@ -9,6 +9,9 @@ import sys
 from pathlib import Path
 
 PERSONAL_PATHS = [
+    ".github/agents",
+    ".github/skills",
+    ".github/copilot-instructions.md",
     ".github/copilot/context.md",
     ".github/copilot/session.md",
     ".github/copilot/instructions.md",
