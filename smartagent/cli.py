@@ -57,9 +57,10 @@ def init(no_standards, minimal, force, target):
 
 @main.command()
 @click.option("--target", default=".", show_default=True, help="Project root.")
-def save(target):
+@click.option("-f", "--force", is_flag=True, default=False, help="Force push, ignoring remote divergence.")
+def save(target, force):
     """Save personal state (agents, skills, context, plans) to branch copilot/<user>."""
-    sync.save(project_root=target)
+    sync.save(project_root=target, force=force)
 
 
 # ---------------------------------------------------------------------------
@@ -68,9 +69,10 @@ def save(target):
 
 @main.command()
 @click.option("--target", default=".", show_default=True, help="Project root.")
-def restore(target):
+@click.option("-f", "--force", is_flag=True, default=False, help="Restore even if working tree has uncommitted changes.")
+def restore(target, force):
     """Restore personal state from branch copilot/<user> onto working tree."""
-    sync.restore(project_root=target)
+    sync.restore(project_root=target, force=force)
 
 
 # ---------------------------------------------------------------------------

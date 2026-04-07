@@ -55,7 +55,7 @@ def _branch_exists_remotely(branch: str, cwd: str) -> bool:
     return bool(result.stdout.strip())
 
 
-def save(project_root: str = ".") -> None:
+def save(project_root: str = ".", force: bool = False) -> None:
     cwd = str(Path(project_root).resolve())
     branch = branch_name(cwd)
 
@@ -99,18 +99,19 @@ def save(project_root: str = ".") -> None:
         _git(["checkout", current], cwd=cwd, check=False)
         sys.exit(1)
 
-    _git(["push", "origin", branch, "--force-with-lease"], cwd=cwd, check=False)
+    push_flags = ["push", "origin", branch, "--force"] if force else ["push", "origin", branch, "--force-with-lease"]
+    _git(push_flags, cwd=cwd, check=False)
     _git(["checkout", current], cwd=cwd)
 
     print(f"✅  Personal state saved to branch '{branch}' and pushed.")
 
 
-def restore(project_root: str = ".") -> None:
+def restore(project_root: str = ".", force: bool = False) -> None:
     cwd = str(Path(project_root).resolve())
     branch = branch_name(cwd)
 
-    if _is_dirty(cwd):
-        print("⚠  Working tree has uncommitted changes. Commit or stash them first.")
+    if _is_dirty(cwd) and not force:
+        print("⚠  Working tree has uncommitted changes. Commit or stash them first, or use --force to restore anyway.")
         sys.exit(1)
 
     # Fetch the personal branch
@@ -119,7 +120,8 @@ def restore(project_root: str = ".") -> None:
         print(f"✗ Branch '{branch}' not found on remote. Run `smart sync save` first.")
         sys.exit(1)
 
-    # Checkout personal files onto the current branch
+    # Checkout personal files onto the current branch (worktree only — unstage after)
+    restored = []
     for p in PERSONAL_PATHS:
         result = _git(
             ["checkout", f"origin/{branch}", "--", p],
@@ -127,6 +129,13 @@ def restore(project_root: str = ".") -> None:
             check=False,
         )
         icon = "✓" if result.returncode == 0 else "·"
+        if result.returncode == 0:
+            restored.append(p)
         print(f"  {icon} {p}")
+
+    # Unstage restored files — they should only be in the worktree,
+    # not staged for the current branch commit.
+    if restored:
+        _git(["reset", "HEAD", "--"] + restored, cwd=cwd, check=False)
 
     print(f"\n✅  Personal state restored from branch '{branch}'.")

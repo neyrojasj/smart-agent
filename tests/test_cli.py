@@ -134,13 +134,37 @@ class TestSyncCommands(unittest.TestCase):
     def test_sync_save(self, mock_save):
         result = self.runner.invoke(main, ["save", "--target", "/tmp/proj"])
         self.assertEqual(result.exit_code, 0)
-        mock_save.assert_called_once_with(project_root="/tmp/proj")
+        mock_save.assert_called_once_with(project_root="/tmp/proj", force=False)
+
+    @patch("smartagent.cli.sync.save")
+    def test_sync_save_force(self, mock_save):
+        result = self.runner.invoke(main, ["save", "--target", "/tmp/proj", "--force"])
+        self.assertEqual(result.exit_code, 0)
+        mock_save.assert_called_once_with(project_root="/tmp/proj", force=True)
+
+    @patch("smartagent.cli.sync.save")
+    def test_sync_save_force_short(self, mock_save):
+        result = self.runner.invoke(main, ["save", "--target", "/tmp/proj", "-f"])
+        self.assertEqual(result.exit_code, 0)
+        mock_save.assert_called_once_with(project_root="/tmp/proj", force=True)
 
     @patch("smartagent.cli.sync.restore")
     def test_sync_restore(self, mock_restore):
         result = self.runner.invoke(main, ["restore", "--target", "/tmp/proj"])
         self.assertEqual(result.exit_code, 0)
-        mock_restore.assert_called_once_with(project_root="/tmp/proj")
+        mock_restore.assert_called_once_with(project_root="/tmp/proj", force=False)
+
+    @patch("smartagent.cli.sync.restore")
+    def test_sync_restore_force(self, mock_restore):
+        result = self.runner.invoke(main, ["restore", "--target", "/tmp/proj", "--force"])
+        self.assertEqual(result.exit_code, 0)
+        mock_restore.assert_called_once_with(project_root="/tmp/proj", force=True)
+
+    @patch("smartagent.cli.sync.restore")
+    def test_sync_restore_force_short(self, mock_restore):
+        result = self.runner.invoke(main, ["restore", "--target", "/tmp/proj", "-f"])
+        self.assertEqual(result.exit_code, 0)
+        mock_restore.assert_called_once_with(project_root="/tmp/proj", force=True)
 
 
 if __name__ == "__main__":
