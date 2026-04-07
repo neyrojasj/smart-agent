@@ -52,29 +52,23 @@ def init(no_standards, minimal, force, target):
 
 
 # ---------------------------------------------------------------------------
-# smart sync
+# smart save
 # ---------------------------------------------------------------------------
 
-@main.group()
-def sync_group():
-    """Sync personal Copilot state to/from a personal git branch."""
-    pass
-
-
-# register as 'sync' on the CLI
-main.add_command(sync_group, name="sync")
-
-
-@sync_group.command("save")
+@main.command()
 @click.option("--target", default=".", show_default=True, help="Project root.")
-def sync_save(target):
-    """Save personal state (context, plans, docs) to branch copilot/<user>."""
+def save(target):
+    """Save personal state (agents, skills, context, plans) to branch copilot/<user>."""
     sync.save(project_root=target)
 
 
-@sync_group.command("restore")
+# ---------------------------------------------------------------------------
+# smart restore
+# ---------------------------------------------------------------------------
+
+@main.command()
 @click.option("--target", default=".", show_default=True, help="Project root.")
-def sync_restore(target):
+def restore(target):
     """Restore personal state from branch copilot/<user> onto working tree."""
     sync.restore(project_root=target)
 

@@ -39,11 +39,11 @@ class TestCliHelp(unittest.TestCase):
         self.assertIn("--force", result.output)
 
     def test_sync_save_help(self):
-        result = self.runner.invoke(main, ["sync", "save", "--help"])
+        result = self.runner.invoke(main, ["save", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_sync_restore_help(self):
-        result = self.runner.invoke(main, ["sync", "restore", "--help"])
+        result = self.runner.invoke(main, ["restore", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_update_help(self):
@@ -125,20 +125,20 @@ class TestUpdateCommand(unittest.TestCase):
 
 
 class TestSyncCommands(unittest.TestCase):
-    """smart sync save/restore call sync.save / sync.restore."""
+    """smart save/restore call sync.save / sync.restore."""
 
     def setUp(self):
         self.runner = CliRunner()
 
     @patch("smartagent.cli.sync.save")
     def test_sync_save(self, mock_save):
-        result = self.runner.invoke(main, ["sync", "save", "--target", "/tmp/proj"])
+        result = self.runner.invoke(main, ["save", "--target", "/tmp/proj"])
         self.assertEqual(result.exit_code, 0)
         mock_save.assert_called_once_with(project_root="/tmp/proj")
 
     @patch("smartagent.cli.sync.restore")
     def test_sync_restore(self, mock_restore):
-        result = self.runner.invoke(main, ["sync", "restore", "--target", "/tmp/proj"])
+        result = self.runner.invoke(main, ["restore", "--target", "/tmp/proj"])
         self.assertEqual(result.exit_code, 0)
         mock_restore.assert_called_once_with(project_root="/tmp/proj")
 

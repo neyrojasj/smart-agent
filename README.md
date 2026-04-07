@@ -357,8 +357,8 @@ Documentation is treated as part of the implementation.
 | `smart init` | Install Smart Copilot into a project |
 | `smart init --no-standards` | Install without language standards |
 | `smart init --minimal` | Install agent + skills only |
-| `smart sync save` | Save personal state to `copilot/<user>` branch |
-| `smart sync restore` | Restore personal state from personal branch |
+| `smart save` | Save personal state to `copilot/<user>` branch |
+| `smart restore` | Restore personal state from personal branch |
 | `smart update` | Pull latest skills and agent from upstream |
 | `smart update --dry-run` | Preview what would be updated |
 
