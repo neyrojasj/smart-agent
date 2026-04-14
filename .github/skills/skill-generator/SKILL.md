@@ -1,7 +1,7 @@
 ---
 name: skill-generator
 description: Detect project patterns and generate project-specific skills on demand.
-version: "1.0"
+version: "2.0"
 ---
 
 # Skill Generator Skill
@@ -59,6 +59,22 @@ What this skill can do:
 3. Read .github/copilot/docs/skills-opportunities.md if it exists (deferred gaps)
 ```
 
+### Step 1.5: Classify Existing Skills
+
+Before detecting new patterns, map existing skills to the patterns they cover:
+
+```
+For each skill in index.yaml:
+  - Note its detected_from / trigger keywords
+  - Mark the pattern as "ALREADY COVERED"
+
+Result: a checklist of covered vs. uncovered patterns
+```
+
+This prevents duplicating skills that already exist. The goal is to find **gaps**, not recreate what's present.
+
+> If `.github/skills/index.yaml` does not exist → treat all patterns as uncovered.
+
 ### Step 2: Detect Skill Opportunities
 
 ```
@@ -82,21 +98,31 @@ What this skill can do:
 
 ### Step 3: Propose Skill Set (MANDATORY)
 
-Before creating files, produce a proposal table:
+Before creating files, produce a proposal table. **Only include skills NOT already in index.yaml**:
 
 ```markdown
-## Proposed Skill Set
+## Skill Generation Proposal
+
+### New Skills to Create
 
 | Skill | Source Evidence | Why It Matters | Action |
-|-------|------------------|----------------|--------|
+|-------|-----------------|----------------|--------|
 | `[name]/SKILL.md` | `[path(s)]` | [project-specific need] | create now / defer until requested |
+
+### Existing Skills Verified (No Changes Needed)
+
+| Skill | Registered Name | Status |
+|-------|-----------------|--------|
+| `sdk-parity/SKILL.md` | SDK Parity | ✅ active — covers pattern X |
+| `codegen/SKILL.md` | Code Generation | ✅ active — covers pattern Y |
 ```
 
 Rules:
 - Favor project-specific skills over generic catch-all skills.
 - Mark low-confidence items as `defer until requested`.
-- If no extra skills are needed, explicitly state why.
-- Do NOT create near-duplicates of existing skills — merge instead.
+- **If no new patterns are found**: explicitly state "All detected patterns already covered by existing skills" and list them. Do NOT invent new skills.
+- Do NOT create near-duplicates of existing skills — merge or extend instead.
+- Do NOT re-register a skill that is already in index.yaml.
 
 ### Step 4: Generate Custom Skills
 
@@ -186,15 +212,23 @@ Store deferred items in `.github/copilot/docs/skills-opportunities.md`:
 |-------|---------------|----------|
 | [skill] | [pattern] | [keywords] |
 
+## Skills Verified (Already Exist)
+
+| Skill | Registered Name | Notes |
+|-------|-----------------|-------|
+| [skill] | [name in index.yaml] | Current, no update needed |
+
 ## Deferred Gaps
 
 | Skill | Reason | Trigger Keywords |
-|-------|--------|-----------------|
+|-------|--------|------------------|
 | [skill] | [reason] | [keywords] |
 
 ## Registry Updated
-`.github/skills/index.yaml` — [N] skills added
+`.github/skills/index.yaml` — [N] skills added, [M] verified existing, [K] deferred
 ```
+
+> **No new skills case**: If all patterns detected are already covered: output only "Skills Verified" + "Deferred Gaps" sections. Do not output an empty "Skills Created" section.
 
 ---
 
@@ -226,11 +260,13 @@ When user requests "rescan" or "regenerate skills":
 
 ```
 1. Read current context.md and index.yaml
-2. Scan project for changes since last generation
-3. Identify new patterns not covered by existing skills
-4. Follow Steps 3-7 for new patterns only
-5. Report what changed
+2. Run Step 1.5 (Classify Existing Skills) — catalog all currently covered patterns
+3. Scan project for NEW patterns not covered by any existing skill
+4. Follow Steps 3-7 for new patterns only — never re-create existing skills
+5. Report: N new skills created, M existing skills verified, K new deferred gaps
 ```
+
+> Rescan does NOT touch existing skills — it only adds. To update an existing skill, use the on-demand workflow or point the coding skill at the specific SKILL.md.
 
 ---
 
@@ -241,12 +277,13 @@ Return to orchestrator:
 ```yaml
 status: success | error
 result:
-  skills_created: [list]
-  skills_deferred: [list]
+  skills_created: [list]              # newly created SKILL.md files
+  skills_verified_existing: [list]    # patterns already covered, no action taken
+  skills_deferred: [list]             # patterns found but not yet created
   registry_updated: true
 context_updates:
   recent_actions:
-    - "Generated [N] skills, deferred [M]"
+    - "Generated [N] new skills, verified [M] existing, deferred [K]"
 next_skill: null
 user_message: "[Generation summary]"
 ```
@@ -260,3 +297,6 @@ user_message: "[Generation summary]"
 - ❌ Skip the proposal step — always propose before creating
 - ❌ Forget to update skill registry
 - ❌ Create speculative skills without concrete project evidence
+- ❌ Re-create a skill that already exists in index.yaml (use RescanWorkflow or on-demand update instead)
+- ❌ Skip Step 1.5 — always classify existing skills before proposing new ones
+- ❌ Output an empty "Skills Created" section when no new skills were needed — report "verified existing" instead

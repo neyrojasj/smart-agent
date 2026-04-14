@@ -1,7 +1,7 @@
 ---
 name: setup
 description: Initialize project context, scan codebase, and generate project documentation.
-version: "1.0"
+version: "2.0"
 ---
 
 # Setup Skill
@@ -49,18 +49,51 @@ What this skill can do:
 
 ## Workflow
 
+### Step 0: Check Existing State (Re-run Guard)
+
+Before scanning, check whether setup has already been run:
+
+```
+1. Does .github/copilot/context.md exist?
+   YES → Read it. Note project identity already detected.
+          Continue as UPDATE run — preserve user edits; only refresh stale sections.
+          Sections to always refresh: Last updated timestamp, session.md state.
+          Sections to preserve (user-owned): Project-Specific Rules, Key Decisions, User Preferences.
+   NO  → Fresh setup — create everything from scratch.
+
+2. Does .github/copilot/docs/ exist with content?
+   YES → Read docs/index.yaml. Note which docs already exist.
+          Skip regenerating docs that are current (only regenerate if project changed significantly).
+   NO  → Generate all docs fresh.
+
+3. Does .github/skills/index.yaml exist?
+   YES → Read it. Pass skill list to skill-generator as "already exists" baseline.
+   NO  → skill-generator will start fresh.
+```
+
+> On re-run: always update timestamps, context updates only if something genuinely changed.
+
 ### Step 1: Scan Project Structure
 
 ```
 Analyze:
-- Root directory structure
+- Root directory structure (depth 2-3)
 - All programming languages (by extension/content)
 - Package files (package.json, Cargo.toml, pyproject.toml, go.mod)
-- Configuration files (.env.example, configs)
-- Build configuration (webpack, vite, tsconfig)
+- Configuration files (.env.example, configs, .editorconfig)
+- Build configuration (webpack, vite, tsconfig, esbuild config)
 - CI/CD configuration (.github/workflows)
 - Existing documentation
 ```
+
+**Read package manifests for exact versions** — do not approximate:
+- `package.json` → dependencies{} and devDependencies{} with semver
+- `pyproject.toml` → [project.dependencies] and [project.optional-dependencies]
+- `go.mod` → require section
+- `global.json` / `Directory.Packages.props` (.NET)
+- `Cargo.toml` → [dependencies]
+
+Record actual version constraints in tech-stack.md. "React ^18.0.0" is better than "React 18+".
 
 ### Step 1.1: Build Capability Map
 
@@ -77,7 +110,12 @@ Rules:
 
 ### Step 2: Initialize Context Memory
 
-Create `.github/copilot/context.md`:
+Create or update `.github/copilot/context.md`.
+
+> **SIZE CONSTRAINT**: context.md MUST stay under 80 lines. It is loaded on every request — brevity is critical.
+> - Project identity, architecture summary, key rules → context.md
+> - Detailed coding style, testing rules, debug guides, language specifics → instructions.md
+> - If context.md would exceed 80 lines, move the overflow sections to instructions.md and add a reference in context.md.
 
 ```markdown
 # Project Context
@@ -88,8 +126,12 @@ Create `.github/copilot/context.md`:
 
 - **Name**: [detected project name]
 - **Type**: [web-api/cli/library/monorepo/etc]
-- **Stack**: [primary language + framework]
-- **Stage**: development
+- **Stack**: [primary language + framework, e.g. TypeScript / Node.js 22]
+- **Stage**: [development/beta/production]
+
+## Architecture Summary
+
+[1-3 sentence description of the main architecture pattern detected]
 
 ## User Preferences
 
@@ -97,7 +139,9 @@ Create `.github/copilot/context.md`:
 
 ## Project-Specific Rules
 
-(analyzing...)
+- [Critical rule 1 — e.g. "Generated code in */generated/ is never hand-edited"]
+- [Critical rule 2 — e.g. ".NET tests must not use InternalsVisibleTo"]
+[Keep to ≤5 critical rules. Remaining rules go in instructions.md]
 
 ## Key Decisions
 
@@ -108,6 +152,8 @@ Create `.github/copilot/context.md`:
 ---
 *Auto-updated by Smart Orchestrator*
 ```
+
+> After writing context.md, count lines. If over 80: move "Project-Specific Rules" body to instructions.md and replace with: `See instructions.md — Coding & Testing Rules.`
 
 Create `.github/copilot/session.md`:
 
@@ -169,6 +215,17 @@ Do NOT create all docs blindly. Use this catalog to decide which docs to generat
 - `overview.md` is the only mandatory doc (always created)
 - For each generated doc, fill it with actual project data (file paths, detected patterns, real commands)
 
+#### Per-Document Quality Standards
+
+| Document | Minimum Content Required |
+|----------|-------------------------|
+| `overview.md` | Repo layout tree, quickstart snippet, auth options (if any), key concepts |
+| `architecture.md` | Architecture diagram (text art OK), layer table with responsibilities, source-file map |
+| `tech-stack.md` | **Actual version numbers** from package manifests; per-SDK dependency table; build/test framework per language |
+| `testing.md` | Test locations per SDK with run command; **≥2 code examples** of key test patterns (e.g. streaming, auth); E2E setup if present |
+| `development.md` | Full setup steps; per-language build commands; code generation workflow if present |
+| `conventions.md` | Cross-language naming table (if multi-SDK); per-language formatter + linter config file references |
+
 ### Step 4: Build Documentation Index
 
 Create `.github/copilot/docs/index.yaml` listing **only the docs that were actually created**.
@@ -207,7 +264,7 @@ Write `.github/copilot/instructions.md` with real content derived from the scan.
 
 This file is **user-owned** — it is separate from `.github/copilot-instructions.md` (which governs agent behavior). This file captures **project-specific rules** that the project owner wants enforced on every task.
 
-Generate from what was discovered:
+Generate from what was discovered. Include **all applicable sections** below:
 
 ```markdown
 # Project Instructions
@@ -217,33 +274,75 @@ Generate from what was discovered:
 ## Project Goals
 
 - [Derived from README/package description]
+- [Include primary use case and target users if detectable]
 
 ## Architecture Constraints
 
 - [Derived from directory structure and module boundaries]
-- [Derived from forbidden patterns observed in code or config]
+- [Forbidden patterns observed in code or config]
+- [Protocol/API constraints enforced by the project]
 
 ## Coding Rules
 
-- [Language/framework-specific rules derived from existing code style]
-- [Error handling and logging patterns found in codebase]
+### [Primary Language]
+- **Formatter**: [tool + config file]
+- **Linter**: [tool + config file]
+- [Framework-specific conventions]
+- [Private/public conventions]
+
+### [Secondary Language] (if applicable)
+- [Same structure — one block per language]
 
 ## Testing Rules
 
-- [Test levels found (unit/integration/e2e)]
-- [Naming conventions observed in test files]
+- [Test framework per SDK/language + discovery command]
+- [E2E test setup if detected]
+- [Coverage expectations]
+- [Key test patterns (e.g. must assert both delta AND final events, cleanup teardown rules)]
 
 ## Documentation Rules
 
 - Keep docs in sync with behavior and API/config changes.
 - Update examples/snippets in the same change as code updates.
+- [Changelog auto-generated? Note it if detected]
+- [Link validation if CI workflow detected]
+
+## Development Workflow
+
+1. [Install command]
+2. [Format/lint command]
+3. [Test command]
+4. [Build or generate command if applicable]
+[Include actual commands from package.json scripts, Makefile, justfile, etc.]
+
+## Debugging & Troubleshooting
+
+- **[Common issue 1]**: [Cause + fix — e.g. stale generated code]
+- **[Common issue 2]**: [Cause + fix — e.g. protocol version mismatch]
+[Derive from README, CONTRIBUTING.md, or docs/troubleshooting/ if present]
+
+## Version & Release
+
+- [Versioning strategy — semver + registry names]
+- [How to trigger a release — tag, CI, manual]
+- [Changelog policy — manual or auto-generated]
+[Skip this section if no package publishing detected]
+
+## Skills Available
+
+This project has custom skills for specialized workflows:
+[List each generated skill with a one-line description]
+- **`[skill-name]/SKILL.md`**: [what it does]
+[This section is filled in after skill-generator runs — update it then]
 
 ---
 
 Last updated: [TIMESTAMP]
 ```
 
-> If the codebase is empty or a brand-new project, generate sensible defaults based on the detected stack and leave `[TBD]` markers where no evidence exists.
+> Sections to ALWAYS include: Goals, Architecture Constraints, Coding Rules, Testing Rules, Documentation Rules, Development Workflow.
+> Sections to include ONLY when evidence exists: Debugging, Version & Release, Skills Available.
+> If the codebase is empty or brand-new: generate sensible defaults and leave `[TBD]` where no evidence exists.
 
 ### Step 6: Report Summary
 
@@ -304,6 +403,10 @@ user_message: "[Setup summary]"
 ## Never Do
 
 - ❌ Skip scanning the entire project
-- ❌ Overwrite existing documentation without confirmation
+- ❌ Overwrite existing documentation without reading it first (Step 0)
 - ❌ Leave context.md with placeholder values
 - ❌ Generate custom skills (delegate to skill-generator skill)
+- ❌ Let context.md exceed 80 lines without moving overflow to instructions.md
+- ❌ Use approximate version numbers in tech-stack.md — always read package manifests
+- ❌ Generate testing.md without code examples when test files exist
+- ❌ Omit the "Skills Available" section in instructions.md after skill-generator has run
