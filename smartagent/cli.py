@@ -64,15 +64,18 @@ def save(target, force):
 
 
 # ---------------------------------------------------------------------------
-# smart restore
+# smart sync
 # ---------------------------------------------------------------------------
 
-@main.command()
+@main.command("sync")
+@click.option("-f", "--force", is_flag=True, default=False,
+              help="Overwrite local files from branch, skipping stash.")
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Show what would be synced without making changes.")
 @click.option("--target", default=".", show_default=True, help="Project root.")
-@click.option("-f", "--force", is_flag=True, default=False, help="Restore even if working tree has uncommitted changes.")
-def restore(target, force):
-    """Restore personal state from branch copilot/<user> onto working tree."""
-    sync.restore(project_root=target, force=force)
+def sync_cmd(force: bool, dry_run: bool, target: str) -> None:
+    """Sync all personal files from copilot/<user> branch into the working tree."""
+    sync.sync(project_root=target, force=force, dry_run=dry_run)
 
 
 # ---------------------------------------------------------------------------

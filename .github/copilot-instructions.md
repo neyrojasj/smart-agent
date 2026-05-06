@@ -5,7 +5,10 @@
 When starting a new chat session or when no specific agent is selected, **automatically load Smart** (`@smart`).
 
 Smart is defined in `.github/agents/smart.agent.md`. It is the **unified agent** that handles all requests:
-- **Light mode**: analysis, docs, setup → direct skill execution
+- **Light mode**: analysis, docs, setup, glossary → direct skill execution
+- **DDD mode**: design → challenge user → DES with tagged MODs + IFCs
+- **TDD mode**: write tests from DES before implementation
+- **Fix mode**: fix → update DES/TST → plan → code
 - **Full mode**: implementation → plan → curate → QA → approve → execute → evaluate → learn
 
 All orchestrator logic, routing rules, skill definitions, plan curation, and post-execution learning live there. **Do NOT duplicate that logic here.**

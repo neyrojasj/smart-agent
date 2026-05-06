@@ -106,36 +106,48 @@ def save(project_root: str = ".", force: bool = False) -> None:
     print(f"✅  Personal state saved to branch '{branch}' and pushed.")
 
 
-def restore(project_root: str = ".", force: bool = False) -> None:
+def sync(project_root: str = ".", force: bool = False, dry_run: bool = False) -> None:
+    """
+    Sync all PERSONAL_PATHS from the user's copilot/<user> branch into the working tree.
+
+    Args:
+        project_root: Path to the git repository root.
+        force:        If True, skip stash and directly overwrite local files from branch.
+        dry_run:      If True, print what would be changed and exit without modifying anything.
+    """
     cwd = str(Path(project_root).resolve())
-    branch = branch_name(cwd)
+    username = get_username(cwd)
+    branch = f"copilot/{username}"
 
-    if _is_dirty(cwd) and not force:
-        print("⚠  Working tree has uncommitted changes. Commit or stash them first, or use --force to restore anyway.")
+    if not _branch_exists_remotely(branch, cwd):
+        print(f"✗ Branch '{branch}' not found on remote. Run 'smart save' first.")
         sys.exit(1)
 
-    # Fetch the personal branch
-    fetch = _git(["fetch", "origin", branch], cwd=cwd, check=False)
-    if fetch.returncode != 0:
-        print(f"✗ Branch '{branch}' not found on remote. Run `smart sync save` first.")
-        sys.exit(1)
+    _git(["fetch", "origin", branch], cwd=cwd)
 
-    # Checkout personal files onto the current branch (worktree only — unstage after)
-    restored = []
-    for p in PERSONAL_PATHS:
-        result = _git(
-            ["checkout", f"origin/{branch}", "--", p],
+    if dry_run:
+        for path in PERSONAL_PATHS:
+            _git(["diff", "HEAD", f"origin/{branch}", "--", path], cwd=cwd, check=False)
+        return
+
+    needs_stash = not force and _is_dirty(cwd)
+
+    if needs_stash:
+        _git(
+            ["stash", "push", "--include-untracked", "-m", "smart sync: pre-sync stash"],
             cwd=cwd,
-            check=False,
         )
-        icon = "✓" if result.returncode == 0 else "·"
+
+    applied = []
+    for path in PERSONAL_PATHS:
+        result = _git(["checkout", f"origin/{branch}", "--", path], cwd=cwd, check=False)
         if result.returncode == 0:
-            restored.append(p)
-        print(f"  {icon} {p}")
+            applied.append(path)
 
-    # Unstage restored files — they should only be in the worktree,
-    # not staged for the current branch commit.
-    if restored:
-        _git(["reset", "HEAD", "--"] + restored, cwd=cwd, check=False)
+    if applied:
+        _git(["reset", "HEAD", "--"] + applied, cwd=cwd, check=False)
 
-    print(f"\n✅  Personal state restored from branch '{branch}'.")
+    if needs_stash:
+        _git(["stash", "pop"], cwd=cwd, check=False)
+
+    print(f"✅  Personal state synced from branch '{branch}'.")

@@ -2,33 +2,98 @@
 # ═════════════════════════════════════════════════════════════════════════
 # This file defines all available skills and their routing rules.
 # Smart reads this to route requests in Light or Full mode.
-# Light mode: analysis, documentation, setup, skill-generator (direct execution)
-# Full mode: planning → evaluator → coding → testing → evaluator (iterative loop)
+# Light mode: analysis, documentation, setup, skill-generator, glossary (direct execution)
+# Full mode: ddd → tdd → planning → plan-reviewer → coding → evaluator (iterative loop)
+# Fix mode: fix → ddd (update) → tdd (update) → planning → coding
 # ═══════════════════════════════════════════════════════════════════════════
 
-version: 3
-last_updated: "2026-03-31T00:00:00Z"
+version: 4
+last_updated: "2026-05-05T00:00:00Z"
 
 skills:
-  planning:
-    file: "planning/SKILL.md"
-    name: "Planning"
-    description: "Creates implementation plans, architectural decisions, and strategy. All plans written to disk. Supports revision from evaluator feedback."
+  glossary:
+    file: "glossary/SKILL.md"
+    name: "Glossary"
+    description: "Manage project glossary (GLO) — acronyms and terms used to minimize context window usage. Read by ALL skills before routing."
+    priority: 0
+    triggers:
+      keywords:
+        - glossary
+        - terms
+        - acronyms
+        - add term
+        - what does
+        - GLO
+      patterns:
+        - "add.*to glossary"
+        - "update glossary"
+        - "show glossary"
+        - "what does.*mean"
+    requires_approval: false
+    can_chain_to: []
+
+  ddd:
+    file: "ddd/SKILL.md"
+    name: "DDD"
+    description: "Design Driven Development — challenge user, produce AI-readable DES with @tagged MODs and IFCs. Fewer files, interfaces mandatory for cross-MOD calls."
     priority: 1
     triggers:
       keywords:
-        - plan
+        - DDD
         - design
         - architect
+        - interface
+        - module
         - structure
+        - boundaries
+      patterns:
+        - "design.*for"
+        - "define.*interface"
+        - "how.*should.*structured"
+        - "DDD.*"
+        - "create.*design"
+    requires_approval: true
+    can_chain_to:
+      - tdd
+      - planning
+
+  tdd:
+    file: "tdd/SKILL.md"
+    name: "TDD"
+    description: "Test Driven Development — write tests before implementation, derived from DES IFCs. All tests RED until coding skill makes them GREEN."
+    priority: 2
+    triggers:
+      keywords:
+        - TDD
+        - test first
+        - write tests
+        - tests before
+        - test driven
+      patterns:
+        - "TDD.*"
+        - "write tests for.*"
+        - "tests.*before.*impl"
+        - "test.*DESIGN"
+        - "tests.*IFC"
+    requires_approval: false
+    can_chain_to:
+      - planning
+
+  planning:
+    file: "planning/SKILL.md"
+    name: "Planning"
+    description: "Creates PLAN + KF. When DES and TST exist, derives phases from MODs/IFCs/test matrix — no re-design. All plans written to disk."
+    priority: 3
+    triggers:
+      keywords:
+        - plan
+        - PLAN
         - approach
         - strategy
         - roadmap
         - proposal
       patterns:
         - "create a plan"
-        - "how should I"
-        - "design.*for"
         - "plan.*implementation"
         - "what's the best approach"
         - "help me think through"
@@ -37,11 +102,39 @@ skills:
       - coding
       - testing
 
+  fix:
+    file: "fix/SKILL.md"
+    name: "Fix"
+    description: "Fix issues — reads GLO+DES+TST, classifies fix, updates DES/TST if needed, then creates PLAN via planning skill."
+    priority: 4
+    triggers:
+      keywords:
+        - fix
+        - bug
+        - broken
+        - failing
+        - error
+        - regression
+        - patch
+        - incorrect
+      patterns:
+        - "fix.*bug"
+        - "tests.*failing"
+        - "broken.*"
+        - "regression.*in"
+        - "error.*in"
+        - "update.*to.*do"
+    requires_approval: true
+    can_chain_to:
+      - ddd
+      - tdd
+      - planning
+
   plan-reviewer:
     file: "plan-reviewer/SKILL.md"
     name: "Plan Reviewer"
     description: "Reviews plans via adversarial critique and generates QA checklists. Pre-execution quality gate."
-    priority: 2
+    priority: 5
     triggers:
       keywords:
         - review plan

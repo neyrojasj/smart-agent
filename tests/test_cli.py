@@ -2,7 +2,7 @@
 Tests for the smartagent CLI commands.
 
 Uses Click's test runner so no real network calls or git operations are made.
-All external I/O (installer.install, installer.update, sync.save, sync.restore)
+All external I/O (installer.install, installer.update, sync.save, sync.sync)
 is patched out.
 """
 
@@ -42,9 +42,11 @@ class TestCliHelp(unittest.TestCase):
         result = self.runner.invoke(main, ["save", "--help"])
         self.assertEqual(result.exit_code, 0)
 
-    def test_sync_restore_help(self):
-        result = self.runner.invoke(main, ["restore", "--help"])
+    def test_sync_sync_help(self):
+        result = self.runner.invoke(main, ["sync", "--help"])
         self.assertEqual(result.exit_code, 0)
+        self.assertIn("--force", result.output)
+        self.assertIn("--dry-run", result.output)
 
     def test_update_help(self):
         result = self.runner.invoke(main, ["update", "--help"])
@@ -125,7 +127,7 @@ class TestUpdateCommand(unittest.TestCase):
 
 
 class TestSyncCommands(unittest.TestCase):
-    """smart save/restore call sync.save / sync.restore."""
+    """smart save calls sync.save."""
 
     def setUp(self):
         self.runner = CliRunner()
@@ -148,23 +150,49 @@ class TestSyncCommands(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         mock_save.assert_called_once_with(project_root="/tmp/proj", force=True)
 
-    @patch("smartagent.cli.sync.restore")
-    def test_sync_restore(self, mock_restore):
-        result = self.runner.invoke(main, ["restore", "--target", "/tmp/proj"])
-        self.assertEqual(result.exit_code, 0)
-        mock_restore.assert_called_once_with(project_root="/tmp/proj", force=False)
 
-    @patch("smartagent.cli.sync.restore")
-    def test_sync_restore_force(self, mock_restore):
-        result = self.runner.invoke(main, ["restore", "--target", "/tmp/proj", "--force"])
-        self.assertEqual(result.exit_code, 0)
-        mock_restore.assert_called_once_with(project_root="/tmp/proj", force=True)
+class TestSyncSyncCommand(unittest.TestCase):
+    """smart sync wires CLI flags to sync.sync().
+    TST-001: @ifc:SyncCommand | @mod:cli | @impl:TBD
+    """
 
-    @patch("smartagent.cli.sync.restore")
-    def test_sync_restore_force_short(self, mock_restore):
-        result = self.runner.invoke(main, ["restore", "--target", "/tmp/proj", "-f"])
+    def setUp(self):
+        self.runner = CliRunner()
+
+    # @case: defaults → sync.sync(project_root=".", force=False, dry_run=False)
+    @patch("smartagent.cli.sync.sync")
+    def test_sync_defaults(self, mock_sync):
+        result = self.runner.invoke(main, ["sync"])
         self.assertEqual(result.exit_code, 0)
-        mock_restore.assert_called_once_with(project_root="/tmp/proj", force=True)
+        mock_sync.assert_called_once_with(project_root=".", force=False, dry_run=False)
+
+    # @case: --force flag → force=True
+    @patch("smartagent.cli.sync.sync")
+    def test_sync_force(self, mock_sync):
+        result = self.runner.invoke(main, ["sync", "--force"])
+        self.assertEqual(result.exit_code, 0)
+        mock_sync.assert_called_once_with(project_root=".", force=True, dry_run=False)
+
+    # @case: -f short flag → force=True
+    @patch("smartagent.cli.sync.sync")
+    def test_sync_force_short(self, mock_sync):
+        result = self.runner.invoke(main, ["sync", "-f"])
+        self.assertEqual(result.exit_code, 0)
+        mock_sync.assert_called_once_with(project_root=".", force=True, dry_run=False)
+
+    # @case: --dry-run flag → dry_run=True
+    @patch("smartagent.cli.sync.sync")
+    def test_sync_dry_run(self, mock_sync):
+        result = self.runner.invoke(main, ["sync", "--dry-run"])
+        self.assertEqual(result.exit_code, 0)
+        mock_sync.assert_called_once_with(project_root=".", force=False, dry_run=True)
+
+    # @case: --target flag → project_root set correctly
+    @patch("smartagent.cli.sync.sync")
+    def test_sync_target(self, mock_sync):
+        result = self.runner.invoke(main, ["sync", "--target", "/tmp/proj"])
+        self.assertEqual(result.exit_code, 0)
+        mock_sync.assert_called_once_with(project_root="/tmp/proj", force=False, dry_run=False)
 
 
 if __name__ == "__main__":

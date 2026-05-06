@@ -1,7 +1,7 @@
 ---
 name: coding
-description: Generate and modify code following project standards and approval flow.
-version: "1.0"
+description: Generate and modify code following project standards, DES MOD/IFC structure, and TDD test contracts.
+version: "2.0"
 ---
 
 # Coding Skill
@@ -9,8 +9,8 @@ version: "1.0"
 ## Identity
 
 - **Name**: coding
-- **Version**: 1.0
-- **Description**: Generates and modifies code following project standards, with mandatory approval for all changes.
+- **Version**: 2.0
+- **Description**: Implements code to make TDD tests GREEN, following DES MOD/IFC structure and project standards.
 
 ---
 
@@ -43,68 +43,52 @@ What this skill can do:
 
 ## Dependencies
 
-- `context.md` - For project context
-- `.github/copilot/standards/` - MANDATORY for code generation
-- `.github/copilot/docs/` - For architecture understanding
-- `planning.skill` - For approved plans
-- `testing.skill` - Chains to for test creation
+- `glossary.md` — Term resolution (read first)
+- `context.md` — Project identity
+- `.github/copilot/docs/ddd/DESIGN-XXX.md` — **MOD structure and IFC signatures** (primary source of truth)
+- `.github/copilot/docs/tdd/TEST-XXX.md` — **Test matrix** (pass all tests = done)
+- `.github/copilot/standards/` — MANDATORY coding standards
+- `plans/PLAN-XXX.md` + `KNOWLEDGE-XXX.md` — Approved plan + context cheat sheet
+- `testing.skill` — Chains to for generic test creation (when no TST exists)
 
 ---
 
 ## Workflow
 
-### Step 1: Load Standards (MANDATORY)
+### Step 1: Load Context (in order)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  BEFORE WRITING ANY CODE                                                │
-│                                                                         │
-│  1. Check if .github/copilot/standards/ exists                                 │
-│  2. Read .github/copilot/standards/general.md (ALWAYS)                         │
-│  3. Read language-specific standard (e.g., nodejs.md, python.md)        │
-│  4. Apply ALL rules to generated code                                   │
-│                                                                         │
-│  IF standards exist but not read → CODE QUALITY VIOLATION               │
-└─────────────────────────────────────────────────────────────────────────┘
+1. Read .github/copilot/glossary.md
+2. Read .github/copilot/standards/general.md (MANDATORY)
+3. Read language-specific standard if exists
+4. Read KF (KNOWLEDGE-XXX.md) — primary context cheat sheet
+5. If DES exists → read DESIGN-XXX.md → extract @mod and @ifc tags
+6. If TST exists → read TEST-XXX.md → extract test matrix (these are your acceptance criteria)
 ```
 
-If `.github/copilot/standards/` is missing, run this fallback before coding:
+**DES-driven implementation rules (when DES exists):**
+- One file per `@mod` — do NOT split a MOD into multiple files
+- IFC signatures must match the DES exactly — no ad-hoc variations
+- After implementing, fill in `@impl:<path>` tag in the DES
+- Cross-MOD calls MUST go through the defined IFC — never bypass it
 
-```
-1. Search the repository for existing standards sources:
-  - **/standards/*.md
-  - **/*conventions*.md
-  - **/*styleguide*.md
-  - lint/format configs (eslint, prettier, ruff, clippy, golangci)
-2. Summarize what was found.
-3. Ask the user:
-  "I couldn't find .github/copilot/standards/. Do you want me to create coding standards from the files I found?"
-4. If user approves:
-  - Create `.github/copilot/standards/general.md`
-  - Create language-specific standards for detected languages
-  - Continue with Step 1 and apply them
-5. If user rejects:
-  - Pause implementation and explain standards are required by this skill
-```
+**TDD contract (when TST exists):**
+- Goal is GREEN tests, not just compiling code
+- Run tests after each MOD implementation
+- Do NOT modify test files — if a test seems wrong, flag it and ask
+- After all tests GREEN, update TST `@status:implemented`
 
 ### Step 2: Check for Approved Plan
 
-If implementing a plan:
 ```
-1. Read .github/copilot/plans/state.yaml
-2. Find plan with status: approved
-3. Read full plan document (PLAN-XXX.md)
-4. Read knowledge file (KNOWLEDGE-XXX.md) — this is your execution context cheat sheet
-5. Follow phases in order
-6. Re-read KNOWLEDGE-XXX.md whenever you lose context on patterns, file roles, or constraints
+1. Read .github/copilot/plans/state.yaml → find status: approved
+2. Read PLAN-XXX.md (phases, tasks)
+3. Re-read KNOWLEDGE-XXX.md whenever context is lost
+4. Follow phases in order; re-read KF between phases
 ```
 
-If no plan (small change):
-```
-1. Estimate change size
-2. If >100 lines → Redirect to planning.skill first
-3. If <100 lines → Proceed with quick implementation
-```
+If no plan (small change, <100 lines):
+- Proceed directly; re-read DES/TST if they exist
 
 ### Step 3: Understand Current Code
 

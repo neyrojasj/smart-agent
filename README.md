@@ -9,7 +9,7 @@
 [![AI Ready](https://img.shields.io/badge/AI-Ready-purple?logo=openai)](https://github.com/features/copilot)
 
 **A skill-based smart agent for GitHub Copilot that brings intentionality to AI-assisted development.**  
-*Route to skills. Maintain context. Plan first. Approve consciously. Implement with confidence.*
+*Design first (DDD). Test first (TDD). Code with confidence. Route to skills. Maintain context.*
 
 [Quick Start](#-quick-start) • [Features](#-features) • [Architecture](#-skill-based-architecture) • [Skills](#-core-skills)
 
@@ -80,6 +80,26 @@ If a request asks for an uncovered subtype (e.g. mutation testing), Smart genera
 
 </td>
 </tr>
+<tr>
+<td width="33%" valign="top">
+
+### 📐 DDD Mode
+Design Driven Development — challenge the user, produce AI-readable design docs (DES) with tagged MODs and IFCs. No implementation before DES is approved.
+
+</td>
+<td width="33%" valign="top">
+
+### 🧪 TDD Mode
+Test Driven Development — write tests derived from DES IFCs before any implementation. All tests stay RED until coding skill makes them GREEN.
+
+</td>
+<td width="33%" valign="top">
+
+### 🔧 Fix Mode
+Fixes go through DES → TST → PLAN → coding. Every fix classifies as impl-fix, ifc-fix, scope-fix, or test-fix and updates design docs accordingly.
+
+</td>
+</tr>
 </table>
 
 ---
@@ -90,28 +110,30 @@ If a request asks for an uncovered subtype (e.g. mutation testing), Smart genera
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        SMART ORCHESTRATOR                                │
 │                                                                         │
-│  1. Receive user request                                                │
-│  2. Load context.md + session.md                                        │
-│  3. Match request → Determine skill(s) needed                           │
-│  4. Delegate to skill(s)                                                │
+│  1. Read context.md + session.md + glossary.md                          │
+│  2. Detect stage: DDD / TDD / CODE / FIX / LIGHT                       │
+│  3. Read matching skill file                                            │
+│  4. Execute skill (approval required for DDD, FIX, planning, coding)   │
 │  5. Update context/session with results                                 │
-│  6. Return response to user                                             │
+│  6. Propose next stage to user                                          │
 └─────────────────────────────────────────────────────────────────────────┘
-            │                                           │
-  ┌─────────┼─────────┬───────────┬───────────┐        │
-  ▼         ▼         ▼           ▼           ▼        ▼
-┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌──────────────┐
-│Planning││ Coding ││Analysis││  Docs  ││Testing ││ + Setup,     │
-│ Skill  ││ Skill  ││ Skill  ││ Skill  ││ Skill  ││ Skill-Gen,   │
-│        ││        ││        ││        ││        ││ Evaluator    │
-└────────┘└────────┘└────────┘└────────┘└────────┘└──────────────┘
-                                                         │
-                                                         ▼
+            │                                                    │
+  ┌─────────┼──────────┬──────────┬──────────┬──────────┐       │
+  ▼         ▼          ▼          ▼          ▼          ▼       ▼
+┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌──────────┐
+│  DDD   ││  TDD   ││Planning││ Coding ││Analysis││  Fix   ││+ Setup,  │
+│ Skill  ││ Skill  ││ Skill  ││ Skill  ││ Skill  ││ Skill  ││  Docs,   │
+│(design)││(tests) ││(PLAN)  ││(impl)  ││(light) ││(patch) ││  Eval… │
+└────────┘└────────┘└────────┘└────────┘└────────┘└────────┘└──────────┘
+     │         │
+     ▼         ▼
+  DES-XXX   TST-XXX  ←  Primary source of truth for planning + coding
+
                                               ┌──────────────────┐
-                                              │     Smart        │
-                                              │  (Auto-Improve)  │
-                                              │  plan → QA →     │
-                                              │  execute → eval  │
+                                              │  DDD → TDD →     │
+                                              │  PLAN → CODE     │
+                                              │  (stage-gated,   │
+                                              │  user approves)  │
                                               └──────────────────┘
 ```
 
@@ -152,9 +174,13 @@ your-project/
 ├── .github/
 │   ├── copilot-instructions.md  # 🤖 Auto-loads smart agent
 │   ├── agents/
-│   │   └── smart.agent.md       # 🎯 Unified agent
+│   │   └── smart.agent.md       # 🎯 Unified agent (DDD → TDD → CODE)
 │   └── skills/
 │       ├── index.yaml           # Skill registry
+│       ├── glossary/SKILL.md    # 📖 Project glossary (GLO)
+│       ├── ddd/SKILL.md         # 📐 Design Driven Development
+│       ├── tdd/SKILL.md         # 🧪 Test Driven Development
+│       ├── fix/SKILL.md         # 🔧 Fix workflow (DES + TST aware)
 │       ├── planning/SKILL.md
 │       ├── plan-reviewer/SKILL.md
 │       ├── coding/SKILL.md
@@ -169,8 +195,11 @@ your-project/
 └── .github/copilot/
     ├── context.md               # 🧠 Project memory
     ├── session.md               # 📋 Session state
+    ├── glossary.md              # 📖 Project glossary (GLO terms)
     ├── instructions.md          # 📝 Project-specific rules
-    ├── docs/                    # 📖 Project documentation (generated by setup)
+    ├── docs/
+    │   ├── ddd/                 # 📐 Design docs (DES-XXX-*.md)
+    │   └── tdd/                 # 🧪 Test specs (TST-XXX-*.md)
     ├── standards/               # 🛡️ Language standards
     └── plans/                   # 📋 Implementation plans
 ```
@@ -358,7 +387,6 @@ Documentation is treated as part of the implementation.
 | `smart init --no-standards` | Install without language standards |
 | `smart init --minimal` | Install agent + skills only |
 | `smart save` | Save personal state to `copilot/<user>` branch |
-| `smart restore` | Restore personal state from personal branch |
 | `smart update` | Pull latest skills and agent from upstream |
 | `smart update --dry-run` | Preview what would be updated |
 

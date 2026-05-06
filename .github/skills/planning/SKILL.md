@@ -1,7 +1,7 @@
 ---
 name: planning
-description: Create implementation plans, architectural options, and phased execution strategy. All plans are written to disk as markdown files.
-version: "2.4"
+description: Create implementation plans, architectural options, and phased execution strategy. All plans are written to disk as markdown files. Reads DES and TST when available.
+version: "2.5"
 ---
 
 # Planning Skill
@@ -9,8 +9,8 @@ version: "2.4"
 ## Identity
 
 - **Name**: planning
-- **Version**: 2.4
-- **Description**: Creates implementation plans, architectural decisions, and strategic approaches for complex tasks. All plans — regardless of size — are persisted to disk as `.md` files in `.github/copilot/plans/`.
+- **Version**: 2.5
+- **Description**: Creates PLANs and KFs. When DES and TST exist, derives plan phases directly from DES MODs, IFCs, and TST test matrix — no re-design, no re-questioning.
 
 ---
 
@@ -49,55 +49,50 @@ What this skill can do:
 
 ## Dependencies
 
-- `context.md` - For session context and project identity
-- `.github/copilot/docs/` - For existing architecture understanding
-- `.github/copilot/standards/` - For coding standards to plan against
-- `coding.skill` - Chains to for implementation
+- `context.md` — Project identity
+- `glossary.md` — Term resolution
+- `.github/copilot/docs/ddd/DESIGN-XXX.md` — **Primary input when DES exists** (MODs, IFCs, boundaries)
+- `.github/copilot/docs/tdd/TEST-XXX.md` — **Primary input when TST exists** (test matrix, coverage goals)
+- `.github/copilot/docs/` — Existing architecture
+- `.github/copilot/standards/` — Coding standards
+- `coding.skill` — Chains to for implementation
 
 ---
 
 ## Workflow
 
-### Step 1: Load Project Context
+### Step 1: Load Context
 
 ```
-Read from context.md:
-- Project type and stack
-- Existing decisions
-- User preferences
+1. Read .github/copilot/glossary.md (term resolution)
+2. Read .github/copilot/context.md (project type, stack, decisions)
+3. Check for DES: ls .github/copilot/docs/ddd/ → read matching DESIGN-XXX.md
+4. Check for TST: ls .github/copilot/docs/tdd/ → read matching TEST-XXX.md
+5. If DES exists → extract MODs, IFCs, @file tags, @dep graph
+6. If TST exists → extract test matrix, coverage goals, test file paths
 ```
+
+**If DES + TST exist → SKIP Steps 3 (clarifying questions) and go directly to Step 4 (size analysis).
+The DES and TST ARE the design. Do not re-ask what has already been designed.**
 
 ### Step 2: Analyze Change Size
 
 **SMALL** (<100 lines)
-- Brief PLAN-XXX.md with summary, scope, and tasks
-- Still written to disk (all plans go to disk)
+- Brief PLAN-XXX.md with summary, scope, tasks
 
 **MEDIUM** (100-500 lines)
 - Standard PLAN-XXX.md with phases and risks
-- 2-3 phases max
 
 **BIG** (>500 lines)
-- Full PLAN-XXX.md document
-- Multiple phases with milestones
-- Risk assessment + rollback strategy
+- Full PLAN-XXX.md with multiple phases, milestones, risk assessment
 
-ALL sizes → Written to `.github/copilot/plans/PLAN-XXX.md`
+ALL sizes → `.github/copilot/plans/PLAN-XXX.md`
 
-### Step 3: Ask Clarifying Questions (MANDATORY)
+### Step 3: Ask Clarifying Questions
 
-Before creating ANY plan, ensure you understand:
+**SKIP this step entirely if DES exists — the DES answers these questions.**
 
-```markdown
-🤔 **Before I create a plan, I have some questions:**
-
-1. **[Scope]**: [Clarify boundaries]
-2. **[Behavior]**: [Clarify expected outcomes]
-3. **[Constraints]**: [Identify limitations]
-4. **[Integration]**: [Understand dependencies]
-
-Please answer these so I can create an accurate plan.
-```
+Without DES, ask only must-have questions:
 
 **Priority Distinction — Ask All Must-Have Questions First:**
 
@@ -478,100 +473,81 @@ CI/CD publishing strategy:
 
 ### Step 5.5: Generate Knowledge File
 
-Create `.github/copilot/plans/KNOWLEDGE-XXX.md` (same XXX as the plan) immediately after the plan. This file is the **execution context cheat sheet** — everything an AI agent needs to implement the plan without re-discovering context.
+Create `.github/copilot/plans/KNOWLEDGE-XXX.md` immediately after the plan.
+This is the **execution context cheat sheet** — everything coding skill needs without re-discovering context.
+
+**If DES and/or TST exist, include them as primary sections:**
 
 ```markdown
 # KNOWLEDGE-XXX: [Plan Title] — Execution Context
 
 > **Plan**: PLAN-XXX.md
+> **DES**: DESIGN-XXX.md (if exists)
+> **TST**: TEST-XXX.md (if exists)
 > **Generated**: [date]
->
-> 📖 Re-read this file whenever you lose context mid-execution.
 
 ---
 
-## Project Context Snapshot
+## Project Context
 
-- **Project**: [name from context.md]
+- **Project**: [name]
 - **Stack**: [language + framework]
-- **Greenfield or brownfield**: [new project / adding to existing codebase]
-- **Relevant standards**: [list which standards/*.md apply]
+- **Standards**: [which standards/*.md apply]
+
+## DES Summary (from DDD)
+
+> Source: .github/copilot/docs/ddd/DESIGN-XXX.md
+
+| MOD | File | IFCs | Deps |
+|-----|------|------|------|
+| @mod:foo | src/foo/mod.rs | FooService | none |
+| @mod:bar | src/bar/mod.rs | BarHandler | foo |
+
+**IFC definitions** (copy from DES — coding skill must match these exactly):
+
+\`\`\`[lang]
+[paste IFC signatures from DES here]
+\`\`\`
+
+## TST Summary (from TDD)
+
+> Source: .github/copilot/docs/tdd/TEST-XXX.md
+
+| Test file | MOD | Cases |
+|-----------|-----|-------|
+| tests/foo_test.[ext] | foo | [N] |
+| tests/bar_test.[ext] | bar | [N] |
+
+Run tests with: `[test command]`
+All tests are RED — implementation must make them GREEN.
 
 ## Architecture Context
 
-[Summarize the relevant parts of architecture.md — only what matters for THIS plan]
+[Only what matters for THIS plan — MOD boundaries, data flow, integration points]
 
-- Module boundaries relevant to this change
-- Data flow through affected components
-- Integration points the change touches
+## Key Files
 
-## Key Files & Their Roles
+| File | Purpose | Change |
+|------|---------|--------|
+| [path] | [what] | create/modify/delete |
 
-| File | Purpose | How This Plan Affects It |
-|------|---------|--------------------------|
-| `path/to/file` | [what it does] | [create/modify/delete — what changes] |
+## Code Patterns
 
-## Code Patterns to Follow
+- Error handling: [pattern]
+- Naming: [convention]
+- Imports: [pattern]
 
-[For **brownfield** projects: extract from standards and existing code — the specific patterns the agent must follow]
+## NFR Constraints
 
-[For **greenfield** projects: document the architectural patterns, conventions, and reference examples the agent should establish. If no prior code exists, document community conventions and the approach chosen in Step 4 of the plan.]
+- [e.g., <3s response → avoid N+1 queries]
 
-- Error handling pattern: [specific to this project/language]
-- Naming convention: [relevant examples from codebase or chosen convention]
-- Import/module pattern: [how this project organizes imports]
+## Phase Dependencies
 
-## Existing Code Snippets
-
-[For **brownfield** projects: include actual code snippets from the codebase that the agent will need to reference or extend — function signatures, type definitions, interfaces, config structures]
-
-[For **greenfield** projects: include reference patterns from the plan's tech stack selection — starter template, boilerplate structure, or community conventions to follow]
-
-\`\`\`[language]
-// Example: Interface or pattern to establish
-[relevant snippet or reference pattern]
-\`\`\`
-
-## NFR Constraints to Enforce
-
-> Taken from the plan's Non-Functional Requirements section. Do not implement in a way that violates these.
-
-- [e.g., Page load < 3s on mobile 4G → no unoptimized images, lazy load below fold]
-- [e.g., WCAG AA → all images need alt text, color contrast ≥ 4.5:1]
-- [e.g., 50 concurrent users → connection pooling required, avoid N+1 queries]
-
-## External Service Configuration
-
-| Service | Integration Point | Credentials Location | Failure Handling |
-|---------|------------------|---------------------|-----------------|
-| [e.g., Twilio SMS] | [Phase 5, notifications module] | [.env TWILIO_API_KEY] | [Retry 3x, then mark failed] |
-
-## Constraints & Gotchas
-
-- [Things that are easy to get wrong in this codebase]
-- [Non-obvious dependencies or side effects]
-- [Environment or config requirements]
-- [Cross-platform concerns (if CLI tool or multi-OS app)]
-
-## Dependencies Between Phases
-
-[If multi-phase plan: what each phase produces that later phases need]
-
-- Phase 1 creates: [artifact] → used by Phase 2 in [file]
-- Phase 2 creates: [artifact] → used by Phase 3 in [file]
+- Phase 1 produces: [artifact] → used by Phase 2
 
 ---
-*Auto-generated by planning skill. Edit if context is missing or wrong.*
+*Re-read this file whenever you lose context mid-execution.*
 ```
-
-**Rules for KNOWLEDGE-XXX.md:**
-- Include REAL code snippets from the codebase, not placeholders
-- Include REAL file paths discovered during planning
-- **Greenfield projects**: Replace "Existing Code Snippets" content with reference patterns and chosen conventions
-- Keep it focused — only context relevant to THIS plan
-- If the plan is SMALL, the knowledge file can be brief (Project Context + Key Files + Code Patterns)
-- For MEDIUM/BIG plans, include all sections
-- Always populate "NFR Constraints to Enforce" — this prevents accidental violations during implementation
 
 ### Step 5b: Revise Plan from Plan-Reviewer Feedback
 
