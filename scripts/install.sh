@@ -156,7 +156,7 @@ create_directory_structure() {
     
     # Create .github directory structure
     mkdir -p "$GITHUB_DIR/agents"
-    mkdir -p "$GITHUB_DIR/skills"
+    mkdir -p "$COPILOT_DIR/skills"
     mkdir -p "$COPILOT_DIR/docs"
     mkdir -p "$COPILOT_DIR/plans"
     mkdir -p "$COPILOT_DIR/tmp"
@@ -189,8 +189,8 @@ install_skills() {
     )
 
     for skill in "${core_skills[@]}"; do
-        mkdir -p "$GITHUB_DIR/skills/$skill"
-        copy_file_from_repo ".github/skills/$skill/SKILL.md" "$GITHUB_DIR/skills/$skill/SKILL.md"
+        mkdir -p "$COPILOT_DIR/skills/$skill"
+        copy_file_from_repo ".github/copilot/skills/$skill/SKILL.md" "$COPILOT_DIR/skills/$skill/SKILL.md"
         print_success "Core skill updated: $skill"
     done
 
@@ -206,8 +206,8 @@ install_skills() {
     )
 
     for skill in "${custom_skills[@]}"; do
-        mkdir -p "$GITHUB_DIR/skills/$skill"
-        copy_file_if_missing_from_repo ".github/skills/$skill/SKILL.md" "$GITHUB_DIR/skills/$skill/SKILL.md" "Custom skill: $skill"
+        mkdir -p "$COPILOT_DIR/skills/$skill"
+        copy_file_if_missing_from_repo ".github/copilot/skills/$skill/SKILL.md" "$COPILOT_DIR/skills/$skill/SKILL.md" "Custom skill: $skill"
     done
 
     # -------------------------------------------------------------------------
@@ -216,7 +216,7 @@ install_skills() {
     # only on first install. After updating, run the regen prompt (shown at the
     # end of this script) to merge new core skill entries into your index.
     # -------------------------------------------------------------------------
-    copy_file_if_missing_from_repo ".github/skills/index.yaml" "$GITHUB_DIR/skills/index.yaml" "Skills index (index.yaml)"
+    copy_file_if_missing_from_repo ".github/copilot/skills/index.yaml" "$COPILOT_DIR/skills/index.yaml" "Skills index (index.yaml)"
 }
 
 install_gitignore() {
@@ -469,8 +469,8 @@ main() {
     echo "The following has been installed:"
     echo "  • Smart agent:          .github/agents/smart.agent.md"
     echo "  • Copilot instructions: .github/copilot-instructions.md"
-    echo "  • Core skills (8):      .github/skills/  (always up-to-date)"
-    echo "  • Custom skills:        .github/skills/  (preserved if existing)"
+    echo "  • Core skills (8):      .github/copilot/skills/  (always up-to-date)"
+    echo "  • Custom skills:        .github/copilot/skills/  (preserved if existing)"
     echo "  • Copilot folder:       .github/copilot/"
     echo "  • Plans tracker:        .github/copilot/plans/state.yaml"
     echo "  • VS Code settings:     .vscode/settings.json"
@@ -490,7 +490,7 @@ main() {
     echo -e "${YELLOW}  Run this prompt to integrate updated core skills with your       ${NC}"
     echo -e "${YELLOW}  custom skills and regenerate the skill index:                   ${NC}"
     echo ""
-    echo -e "  ${BLUE}@smart scan all skills in .github/skills/ and regenerate${NC}"
+    echo -e "  ${BLUE}@smart scan all skills in .github/copilot/skills/ and regenerate${NC}"
     echo -e "  ${BLUE}index.yaml, preserving all existing custom skill entries${NC}"
     echo -e "  ${BLUE}and updating core skill descriptions from their SKILL.md files${NC}"
     echo ""

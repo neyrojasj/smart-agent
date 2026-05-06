@@ -44,7 +44,7 @@ When to activate this skill:
 
 - `.github/copilot/context.md` — for project identity, stack, and prior authorization decisions
 - `.github/copilot/external/ui-ux-pro-max-skill/` — external design intelligence library (optional, requires user approval)
-- `.github/skills/ui-style/SKILL.md` — **output** of this skill; used by `coding` skill for all UI work
+- `.github/copilot/skills/ui-style/SKILL.md` — **output** of this skill; used by `coding` skill for all UI work
 
 ---
 
@@ -55,11 +55,11 @@ When to activate this skill:
 Before doing anything, check if a style has already been defined:
 
 ```
-1. Check if .github/skills/ui-style/SKILL.md exists
+1. Check if .github/copilot/skills/ui-style/SKILL.md exists
 2. If YES and the user did NOT explicitly ask to "change", "update", or "redesign" the style:
    → STOP. Inform the user:
 
-   "A design system already exists for this project (.github/skills/ui-style/SKILL.md).
+   "A design system already exists for this project (.github/copilot/skills/ui-style/SKILL.md).
     I'll apply it to your request. If you want to change the style, say 'change the application style'."
 
    → Then route to coding skill with ui-style as a dependency.
@@ -235,7 +235,7 @@ If the user revises:
 
 Once the design system is approved, create (or overwrite) the project-specific style skill:
 
-**File**: `.github/skills/ui-style/SKILL.md`
+**File**: `.github/copilot/skills/ui-style/SKILL.md`
 
 ```markdown
 ---
@@ -348,7 +348,7 @@ After creating the `ui-style` skill file:
 3. **Inform the user**:
 
 ```markdown
-✅ **Design system saved** to `.github/skills/ui-style/SKILL.md`
+✅ **Design system saved** to `.github/copilot/skills/ui-style/SKILL.md`
 
 This style will be automatically applied to all future UI coding in this project.
 To change it later, say: "change the application style".

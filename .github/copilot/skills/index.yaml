@@ -361,7 +361,7 @@ skills:
         - "define.*design"
     requires_approval: true
     idempotent: true
-    idempotency_check: ".github/skills/ui-style/SKILL.md"
+    idempotency_check: ".github/copilot/skills/ui-style/SKILL.md"
     produces: "ui-style"
     can_chain_to:
       - coding

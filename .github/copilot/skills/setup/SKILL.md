@@ -68,10 +68,10 @@ Build a capability map: `project area → evidence → candidate skill → confi
 
 ## Available Skills
 - GLO: .github/copilot/glossary.md
-- DDD: .github/skills/ddd/SKILL.md
-- TDD: .github/skills/tdd/SKILL.md
-- coding: .github/skills/coding/SKILL.md
-- fix: .github/skills/fix/SKILL.md
+- DDD: .github/copilot/skills/ddd/SKILL.md
+- TDD: .github/copilot/skills/tdd/SKILL.md
+- coding: .github/copilot/skills/coding/SKILL.md
+- fix: .github/copilot/skills/fix/SKILL.md
 
 ## User Preferences
 (to be learned)

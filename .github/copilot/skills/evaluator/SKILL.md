@@ -172,7 +172,7 @@ After a plan reaches `completed` status, review the entire execution and extract
 2. Read QA-XXX.md — all verdicts and iteration history
 3. Read the Post-Execution Learning Checklist from the plan
 4. Identify all skills that were invoked during this plan
-5. Read those skill files (.github/skills/[name]/SKILL.md)
+5. Read those skill files (.github/copilot/skills/[name]/SKILL.md)
 6. Read .github/copilot/docs/ files that were referenced
 7. Read .github/copilot/context.md for current state
 ```

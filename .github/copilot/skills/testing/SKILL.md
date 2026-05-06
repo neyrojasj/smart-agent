@@ -47,7 +47,7 @@ What this skill can do:
 - `.github/copilot/docs/testing.md` - For test strategy
 - `coding.skill` - Chains from after implementation
 - Existing tests - For pattern matching
-- `.github/skills/index.yaml` - To verify specialized test skill coverage
+- `.github/copilot/skills/index.yaml` - To verify specialized test skill coverage
 
 ---
 
@@ -60,7 +60,7 @@ Before executing, run a specialization check:
 ```
 1. Extract requested test subtype from the user prompt
 2. Check if subtype is explicitly covered in this skill
-3. Check if a dedicated skill already exists in .github/skills/index.yaml
+3. Check if a dedicated skill already exists in .github/copilot/skills/index.yaml
 4. If subtype is specialized and uncovered:
   - STOP direct test generation
   - Trigger missing-skill generation via setup workflow

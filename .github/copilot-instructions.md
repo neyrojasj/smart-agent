@@ -31,11 +31,13 @@ If `context.md` doesn't exist → Run the **Setup Project** handoff first.
 └── plans/               # 📋 Implementation plans (ALL plans go to disk)
 
 .github/
-├── agents/
-│   └── smart.agent.md          # 🎯 Unified agent (routing + execution + learning)
-└── skills/
-    ├── index.yaml           # Skill registry
-    └── <skill>/SKILL.md     # Individual skill files
+└── agents/
+    └── smart.agent.md          # 🎯 Unified agent (routing + execution + learning)
+
+.github/copilot/ (continued)
+├── skills/
+│   ├── index.yaml           # Skill registry
+│   └── <skill>/SKILL.md     # Individual skill files
 ```
 
 ## Standards (If Installed)

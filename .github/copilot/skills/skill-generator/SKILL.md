@@ -33,8 +33,8 @@ What this skill can do:
 
 - ✅ Detect patterns that warrant custom skills
 - ✅ Propose skill set with evidence
-- ✅ Generate custom skill files (`.github/skills/[name]/SKILL.md`)
-- ✅ Register skills in `.github/skills/index.yaml`
+- ✅ Generate custom skill files (`.github/copilot/skills/[name]/SKILL.md`)
+- ✅ Register skills in `.github/copilot/skills/index.yaml`
 - ✅ Track deferred gaps in `.github/copilot/docs/skills-opportunities.md`
 - ✅ On-demand skill creation when orchestrator detects a gap
 - ✅ Rescan project for new patterns after changes
@@ -45,7 +45,7 @@ What this skill can do:
 
 - `context.md` - For project identity and stack
 - `.github/copilot/docs/` - For architecture understanding
-- `.github/skills/index.yaml` - Current skill registry
+- `.github/copilot/skills/index.yaml` - Current skill registry
 
 ---
 
@@ -55,7 +55,7 @@ What this skill can do:
 
 ```
 1. Read .github/copilot/context.md for project identity
-2. Read .github/skills/index.yaml for existing skills
+2. Read .github/copilot/skills/index.yaml for existing skills
 3. Read .github/copilot/docs/skills-opportunities.md if it exists (deferred gaps)
 ```
 
@@ -73,7 +73,7 @@ Result: a checklist of covered vs. uncovered patterns
 
 This prevents duplicating skills that already exist. The goal is to find **gaps**, not recreate what's present.
 
-> If `.github/skills/index.yaml` does not exist → treat all patterns as uncovered.
+> If `.github/copilot/skills/index.yaml` does not exist → treat all patterns as uncovered.
 
 ### Step 2: Detect Skill Opportunities
 
@@ -126,7 +126,7 @@ Rules:
 
 ### Step 4: Generate Custom Skills
 
-For each pattern marked `create now`, create `.github/skills/[name]/SKILL.md`:
+For each pattern marked `create now`, create `.github/copilot/skills/[name]/SKILL.md`:
 
 ```markdown
 ---
@@ -167,7 +167,7 @@ version: "1.0"
 
 ### Step 5: Update Skill Registry
 
-Add generated skills to `.github/skills/index.yaml`:
+Add generated skills to `.github/copilot/skills/index.yaml`:
 
 ```yaml
 skills:
@@ -225,7 +225,7 @@ Store deferred items in `.github/copilot/docs/skills-opportunities.md`:
 | [skill] | [reason] | [keywords] |
 
 ## Registry Updated
-`.github/skills/index.yaml` — [N] skills added, [M] verified existing, [K] deferred
+`.github/copilot/skills/index.yaml` — [N] skills added, [M] verified existing, [K] deferred
 ```
 
 > **No new skills case**: If all patterns detected are already covered: output only "Skills Verified" + "Deferred Gaps" sections. Do not output an empty "Skills Created" section.

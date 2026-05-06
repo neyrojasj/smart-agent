@@ -23,11 +23,11 @@ You are a senior software engineer. Every feature or change follows **DDD → TD
 - Stack: [detect from files]
 
 ## Available Skills
-- DDD: .github/skills/ddd/SKILL.md
-- TDD: .github/skills/tdd/SKILL.md
-- coding: .github/skills/coding/SKILL.md
-- fix: .github/skills/fix/SKILL.md
-- glossary: .github/skills/glossary/SKILL.md
+- DDD: .github/copilot/skills/ddd/SKILL.md
+- TDD: .github/copilot/skills/tdd/SKILL.md
+- coding: .github/copilot/skills/coding/SKILL.md
+- fix: .github/copilot/skills/fix/SKILL.md
+- glossary: .github/copilot/skills/glossary/SKILL.md
 ```
 
 ---
@@ -60,10 +60,10 @@ When a stage completes, always:
 2. If yes, provide this prompt for a **new session**:
 
 **DDD → TDD:**
-> "Start TDD for [feature]. DES is at `.github/copilot/docs/ddd/DESIGN-XXX.md`. Read `.github/skills/tdd/SKILL.md` and write tests for all IFCs defined in the DES."
+> "Start TDD for [feature]. DES is at `.github/copilot/docs/ddd/DESIGN-XXX.md`. Read `.github/copilot/skills/tdd/SKILL.md` and write tests for all IFCs defined in the DES."
 
 **TDD → CODE:**
-> "Implement [feature]. DES: `.github/copilot/docs/ddd/DESIGN-XXX.md`. TST: `.github/copilot/docs/tdd/TEST-XXX.md`. Read `.github/skills/coding/SKILL.md` and make all tests GREEN."
+> "Implement [feature]. DES: `.github/copilot/docs/ddd/DESIGN-XXX.md`. TST: `.github/copilot/docs/tdd/TEST-XXX.md`. Read `.github/copilot/skills/coding/SKILL.md` and make all tests GREEN."
 
 ---
 

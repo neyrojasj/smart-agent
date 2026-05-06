@@ -37,7 +37,7 @@ STANDARDS = [
 SHARED_FILES = [
     (".github/copilot-instructions.md", ".github/copilot-instructions.md"),
     (".github/agents/smart.agent.md", ".github/agents/smart.agent.md"),
-    (".github/skills/index.yaml", ".github/skills/index.yaml"),
+    (".github/copilot/skills/index.yaml", ".github/copilot/skills/index.yaml"),
 ]
 
 TEMPLATE_FILES = [
@@ -76,7 +76,7 @@ def install(
     pairs = list(SHARED_FILES)
 
     for skill in SKILL_NAMES:
-        src = f".github/skills/{skill}/SKILL.md"
+        src = f".github/copilot/skills/{skill}/SKILL.md"
         pairs.append((src, src))
 
     if not minimal:
@@ -95,9 +95,12 @@ def install(
             print(f"  ✗ {dest_rel} — download failed: {e}")
             continue
 
-        # Personal files: never overwrite unless --force
-        is_personal = "copilot/context" in src_rel or "copilot/session" in src_rel
-        result = _write(dest, data, force=force and not is_personal)
+        # Personal files: never overwrite unless --force is explicitly passed
+        is_personal = any(p in src_rel for p in [
+            "copilot/context", "copilot/session", "copilot/instructions.md"
+        ])
+        # Framework files (skills, agent, standards) are always refreshed from GitHub
+        result = _write(dest, data, force=not is_personal or force)
         icon = "✓" if result != "skipped" else "·"
         print(f"  {icon} {dest_rel} [{result}]")
 
@@ -115,7 +118,7 @@ def update(target_dir: str = ".", dry_run: bool = False) -> None:
 
     pairs = list(SHARED_FILES)
     for skill in SKILL_NAMES:
-        src = f".github/skills/{skill}/SKILL.md"
+        src = f".github/copilot/skills/{skill}/SKILL.md"
         pairs.append((src, src))
 
     for src_rel, dest_rel in pairs:

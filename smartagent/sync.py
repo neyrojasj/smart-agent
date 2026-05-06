@@ -10,7 +10,7 @@ from pathlib import Path
 
 PERSONAL_PATHS = [
     ".github/agents",
-    ".github/skills",
+    ".github/copilot/skills",
     ".github/copilot-instructions.md",
     ".github/copilot/context.md",
     ".github/copilot/session.md",
