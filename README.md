@@ -175,33 +175,25 @@ your-project/
 │   ├── copilot-instructions.md  # 🤖 Auto-loads smart agent
 │   ├── agents/
 │   │   └── smart.agent.md       # 🎯 Unified agent (DDD → TDD → CODE)
-│   └── skills/
-│       ├── index.yaml           # Skill registry
-│       ├── glossary/SKILL.md    # 📖 Project glossary (GLO)
-│       ├── ddd/SKILL.md         # 📐 Design Driven Development
-│       ├── tdd/SKILL.md         # 🧪 Test Driven Development
-│       ├── fix/SKILL.md         # 🔧 Fix workflow (DES + TST aware)
-│       ├── planning/SKILL.md
-│       ├── plan-reviewer/SKILL.md
-│       ├── coding/SKILL.md
-│       ├── analysis/SKILL.md
-│       ├── documentation/SKILL.md
-│       ├── testing/SKILL.md
-│       ├── setup/SKILL.md
-│       ├── skill-generator/SKILL.md
-│       ├── evaluator/SKILL.md
-│       ├── ui-ux/SKILL.md
-│       └── rust-web-app/SKILL.md
-└── .github/copilot/
-    ├── context.md               # 🧠 Project memory
-    ├── session.md               # 📋 Session state
-    ├── glossary.md              # 📖 Project glossary (GLO terms)
-    ├── instructions.md          # 📝 Project-specific rules
-    ├── docs/
-    │   ├── ddd/                 # 📐 Design docs (DES-XXX-*.md)
-    │   └── tdd/                 # 🧪 Test specs (TST-XXX-*.md)
-    ├── standards/               # 🛡️ Language standards
-    └── plans/                   # 📋 Implementation plans
+│   └── copilot/                 # ⚠️ Gitignored — personal workspace
+│       ├── .gitignore           # Ignores this entire folder
+│       ├── context.md           # 🧠 Project memory
+│       ├── session.md           # 📋 Session state
+│       ├── glossary.md          # 📖 Project glossary (GLO terms)
+│       ├── instructions.md      # 📝 Project-specific rules
+│       ├── skills/              # 📚 Framework + custom skills
+│       │   ├── index.yaml
+│       │   ├── ddd/SKILL.md
+│       │   ├── tdd/SKILL.md
+│       │   ├── fix/SKILL.md
+│       │   ├── planning/SKILL.md
+│       │   ├── coding/SKILL.md
+│       │   └── ...
+│       ├── docs/
+│       │   ├── ddd/             # 📐 Design docs (DES-XXX-*.md)
+│       │   └── tdd/             # 🧪 Test specs (TST-XXX-*.md)
+│       ├── standards/           # 🛡️ Language standards
+│       └── plans/               # 📋 Implementation plans
 ```
 
 ---
@@ -377,17 +369,38 @@ Documentation is treated as part of the implementation.
 
 ---
 
+## � The `.github/copilot/` Folder is Gitignored
+
+The `.github/copilot/` folder is **intentionally excluded from your main branch**. It contains your personal workspace — context, session state, skills, plans, and design docs — which are user-specific and not shared.
+
+This means:
+- You can freely iterate on context, session, and plans without polluting the repo history
+- Skills are always refreshed from GitHub on `smart init` and `smart update` — no stale copies
+- Design docs (DES) and test specs (TST) live locally until you choose to share them
+
+### Recommended Workflow
+
+| When | Run |
+|------|-----|
+| Starting a new project | `smart init` — downloads everything fresh from GitHub |
+| Picking up where you left off on a different machine | `smart sync` — restores your personal state from your branch |
+| Saving progress (context, plans, docs) | `smart save` — commits your personal state to `copilot/<user>` branch |
+| Keeping skills and agent up to date | `smart update` — re-downloads framework files from GitHub |
+
+> Skills, the smart agent, and standards are **always overwritten** by `smart init` and `smart update`. Personal files (`context.md`, `session.md`, `instructions.md`) are never touched unless you pass `--force`.
+
+---
+
 ## 📋 Commands
 
 | Command | Description |
 |---------|-------------|
-| Command | Description |
-|---------|-------------|
-| `smart init` | Install Smart Copilot into a project |
+| `smart init` | Install Smart Copilot — always downloads latest from GitHub |
 | `smart init --no-standards` | Install without language standards |
 | `smart init --minimal` | Install agent + skills only |
 | `smart save` | Save personal state to `copilot/<user>` branch |
-| `smart update` | Pull latest skills and agent from upstream |
+| `smart sync` | Restore personal state from `copilot/<user>` branch |
+| `smart update` | Pull latest skills and agent from GitHub |
 | `smart update --dry-run` | Preview what would be updated |
 
 ### Copilot Chat Commands
@@ -419,24 +432,24 @@ planning-copilot/
 │   ├── copilot-instructions.md
 │   ├── agents/
 │   │   └── smart.agent.md       # 🎯 Unified agent
-│   ├── skills/                  # 📚 Canonical skills (11 total)
-│   │   ├── index.yaml
-│   │   ├── planning/SKILL.md
-│   │   ├── plan-reviewer/SKILL.md
-│   │   ├── coding/SKILL.md
-│   │   ├── analysis/SKILL.md
-│   │   ├── documentation/SKILL.md
-│   │   ├── testing/SKILL.md
-│   │   ├── setup/SKILL.md
-│   │   ├── skill-generator/SKILL.md
-│   │   ├── evaluator/SKILL.md
-│   │   ├── ui-ux/SKILL.md
-│   │   └── rust-web-app/SKILL.md
-│   └── copilot/                 # 📋 Templates
+│   └── copilot/                 # 📚 Skills, templates, standards
+│       ├── gitignore.txt        # 🚫 Gitignore template (installed as .gitignore)
+│       ├── skills/              # 📚 Canonical skills
+│       │   ├── index.yaml
+│       │   ├── planning/SKILL.md
+│       │   ├── plan-reviewer/SKILL.md
+│       │   ├── coding/SKILL.md
+│       │   ├── analysis/SKILL.md
+│       │   ├── documentation/SKILL.md
+│       │   ├── testing/SKILL.md
+│       │   ├── setup/SKILL.md
+│       │   ├── skill-generator/SKILL.md
+│       │   ├── evaluator/SKILL.md
+│       │   ├── ui-ux/SKILL.md
+│       │   └── rust-web-app/SKILL.md
 │       ├── context.md           # 🧠 Project memory template
 │       ├── session.md           # 📋 Session state template
 │       ├── instructions.md      # 📝 Project instructions template
-│       ├── gitignore.txt        # 🚫 Gitignore template
 │       ├── plans/
 │       │   └── state.yaml       # 📊 Plan tracking template
 │       └── standards/           # 🛡️ Language standards

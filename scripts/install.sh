@@ -468,7 +468,6 @@ main() {
     echo ""
     echo "The following has been installed:"
     echo "  • Smart agent:          .github/agents/smart.agent.md"
-    echo "  • Copilot instructions: .github/copilot-instructions.md"
     echo "  • Core skills (8):      .github/copilot/skills/  (always up-to-date)"
     echo "  • Custom skills:        .github/copilot/skills/  (preserved if existing)"
     echo "  • Copilot folder:       .github/copilot/"
