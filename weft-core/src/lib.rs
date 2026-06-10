@@ -134,6 +134,23 @@ pub fn skeleton_toml(id: &str, feat: Option<&str>) -> String {
     out
 }
 
+/// The new `version` and `hash` produced by [`bump`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Bumped {
+    pub version: u32,
+    pub hash: String,
+}
+
+/// Bumps a requirement: increments `version` and recomputes `hash` from its
+/// current normative region, as one operation — so a version bump and a hash
+/// update can never happen independently.
+pub fn bump(req: &Requirement) -> Bumped {
+    Bumped {
+        version: req.version + 1,
+        hash: canonical_hash(&req.statement, &req.acceptance),
+    }
+}
+
 /// The first line of a requirement's `statement`, trimmed — used as its
 /// short description in listings.
 pub fn description(statement: &str) -> &str {

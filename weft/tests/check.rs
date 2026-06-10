@@ -33,6 +33,28 @@ acceptance = [
     fs::write(prds_dir.join("REQ-001.toml"), toml_src).expect("write REQ-001");
 }
 
+fn write_deprecated_requirement(dir: &TempDir, hash: &str) {
+    let prds_dir = dir.path().join("docs/prds");
+    fs::create_dir_all(&prds_dir).expect("create docs/prds");
+
+    let toml_src = format!(
+        r#"
+id = "REQ-001"
+version = 1
+hash = "{hash}"
+status = "deprecated"
+statement = "{STATEMENT}"
+acceptance = [
+    "{a0}",
+    "{a1}",
+]
+"#,
+        a0 = ACCEPTANCE[0],
+        a1 = ACCEPTANCE[1],
+    );
+    fs::write(prds_dir.join("REQ-001.toml"), toml_src).expect("write REQ-001");
+}
+
 fn write_design_doc(dir: &TempDir, hash: &str) {
     let decisions_dir = dir.path().join("docs/decisions");
     fs::create_dir_all(&decisions_dir).expect("create docs/decisions");
@@ -130,4 +152,21 @@ fn requirement_with_no_links_is_orphaned() {
         .assert()
         .failure()
         .stdout(predicate::str::contains("REQ-001: Orphaned"));
+}
+
+#[test]
+fn deprecated_requirement_with_no_links_does_not_fail_check() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_deprecated_requirement(&dir, &hash);
+    // no design doc, no code, no test, and status = "deprecated":
+    // excluded from the drift gate entirely.
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("check")
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("REQ-001").not());
 }

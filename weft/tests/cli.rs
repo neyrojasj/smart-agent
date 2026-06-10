@@ -312,3 +312,49 @@ fn verify_fails_with_bump_message_for_a_stale_hash() {
         .failure()
         .stdout(predicate::str::contains("weft bump REQ-001"));
 }
+
+#[test]
+fn bump_recomputes_hash_and_increments_version_after_an_edit() {
+    let dir = project_with_well_formed_record();
+    let prd_path = dir.path().join("docs/prds/REQ-001.toml");
+    let original_hash = canonical_hash(
+        STATEMENT,
+        &ACCEPTANCE.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
+    );
+
+    // Silently edit the statement without bumping: the stored hash is now stale.
+    let edited = fs::read_to_string(&prd_path)
+        .unwrap()
+        .replace(STATEMENT, "The system must allow users to log in with email, password, and a one-time code.");
+    fs::write(&prd_path, edited).unwrap();
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("verify")
+        .current_dir(dir.path())
+        .assert()
+        .failure();
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .args(["bump", "REQ-001"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("REQ-001"))
+        .stdout(predicate::str::contains("v2"));
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("verify")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let bumped = fs::read_to_string(&prd_path).unwrap();
+    assert!(bumped.contains("version = 2"), "expected version = 2 in: {bumped}");
+    assert!(
+        !bumped.contains(&original_hash),
+        "expected the original hash to be replaced in: {bumped}"
+    );
+}

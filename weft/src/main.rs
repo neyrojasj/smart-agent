@@ -4,8 +4,8 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
-    description, next_req_id, scan_annotations, skeleton_toml, trace_state, verify_requirement,
-    Annotation, Requirement, Status, TraceState,
+    bump, description, next_req_id, scan_annotations, skeleton_toml, trace_state,
+    verify_requirement, Annotation, Requirement, Status, TraceState,
 };
 
 #[derive(Parser)]
@@ -43,6 +43,11 @@ enum Command {
     },
     /// Report each requirement's Trace State; exit non-zero on any drift.
     Check,
+    /// Increment a requirement's version and recompute its hash, together.
+    Bump {
+        /// The requirement's REQ_ID, e.g. REQ-001.
+        req_id: String,
+    },
 }
 
 #[derive(Clone, ValueEnum)]
@@ -62,6 +67,7 @@ fn main() -> ExitCode {
         Command::New { feat } => new_cmd(feat.as_deref()),
         Command::List { feat } => list_cmd(feat.as_deref()),
         Command::Check => check_cmd(),
+        Command::Bump { req_id } => bump_cmd(&req_id),
     }
 }
 
@@ -256,6 +262,66 @@ fn check_cmd() -> ExitCode {
     } else {
         ExitCode::FAILURE
     }
+}
+
+/// Rewrites a requirement record's `version` and `hash` lines in place,
+/// leaving everything else (formatting, commentary) untouched.
+fn rewrite_bumped(src: &str, version: u32, hash: &str) -> String {
+    let mut out: Vec<String> = Vec::new();
+    for line in src.lines() {
+        if line.trim_start().starts_with("version =") {
+            out.push(format!("version = {version}"));
+        } else if line.trim_start().starts_with("hash =") {
+            out.push(format!("hash = \"{hash}\""));
+        } else {
+            out.push(line.to_string());
+        }
+    }
+    let mut result = out.join("\n");
+    result.push('\n');
+    result
+}
+
+fn bump_cmd(req_id: &str) -> ExitCode {
+    let mut files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut files);
+
+    for file in &files {
+        if file.file_stem().and_then(|s| s.to_str()) != Some(req_id) {
+            continue;
+        }
+
+        let src = match fs::read_to_string(file) {
+            Ok(src) => src,
+            Err(e) => {
+                eprintln!("{}: {e}", file.display());
+                return ExitCode::FAILURE;
+            }
+        };
+        let req = match Requirement::parse(&src) {
+            Ok(req) => req,
+            Err(e) => {
+                eprintln!("{}: {e}", file.display());
+                return ExitCode::FAILURE;
+            }
+        };
+
+        let bumped = bump(&req);
+        let rewritten = rewrite_bumped(&src, bumped.version, &bumped.hash);
+        if let Err(e) = fs::write(file, rewritten) {
+            eprintln!("{}: {e}", file.display());
+            return ExitCode::FAILURE;
+        }
+
+        println!(
+            "{req_id}: v{} -> v{} ({})",
+            req.version, bumped.version, bumped.hash
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    eprintln!("requirement '{req_id}' not found under docs/prds");
+    ExitCode::FAILURE
 }
 
 fn list_cmd(feat: Option<&str>) -> ExitCode {
