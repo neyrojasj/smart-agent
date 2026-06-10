@@ -89,8 +89,11 @@ no_progress=0
 iter=0
 
 while (( iter++ < MAX_ITERS )); do
-  slice_json="$(gh issue list --label "$LABEL" --state open \
-                  --json number,title,body --jq 'sort_by(.number) | .[0] // empty')"
+  # Filter the label CLIENT-SIDE in jq rather than via `gh --label`: when the
+  # repo has been renamed, gh's server-side label filter doesn't follow the
+  # redirect and silently returns nothing, whereas the unfiltered list does.
+  slice_json="$(gh issue list --state open --json number,title,body,labels \
+                  --jq "[.[] | select(any(.labels[]; .name==\"$LABEL\"))] | sort_by(.number) | .[0] // empty")"
   if [[ -z "$slice_json" ]]; then
     echo "✓ No open '$LABEL' issues remain — all slices done."
     exit 0
