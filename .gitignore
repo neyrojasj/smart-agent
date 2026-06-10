@@ -1,11 +1,5 @@
 # Rust build artifacts
 /target
 
-# Ephemeral per-developer state (not committed)
-.github/copilot/tmp/
-.github/copilot/plans/*
-!.github/copilot/plans/.gitkeep
-.github/copilot/session.md
-
-# External skill repositories (cloned locally, not committed)
-.github/copilot/external/
+# Ralph loop runtime logs (never committed)
+/logs/
