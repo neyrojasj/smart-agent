@@ -420,6 +420,33 @@ skills:
     can_chain_to:
       - to-smart-issues
 
+  to-smart-issues:
+    file: "to-smart-issues/SKILL.md"
+    name: "to-smart-issues"
+    description: >
+      Consume not-yet-Traced requirements from weft check and produce a
+      vertical-slice implementation plan as GitHub issues. Each issue spans
+      whole requirements, embeds REQ_ID+version+hash for copy-paste-correct
+      trace annotations, and is tagged implement (Orphaned/Incomplete) or
+      rework (Stale). Fully-Traced requirements produce no work.
+    priority: 12
+    triggers:
+      keywords:
+        - to-smart-issues
+        - plan implementation
+        - create implementation issues
+        - implementation gaps
+        - what needs implementing
+        - unfinished requirements
+      patterns:
+        - "run to-smart-issues"
+        - "plan.*implementation.*gaps"
+        - "create.*implementation.*issues"
+        - "turn.*requirements.*issues"
+        - "to-smart-issues.*"
+    requires_approval: false
+    can_chain_to: []
+
 # Routing configuration
 routing:
   # Default skill when no clear match

@@ -64,6 +64,7 @@ enum Field {
     Statement,
     Acceptance,
     Hash,
+    Version,
 }
 
 fn main() -> ExitCode {
@@ -143,6 +144,7 @@ fn verify_cmd(path: &Path) -> ExitCode {
     }
 }
 
+// @implements REQ-026 v1 placeholder
 fn get_cmd(req_id: &str, field: &Field) -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);
@@ -168,6 +170,7 @@ fn get_cmd(req_id: &str, field: &Field) -> ExitCode {
                 }
             }
             Field::Hash => println!("{}", req.hash),
+            Field::Version => println!("{}", req.version),
         }
         return ExitCode::SUCCESS;
     }
