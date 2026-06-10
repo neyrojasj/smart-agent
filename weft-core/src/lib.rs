@@ -313,6 +313,31 @@ pub fn trace_state(req: &Requirement, annotations: &[Annotation]) -> TraceState 
     TraceState::Traced
 }
 
+/// Renders a human-readable Markdown view of a set of requirements.
+///
+/// The output is non-authoritative — the TOML records under `docs/prds/` are
+/// the source of truth. See ADR 0001.
+// @implements REQ-020 v1 placeholder
+pub fn render_markdown(requirements: &[Requirement]) -> String {
+    let mut out = String::from("# Requirements\n");
+
+    for req in requirements {
+        out.push('\n');
+        if let Some(feat) = &req.feat {
+            out.push_str(&format!("## {} (v{}) [{}]\n\n", req.id, req.version, feat));
+        } else {
+            out.push_str(&format!("## {} (v{})\n\n", req.id, req.version));
+        }
+        out.push_str(&req.statement);
+        out.push_str("\n\n**Acceptance:**\n\n");
+        for item in &req.acceptance {
+            out.push_str(&format!("- {item}\n"));
+        }
+    }
+
+    out
+}
+
 /// Validates a requirement record's format and integrity.
 ///
 /// `filename_id` is the record's id as derived from its filename (the

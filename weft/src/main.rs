@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
-    bump, description, next_req_id, scan_annotations, skeleton_toml, trace_state,
+    bump, description, next_req_id, render_markdown, scan_annotations, skeleton_toml, trace_state,
     verify_requirement, Annotation, Requirement, Status, TraceState,
 };
 
@@ -48,6 +48,10 @@ enum Command {
         /// The requirement's REQ_ID, e.g. REQ-001.
         req_id: String,
     },
+    /// Generate a human-readable Markdown view of the PRD.
+    Render,
+    /// Scaffold docs/prds/, the design-decision docs dir, and weft skill stubs.
+    Init,
 }
 
 #[derive(Clone, ValueEnum)]
@@ -68,6 +72,8 @@ fn main() -> ExitCode {
         Command::List { feat } => list_cmd(feat.as_deref()),
         Command::Check => check_cmd(),
         Command::Bump { req_id } => bump_cmd(&req_id),
+        Command::Render => render_cmd(),
+        Command::Init => init_cmd(),
     }
 }
 
@@ -348,4 +354,47 @@ fn list_cmd(feat: Option<&str>) -> ExitCode {
     }
 
     ExitCode::SUCCESS
+}
+
+// @implements REQ-020 v1 placeholder
+fn render_cmd() -> ExitCode {
+    let mut files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut files);
+    files.sort();
+
+    let mut requirements = Vec::new();
+    for file in &files {
+        match load_requirement(file) {
+            Ok(req) => requirements.push(req),
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+
+    print!("{}", render_markdown(&requirements));
+    ExitCode::SUCCESS
+}
+
+// @implements REQ-021 v1 placeholder
+fn init_cmd() -> ExitCode {
+    let dirs = ["docs/prds", "docs/decisions"];
+    let mut ok = true;
+
+    for dir in &dirs {
+        let path = Path::new(dir);
+        if let Err(e) = fs::create_dir_all(path) {
+            eprintln!("{}: {e}", path.display());
+            ok = false;
+        } else {
+            println!("created {}", path.display());
+        }
+    }
+
+    if ok {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
 }
