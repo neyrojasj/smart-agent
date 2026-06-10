@@ -28,6 +28,7 @@ LOG_DIR="logs/ralph"
 
 # ---- preflight ----------------------------------------------------------------
 command -v gh >/dev/null     || { echo "✗ gh CLI not found"; exit 1; }
+command -v jq >/dev/null     || { echo "✗ jq not found"; exit 1; }
 command -v claude >/dev/null || { echo "✗ claude CLI not found"; exit 1; }
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "✗ not a git repo"; exit 1; }
 mkdir -p "$LOG_DIR"
@@ -115,11 +116,37 @@ while (( iter++ < MAX_ITERS )); do
   fi
 
   head_before="$(git rev-parse HEAD)"
-  log_file="$LOG_DIR/slice-${num}-$(date +%Y%m%d-%H%M%S).log"
+  ts="$(date +%Y%m%d-%H%M%S)"
+  log_file="$LOG_DIR/slice-${num}-${ts}.log"
+  raw_file="$LOG_DIR/slice-${num}-${ts}.jsonl"
 
+  echo "  running claude — streaming steps below (raw events → $raw_file)"
+  echo "  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
   # Fresh headless session, AFK (no permission prompts), one slice.
-  printf '%s' "$prompt" | claude -p --dangerously-skip-permissions \
-      ${RALPH_MODEL:+--model "$RALPH_MODEL"} 2>&1 | tee "$log_file" || true
+  # stream-json + --verbose surfaces each assistant message / tool call live;
+  # the jq filter renders those events human-readably while tee keeps full logs.
+  printf '%s' "$prompt" | claude -p \
+      --dangerously-skip-permissions \
+      --verbose --output-format stream-json \
+      ${RALPH_MODEL:+--model "$RALPH_MODEL"} \
+    | tee "$raw_file" \
+    | jq --unbuffered -r '
+        if   .type=="system" and .subtype=="init" then "⚙️  session start (model \(.model // "?"))"
+        elif .type=="assistant" then
+          ( .message.content[]?
+            | if   .type=="text"     then .text
+              elif .type=="tool_use" then "🔧 \(.name): \(.input|tostring|.[0:200])"
+              else empty end )
+        elif .type=="user" then
+          ( .message.content[]?
+            | select(.type=="tool_result")
+            | (.content // "")
+            | (if type=="array" then (map(.text // "")|join(" ")) else tostring end)
+            | "   ↳ \(.[0:200])" )
+        elif .type=="result" then "✅ \(.subtype // "done")  (cost $\(.total_cost_usd // 0))"
+        else empty end' 2>/dev/null \
+    | tee "$log_file" || true
+  echo "  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
 
   head_after="$(git rev-parse HEAD)"
 
