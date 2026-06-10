@@ -1,5 +1,6 @@
 # Rust build artifacts
-/target
+target/*
 
 # Ralph loop runtime logs (never committed)
-/logs/
+logs/*
+.scratch/*
