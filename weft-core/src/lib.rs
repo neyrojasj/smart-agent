@@ -97,6 +97,49 @@ fn is_valid_id_format(id: &str) -> bool {
     }
 }
 
+/// Computes the next globally-unique `REQ-NNN` id given the ids of existing
+/// requirement records (in any order, including malformed ones, which are
+/// ignored).
+pub fn next_req_id<'a>(existing_ids: impl Iterator<Item = &'a str>) -> String {
+    let max = existing_ids
+        .filter_map(|id| id.strip_prefix("REQ-"))
+        .filter_map(|digits| digits.parse::<u32>().ok())
+        .max()
+        .unwrap_or(0);
+    format!("REQ-{:03}", max + 1)
+}
+
+/// Renders a skeleton requirement record for `id`, with placeholder
+/// `statement`/`acceptance` and a `hash` that matches them, ready for the
+/// author to fill in. If `feat` is given, it is included as the `feat` field.
+pub fn skeleton_toml(id: &str, feat: Option<&str>) -> String {
+    const STATEMENT: &str = "TODO: describe this requirement.";
+    let acceptance = vec!["TODO: define an acceptance criterion.".to_string()];
+    let hash = canonical_hash(STATEMENT, &acceptance);
+
+    let mut out = String::new();
+    out.push_str(&format!("id = \"{id}\"\n"));
+    out.push_str("version = 1\n");
+    if let Some(feat) = feat {
+        out.push_str(&format!("feat = \"{feat}\"\n"));
+    }
+    out.push_str(&format!("hash = \"{hash}\"\n"));
+    out.push_str("status = \"active\"\n");
+    out.push_str(&format!("statement = \"{STATEMENT}\"\n"));
+    out.push_str("acceptance = [\n");
+    for item in &acceptance {
+        out.push_str(&format!("    \"{item}\",\n"));
+    }
+    out.push_str("]\n");
+    out
+}
+
+/// The first line of a requirement's `statement`, trimmed — used as its
+/// short description in listings.
+pub fn description(statement: &str) -> &str {
+    statement.lines().next().unwrap_or("").trim()
+}
+
 /// Validates a requirement record's format and integrity.
 ///
 /// `filename_id` is the record's id as derived from its filename (the

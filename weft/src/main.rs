@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use weft_core::{verify_requirement, Requirement};
+use weft_core::{description, next_req_id, skeleton_toml, verify_requirement, Requirement};
 
 #[derive(Parser)]
 #[command(name = "weft")]
@@ -26,6 +26,18 @@ enum Command {
         #[arg(long, value_enum)]
         field: Field,
     },
+    /// Allocate the next REQ_ID and write a skeleton requirement record.
+    New {
+        /// Group the new requirement under this FEAT label.
+        #[arg(long)]
+        feat: Option<String>,
+    },
+    /// List requirements by id and description.
+    List {
+        /// Only show requirements with this FEAT label.
+        #[arg(long)]
+        feat: Option<String>,
+    },
 }
 
 #[derive(Clone, ValueEnum)]
@@ -42,6 +54,8 @@ fn main() -> ExitCode {
             verify_cmd(&path.unwrap_or_else(|| PathBuf::from("docs/prds")))
         }
         Command::Get { req_id, field } => get_cmd(&req_id, &field),
+        Command::New { feat } => new_cmd(feat.as_deref()),
+        Command::List { feat } => list_cmd(feat.as_deref()),
     }
 }
 
@@ -136,4 +150,60 @@ fn get_cmd(req_id: &str, field: &Field) -> ExitCode {
 
     eprintln!("requirement '{req_id}' not found under docs/prds");
     ExitCode::FAILURE
+}
+
+fn new_cmd(feat: Option<&str>) -> ExitCode {
+    let prds_root = Path::new("docs/prds");
+    let mut files = Vec::new();
+    find_toml_files(prds_root, &mut files);
+
+    let existing_ids: Vec<String> = files
+        .iter()
+        .filter_map(|f| f.file_stem().and_then(|s| s.to_str()).map(String::from))
+        .collect();
+    let id = next_req_id(existing_ids.iter().map(String::as_str));
+
+    let dir = match feat {
+        Some(feat) => prds_root.join(feat),
+        None => prds_root.to_path_buf(),
+    };
+    if let Err(e) = fs::create_dir_all(&dir) {
+        eprintln!("{}: {e}", dir.display());
+        return ExitCode::FAILURE;
+    }
+
+    let path = dir.join(format!("{id}.toml"));
+    if let Err(e) = fs::write(&path, skeleton_toml(&id, feat)) {
+        eprintln!("{}: {e}", path.display());
+        return ExitCode::FAILURE;
+    }
+
+    println!("{id}: {}", path.display());
+    ExitCode::SUCCESS
+}
+
+fn list_cmd(feat: Option<&str>) -> ExitCode {
+    let mut files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut files);
+    files.sort();
+
+    for file in &files {
+        let req = match load_requirement(file) {
+            Ok(req) => req,
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+        };
+
+        if let Some(feat) = feat {
+            if req.feat.as_deref() != Some(feat) {
+                continue;
+            }
+        }
+
+        println!("{}: {}", req.id, description(&req.statement));
+    }
+
+    ExitCode::SUCCESS
 }
