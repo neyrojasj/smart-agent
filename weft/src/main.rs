@@ -3,7 +3,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use weft_core::{description, next_req_id, skeleton_toml, verify_requirement, Requirement};
+use weft_core::{
+    description, next_req_id, scan_annotations, skeleton_toml, trace_state, verify_requirement,
+    Annotation, Requirement, Status, TraceState,
+};
 
 #[derive(Parser)]
 #[command(name = "weft")]
@@ -38,6 +41,8 @@ enum Command {
         #[arg(long)]
         feat: Option<String>,
     },
+    /// Report each requirement's Trace State; exit non-zero on any drift.
+    Check,
 }
 
 #[derive(Clone, ValueEnum)]
@@ -56,6 +61,7 @@ fn main() -> ExitCode {
         Command::Get { req_id, field } => get_cmd(&req_id, &field),
         Command::New { feat } => new_cmd(feat.as_deref()),
         Command::List { feat } => list_cmd(feat.as_deref()),
+        Command::Check => check_cmd(),
     }
 }
 
@@ -180,6 +186,76 @@ fn new_cmd(feat: Option<&str>) -> ExitCode {
 
     println!("{id}: {}", path.display());
     ExitCode::SUCCESS
+}
+
+/// Directories never scanned for Trace Links: VCS metadata and build output.
+const SCAN_EXCLUDES: &[&str] = &[".git", "target", "node_modules"];
+
+/// Recursively collects every file under `root`, skipping [`SCAN_EXCLUDES`]
+/// directories.
+fn find_scannable_files(root: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| SCAN_EXCLUDES.contains(&n))
+            {
+                continue;
+            }
+            find_scannable_files(&path, out);
+        } else {
+            out.push(path);
+        }
+    }
+}
+
+fn check_cmd() -> ExitCode {
+    let mut req_files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut req_files);
+    req_files.sort();
+
+    let mut requirements = Vec::new();
+    for file in &req_files {
+        match load_requirement(file) {
+            Ok(req) => requirements.push(req),
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+    requirements.retain(|req| req.status == Status::Active);
+    requirements.sort_by(|a, b| a.id.cmp(&b.id));
+
+    let mut scan_files = Vec::new();
+    find_scannable_files(Path::new("."), &mut scan_files);
+
+    let mut annotations: Vec<Annotation> = Vec::new();
+    for file in &scan_files {
+        if let Ok(src) = fs::read_to_string(file) {
+            annotations.extend(scan_annotations(&src));
+        }
+    }
+
+    let mut ok = true;
+    for req in &requirements {
+        let state = trace_state(req, &annotations);
+        if state != TraceState::Traced {
+            ok = false;
+        }
+        println!("{}: {state}", req.id);
+    }
+
+    if ok {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
 }
 
 fn list_cmd(feat: Option<&str>) -> ExitCode {

@@ -140,6 +140,162 @@ pub fn description(statement: &str) -> &str {
     statement.lines().next().unwrap_or("").trim()
 }
 
+/// The chain stop a [`Annotation`] declares: design, code, or test.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnnotationKind {
+    /// `@addresses` — a design decision addresses a requirement.
+    Addresses,
+    /// `@implements` — code implements a requirement.
+    Implements,
+    /// `@verifies` — a test verifies a requirement.
+    Verifies,
+}
+
+/// A single Trace Link found by scanning a file: a requirement id pinned to
+/// the version and Content Hash that were current when the link was written.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Annotation {
+    pub kind: AnnotationKind,
+    pub req_id: String,
+    pub version: u32,
+    pub hash: String,
+}
+
+/// Scans `text` for Trace Links: `@addresses` entries in TOML frontmatter
+/// (DEC/ADR docs), and inline `@implements`/`@verifies` markers, one per
+/// line, in any comment syntax: `@implements REQ-042 v3 a3f9b2c1`.
+pub fn scan_annotations(text: &str) -> Vec<Annotation> {
+    let mut out = scan_addresses_frontmatter(text);
+    for line in text.lines() {
+        if let Some(idx) = line.find("@implements") {
+            if let Some(annotation) = parse_inline_annotation(&line[idx..], AnnotationKind::Implements)
+            {
+                out.push(annotation);
+            }
+        } else if let Some(idx) = line.find("@verifies") {
+            if let Some(annotation) = parse_inline_annotation(&line[idx..], AnnotationKind::Verifies)
+            {
+                out.push(annotation);
+            }
+        }
+    }
+    out
+}
+
+/// Extracts `@addresses` Trace Links from a `+++`-delimited TOML frontmatter
+/// block at the start of `text` (DEC/ADR docs). Returns an empty vec if
+/// `text` has no frontmatter, the frontmatter is not valid TOML, or it has no
+/// `addresses` array.
+fn scan_addresses_frontmatter(text: &str) -> Vec<Annotation> {
+    let Some(rest) = text.strip_prefix("+++\n") else {
+        return Vec::new();
+    };
+    let Some(end) = rest.find("\n+++") else {
+        return Vec::new();
+    };
+    let Ok(frontmatter) = rest[..end].parse::<toml::Value>() else {
+        return Vec::new();
+    };
+    let Some(addresses) = frontmatter.get("addresses").and_then(|v| v.as_array()) else {
+        return Vec::new();
+    };
+
+    addresses
+        .iter()
+        .filter_map(|v| v.as_str())
+        .filter_map(parse_addresses_entry)
+        .collect()
+}
+
+/// Parses an `addresses` entry of the form `REQ-042 v3 a3f9b2c1` (no
+/// `@addresses` marker — the field name itself is the marker).
+fn parse_addresses_entry(s: &str) -> Option<Annotation> {
+    let mut tokens = s.split_whitespace();
+    let req_id = tokens.next()?.to_string();
+    let version = tokens.next()?.strip_prefix('v')?.parse::<u32>().ok()?;
+    let hash = tokens.next()?.to_string();
+    Some(Annotation {
+        kind: AnnotationKind::Addresses,
+        req_id,
+        version,
+        hash,
+    })
+}
+
+/// Parses `@implements REQ-042 v3 a3f9b2c1` (or `@verifies ...`) starting at
+/// the marker itself.
+fn parse_inline_annotation(s: &str, kind: AnnotationKind) -> Option<Annotation> {
+    let mut tokens = s.split_whitespace();
+    tokens.next()?; // the @implements / @verifies marker itself
+    let req_id = tokens.next()?.to_string();
+    let version = tokens.next()?.strip_prefix('v')?.parse::<u32>().ok()?;
+    let hash = tokens.next()?.to_string();
+    Some(Annotation {
+        kind,
+        req_id,
+        version,
+        hash,
+    })
+}
+
+/// The static verdict for a requirement: do its Trace Links exist
+/// (completeness), and do their frozen hashes match the requirement's
+/// current Content Hash (freshness)?
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TraceState {
+    /// No Trace Links at all.
+    Orphaned,
+    /// At least one Trace Link is missing (design, code, or test).
+    Incomplete,
+    /// All three Trace Links are present, but at least one pins a hash that
+    /// no longer matches the requirement's current Content Hash.
+    Stale,
+    /// All three Trace Links are present and current.
+    Traced,
+}
+
+impl fmt::Display for TraceState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            TraceState::Orphaned => "Orphaned",
+            TraceState::Incomplete => "Incomplete",
+            TraceState::Stale => "Stale",
+            TraceState::Traced => "Traced",
+        };
+        write!(f, "{s}")
+    }
+}
+
+/// Computes `req`'s [`TraceState`] from the Trace Links found by
+/// [`scan_annotations`] across the project (annotations for other
+/// requirements are ignored).
+pub fn trace_state(req: &Requirement, annotations: &[Annotation]) -> TraceState {
+    let find = |kind: AnnotationKind| {
+        annotations
+            .iter()
+            .find(|a| a.kind == kind && a.req_id == req.id)
+    };
+
+    let links = [
+        find(AnnotationKind::Addresses),
+        find(AnnotationKind::Implements),
+        find(AnnotationKind::Verifies),
+    ];
+
+    let present: Vec<&Annotation> = links.into_iter().flatten().collect();
+
+    if present.is_empty() {
+        return TraceState::Orphaned;
+    }
+    if present.len() < 3 {
+        return TraceState::Incomplete;
+    }
+    if present.iter().any(|a| a.hash != req.hash) {
+        return TraceState::Stale;
+    }
+    TraceState::Traced
+}
+
 /// Validates a requirement record's format and integrity.
 ///
 /// `filename_id` is the record's id as derived from its filename (the
