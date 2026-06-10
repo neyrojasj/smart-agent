@@ -1,0 +1,126 @@
+use weft_core::{canonical_hash, verify_requirement, Requirement, Status, VerifyIssue};
+
+const STATEMENT: &str = "The system must allow users to log in with email and password.";
+const ACCEPTANCE: &[&str] = &[
+    "Given valid credentials, the user is authenticated.",
+    "Given invalid credentials, an error is shown.",
+];
+
+fn fixture_toml(hash: &str, id: &str) -> String {
+    format!(
+        r#"
+id = "{id}"
+version = 1
+feat = "FEAT-Auth"
+hash = "{hash}"
+status = "active"
+statement = "{STATEMENT}"
+
+acceptance = [
+    "{a0}",
+    "{a1}",
+]
+
+rationale = "Login is the entry point for all authenticated features."
+"#,
+        a0 = ACCEPTANCE[0],
+        a1 = ACCEPTANCE[1],
+    )
+}
+
+fn current_hash() -> String {
+    let acceptance: Vec<String> = ACCEPTANCE.iter().map(|s| s.to_string()).collect();
+    canonical_hash(STATEMENT, &acceptance)
+}
+
+#[test]
+fn parses_a_well_formed_requirement_record() {
+    let hash = current_hash();
+    let toml_src = fixture_toml(&hash, "REQ-001");
+
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    assert_eq!(req.id, "REQ-001");
+    assert_eq!(req.version, 1);
+    assert_eq!(req.feat.as_deref(), Some("FEAT-Auth"));
+    assert_eq!(req.hash, hash);
+    assert_eq!(req.status, Status::Active);
+    assert_eq!(req.statement, STATEMENT);
+    assert_eq!(req.acceptance.len(), 2);
+}
+
+#[test]
+fn well_formed_record_with_current_hash_passes_verification() {
+    let hash = current_hash();
+    let toml_src = fixture_toml(&hash, "REQ-001");
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    let issues = verify_requirement(&req, "REQ-001");
+
+    assert!(issues.is_empty(), "expected no issues, got {issues:?}");
+}
+
+#[test]
+fn stale_stored_hash_fails_verification_with_bump_message() {
+    let toml_src = fixture_toml("deadbeef", "REQ-001");
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    let issues = verify_requirement(&req, "REQ-001");
+
+    assert_eq!(issues.len(), 1);
+    match &issues[0] {
+        VerifyIssue::HashMismatch { stored, derived, .. } => {
+            assert_eq!(stored, "deadbeef");
+            assert_eq!(derived, &current_hash());
+        }
+        other => panic!("expected HashMismatch, got {other:?}"),
+    }
+    assert!(issues[0].to_string().contains("weft bump REQ-001"));
+}
+
+#[test]
+fn id_not_matching_filename_fails_verification() {
+    let hash = current_hash();
+    let toml_src = fixture_toml(&hash, "REQ-001");
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    let issues = verify_requirement(&req, "REQ-002");
+
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, VerifyIssue::IdFilenameMismatch { .. })));
+}
+
+#[test]
+fn malformed_id_fails_verification() {
+    let hash = current_hash();
+    let toml_src = fixture_toml(&hash, "REQ-1");
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    let issues = verify_requirement(&req, "REQ-1");
+
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, VerifyIssue::InvalidIdFormat(_))));
+}
+
+#[test]
+fn empty_acceptance_fails_verification() {
+    let toml_src = format!(
+        r#"
+id = "REQ-001"
+version = 1
+hash = "00000000"
+status = "active"
+statement = "{STATEMENT}"
+acceptance = []
+"#
+    );
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    let issues = verify_requirement(&req, "REQ-001");
+
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, VerifyIssue::EmptyAcceptance)));
+}
