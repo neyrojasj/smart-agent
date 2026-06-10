@@ -5,7 +5,7 @@ use weft_core::{
 
 #[test]
 fn finds_an_implements_annotation_in_a_code_comment() {
-    let src = "// @implements REQ-001 v1 a3f9b2c1\nfn login() {}\n";
+    let src = "// @implements REQ-901 v1 a3f9b2c1\nfn login() {}\n";
 
     let annotations = scan_annotations(src);
 
@@ -13,7 +13,7 @@ fn finds_an_implements_annotation_in_a_code_comment() {
         annotations,
         vec![Annotation {
             kind: AnnotationKind::Implements,
-            req_id: "REQ-001".to_string(),
+            req_id: "REQ-901".to_string(),
             version: 1,
             hash: "a3f9b2c1".to_string(),
         }]
@@ -22,7 +22,7 @@ fn finds_an_implements_annotation_in_a_code_comment() {
 
 #[test]
 fn finds_a_verifies_annotation_in_a_test_comment() {
-    let src = "# @verifies REQ-002 v3 deadbeef\ndef test_login(): ...\n";
+    let src = "# @verifies REQ-902 v3 deadbeef\ndef test_login(): ...\n";
 
     let annotations = scan_annotations(src);
 
@@ -30,7 +30,7 @@ fn finds_a_verifies_annotation_in_a_test_comment() {
         annotations,
         vec![Annotation {
             kind: AnnotationKind::Verifies,
-            req_id: "REQ-002".to_string(),
+            req_id: "REQ-902".to_string(),
             version: 3,
             hash: "deadbeef".to_string(),
         }]

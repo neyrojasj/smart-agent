@@ -1,0 +1,11 @@
+id = "REQ-005"
+version = 2
+feat = "FEAT-Records"
+hash = "0659bb8e"
+status = "active"
+statement = "The system must allow requirements to be grouped under an optional FEAT label."
+acceptance = [
+    "Given a requirement record contains a feat field, then its file is stored under docs/prds/<feat>/.",
+    "Given a requirement record has no feat field, then it is stored directly under docs/prds/.",
+    "Given weft list --feat FEAT-X is run, then only requirements with feat = \"FEAT-X\" are returned.",
+]

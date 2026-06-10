@@ -1,0 +1,10 @@
+id = "REQ-003"
+version = 2
+feat = "FEAT-Records"
+hash = "6e343519"
+status = "active"
+statement = "The system must track an integer version on each requirement record, incremented each time its normative text changes."
+acceptance = [
+    "Given a new requirement record is created, then its version is 1.",
+    "Given a requirement's normative text is edited and weft bump is run, then the version increments by exactly 1.",
+]

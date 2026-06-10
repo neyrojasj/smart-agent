@@ -1,0 +1,11 @@
+id = "REQ-002"
+version = 2
+feat = "FEAT-Records"
+hash = "1c857a61"
+status = "active"
+statement = "The system must assign each requirement a stable, immutable identifier of the form REQ-NNN."
+acceptance = [
+    "Given a requirement file exists, when its id field is read at any point in the project's lifetime, then the value has never changed from when the record was first created.",
+    "Given two requirements exist, then their ids are distinct.",
+]
+rationale = "A stable id lets requirements be cited in code, tests, and design decisions without the reference going stale."

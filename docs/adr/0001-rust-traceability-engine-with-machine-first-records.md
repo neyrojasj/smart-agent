@@ -1,3 +1,12 @@
++++
+addresses = [
+    "REQ-001 v2 f99f9f41",
+    "REQ-002 v2 1c857a61",
+    "REQ-005 v2 0659bb8e",
+    "REQ-006 v2 72cef08d",
+]
++++
+
 # 0001 — Pivot to a Rust traceability engine with machine-first requirement records
 
 The repository pivots from a Python skills-installer into a Rust tool whose
@@ -26,3 +35,6 @@ Any Markdown PRD is a generated, non-authoritative view.
   versions live in git, not as retained queryable entities.
 - The old Python `smart` installer and its `save`/`sync` personal-branch feature
   are dropped; they are unrelated to traceability.
+- A requirement removed from the PRD's intent is marked `status = "deprecated"`
+  in its record rather than having its file deleted — preserving its `id` and
+  history, and keeping the `id` space collision-free for `weft new`.

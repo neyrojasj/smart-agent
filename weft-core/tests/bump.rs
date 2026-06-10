@@ -14,6 +14,7 @@ fn requirement(version: u32, hash: &str, statement: &str, acceptance: &[&str]) -
     }
 }
 
+// @verifies REQ-003 v2 6e343519
 #[test]
 fn bump_increments_version_and_recomputes_hash_from_current_text() {
     let statement = "The system must allow users to log in.";

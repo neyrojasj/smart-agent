@@ -17,7 +17,7 @@ fn write_requirement(dir: &TempDir, hash: &str) {
 
     let toml_src = format!(
         r#"
-id = "REQ-001"
+id = "REQ-901"
 version = 1
 hash = "{hash}"
 status = "active"
@@ -30,7 +30,7 @@ acceptance = [
         a0 = ACCEPTANCE[0],
         a1 = ACCEPTANCE[1],
     );
-    fs::write(prds_dir.join("REQ-001.toml"), toml_src).expect("write REQ-001");
+    fs::write(prds_dir.join("REQ-901.toml"), toml_src).expect("write REQ-901");
 }
 
 fn write_deprecated_requirement(dir: &TempDir, hash: &str) {
@@ -39,7 +39,7 @@ fn write_deprecated_requirement(dir: &TempDir, hash: &str) {
 
     let toml_src = format!(
         r#"
-id = "REQ-001"
+id = "REQ-901"
 version = 1
 hash = "{hash}"
 status = "deprecated"
@@ -52,14 +52,14 @@ acceptance = [
         a0 = ACCEPTANCE[0],
         a1 = ACCEPTANCE[1],
     );
-    fs::write(prds_dir.join("REQ-001.toml"), toml_src).expect("write REQ-001");
+    fs::write(prds_dir.join("REQ-901.toml"), toml_src).expect("write REQ-901");
 }
 
 fn write_design_doc(dir: &TempDir, hash: &str) {
     let decisions_dir = dir.path().join("docs/decisions");
     fs::create_dir_all(&decisions_dir).expect("create docs/decisions");
 
-    let doc = format!("+++\naddresses = [\"REQ-001 v1 {hash}\"]\n+++\n\n# Login design\n");
+    let doc = format!("+++\naddresses = [\"REQ-901 v1 {hash}\"]\n+++\n\n# Login design\n");
     fs::write(decisions_dir.join("0001-login.md"), doc).expect("write design doc");
 }
 
@@ -67,7 +67,7 @@ fn write_code(dir: &TempDir, hash: &str) {
     let src_dir = dir.path().join("src");
     fs::create_dir_all(&src_dir).expect("create src");
 
-    let code = format!("// @implements REQ-001 v1 {hash}\nfn login() {{}}\n");
+    let code = format!("// @implements REQ-901 v1 {hash}\nfn login() {{}}\n");
     fs::write(src_dir.join("login.rs"), code).expect("write code");
 }
 
@@ -75,7 +75,7 @@ fn write_test(dir: &TempDir, hash: &str) {
     let tests_dir = dir.path().join("tests");
     fs::create_dir_all(&tests_dir).expect("create tests");
 
-    let test = format!("// @verifies REQ-001 v1 {hash}\nfn test_login() {{}}\n");
+    let test = format!("// @verifies REQ-901 v1 {hash}\nfn test_login() {{}}\n");
     fs::write(tests_dir.join("login.rs"), test).expect("write test");
 }
 
@@ -99,7 +99,7 @@ fn fully_traced_requirement_passes_check() {
         .current_dir(dir.path())
         .assert()
         .success()
-        .stdout(predicate::str::contains("REQ-001: Traced"));
+        .stdout(predicate::str::contains("REQ-901: Traced"));
 }
 
 #[test]
@@ -117,7 +117,7 @@ fn missing_verifies_link_is_incomplete() {
         .current_dir(dir.path())
         .assert()
         .failure()
-        .stdout(predicate::str::contains("REQ-001: Incomplete"));
+        .stdout(predicate::str::contains("REQ-901: Incomplete"));
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn old_hash_in_implements_link_is_stale() {
         .current_dir(dir.path())
         .assert()
         .failure()
-        .stdout(predicate::str::contains("REQ-001: Stale"));
+        .stdout(predicate::str::contains("REQ-901: Stale"));
 }
 
 #[test]
@@ -151,7 +151,7 @@ fn requirement_with_no_links_is_orphaned() {
         .current_dir(dir.path())
         .assert()
         .failure()
-        .stdout(predicate::str::contains("REQ-001: Orphaned"));
+        .stdout(predicate::str::contains("REQ-901: Orphaned"));
 }
 
 #[test]
@@ -168,5 +168,5 @@ fn deprecated_requirement_with_no_links_does_not_fail_check() {
         .current_dir(dir.path())
         .assert()
         .success()
-        .stdout(predicate::str::contains("REQ-001").not());
+        .stdout(predicate::str::contains("REQ-901").not());
 }

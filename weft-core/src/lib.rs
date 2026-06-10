@@ -7,6 +7,7 @@ use sha2::{Digest, Sha256};
 use unicode_normalization::UnicodeNormalization;
 
 /// The lifecycle state of a requirement record.
+// @implements REQ-006 v2 72cef08d
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
@@ -15,6 +16,9 @@ pub enum Status {
 }
 
 /// A single requirement record, parsed from a `docs/prds/**/*.toml` file.
+// @implements REQ-001 v2 f99f9f41
+// @implements REQ-002 v2 1c857a61
+// @implements REQ-005 v2 0659bb8e
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Requirement {
     pub id: String,
@@ -38,6 +42,7 @@ impl Requirement {
 /// Computes the Content Hash for a requirement's normative region: the
 /// `statement` (trimmed) plus each `acceptance` item (trimmed), joined with
 /// `\n`, NFC-normalized, then SHA-256, truncated to the first 8 hex chars.
+// @implements REQ-004 v2 7766a56e
 pub fn canonical_hash(statement: &str, acceptance: &[String]) -> String {
     let mut parts: Vec<String> = Vec::with_capacity(1 + acceptance.len());
     parts.push(statement.trim().to_string());
@@ -144,6 +149,7 @@ pub struct Bumped {
 /// Bumps a requirement: increments `version` and recomputes `hash` from its
 /// current normative region, as one operation — so a version bump and a hash
 /// update can never happen independently.
+// @implements REQ-003 v2 6e343519
 pub fn bump(req: &Requirement) -> Bumped {
     Bumped {
         version: req.version + 1,

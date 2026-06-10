@@ -1,0 +1,11 @@
+id = "REQ-001"
+version = 2
+feat = "FEAT-Records"
+hash = "f99f9f41"
+status = "active"
+statement = "The system must store each requirement as a single structured TOML record under docs/prds/."
+acceptance = [
+    "Given a requirement exists, when the repository is checked out, then a file matching docs/prds/**/<id>.toml is present.",
+    "Given a TOML record is parsed, then it contains at minimum the fields: id, version, hash, status, statement, acceptance.",
+]
+rationale = "Machine-first records enable automated traceability; prose documents cannot be reliably diffed or queried."

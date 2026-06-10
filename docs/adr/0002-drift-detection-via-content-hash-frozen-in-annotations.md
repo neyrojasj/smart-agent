@@ -1,3 +1,10 @@
++++
+addresses = [
+    "REQ-003 v2 6e343519",
+    "REQ-004 v2 7766a56e",
+]
++++
+
 # 0002 — Drift detection via a content hash frozen into trace annotations
 
 Each requirement carries a `hash` over its **normative region** (`statement` +

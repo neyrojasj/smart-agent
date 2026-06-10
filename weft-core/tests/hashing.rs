@@ -1,5 +1,6 @@
 use weft_core::canonical_hash;
 
+// @verifies REQ-004 v2 7766a56e
 #[test]
 fn same_text_produces_same_eight_hex_char_hash() {
     let statement = "The system must allow users to log in.";

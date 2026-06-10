@@ -33,6 +33,9 @@ fn current_hash() -> String {
     canonical_hash(STATEMENT, &acceptance)
 }
 
+// @verifies REQ-001 v2 f99f9f41
+// @verifies REQ-002 v2 1c857a61
+// @verifies REQ-005 v2 0659bb8e
 #[test]
 fn parses_a_well_formed_requirement_record() {
     let hash = current_hash();
@@ -102,6 +105,35 @@ fn malformed_id_fails_verification() {
     assert!(issues
         .iter()
         .any(|i| matches!(i, VerifyIssue::InvalidIdFormat(_))));
+}
+
+// @verifies REQ-006 v2 72cef08d
+#[test]
+fn deprecated_status_round_trips() {
+    let hash = current_hash();
+    let toml_src = format!(
+        r#"
+id = "REQ-001"
+version = 1
+hash = "{hash}"
+status = "deprecated"
+statement = "{STATEMENT}"
+acceptance = [
+    "{a0}",
+    "{a1}",
+]
+"#,
+        a0 = ACCEPTANCE[0],
+        a1 = ACCEPTANCE[1],
+    );
+
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    assert_eq!(req.status, Status::Deprecated);
+    assert!(
+        verify_requirement(&req, "REQ-001").is_empty(),
+        "a deprecated record with intact normative text should still verify cleanly"
+    );
 }
 
 #[test]

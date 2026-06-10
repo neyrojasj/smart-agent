@@ -1,0 +1,12 @@
+id = "REQ-006"
+version = 2
+feat = "FEAT-Records"
+hash = "72cef08d"
+status = "active"
+statement = "The system must represent a removed requirement with status = \"deprecated\" rather than deleting the file."
+acceptance = [
+    "Given weft deprecate REQ-NNN is run, then the record's status field is set to \"deprecated\" and the file remains on disk.",
+    "Given a deprecated requirement, when weft list is run without filters, then the requirement is excluded from the output.",
+    "Given a deprecated requirement's id, then no new requirement is ever assigned that same id.",
+]
+rationale = "Preserving deprecated records keeps the id space collision-free and maintains history of removed requirements."
