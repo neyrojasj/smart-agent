@@ -1,0 +1,12 @@
+id = "REQ-008"
+version = 2
+feat = "FEAT-Commands"
+hash = "3da61ff3"
+status = "active"
+statement = "The system must provide a weft get REQ-NNN --field <field> command that retrieves any single field of a requirement."
+acceptance = [
+    "Given weft get REQ-NNN --field statement is run, then stdout contains exactly the statement value and exits 0.",
+    "Given weft get REQ-NNN --field acceptance is run, then stdout contains the acceptance array and exits 0.",
+    "Given weft get REQ-NNN --field hash is run, then stdout contains the stored hash string and exits 0.",
+    "Given weft get is called with an id that does not exist, then it exits non-zero.",
+]

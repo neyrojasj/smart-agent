@@ -1,0 +1,12 @@
+id = "REQ-009"
+version = 2
+feat = "FEAT-Commands"
+hash = "c30912ae"
+status = "active"
+statement = "The system must provide a weft new command that allocates the next globally-unique REQ-NNN identifier and creates a skeleton record file."
+acceptance = [
+    "Given no requirements exist, then weft new creates REQ-001.",
+    "Given the highest existing id is REQ-NNN, then weft new creates REQ-(NNN+1).",
+    "Given weft new --feat FEAT-X is run, then the skeleton file is placed under docs/prds/FEAT-X/ and the feat field is set.",
+    "Given two concurrent weft new invocations, then no two records share the same id.",
+]

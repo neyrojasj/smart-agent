@@ -1,0 +1,11 @@
+id = "REQ-007"
+version = 2
+feat = "FEAT-Commands"
+hash = "1d00916a"
+status = "active"
+statement = "The system must provide a weft verify command that validates a requirement record's TOML format and flags any hash mismatch."
+acceptance = [
+    "Given a valid requirement record whose stored hash matches its derived hash, then weft verify exits 0 and prints \"ok\".",
+    "Given a record with a malformed TOML structure, then weft verify exits non-zero and reports the format error.",
+    "Given a record whose stored hash does not match the hash derived from its current normative text, then weft verify exits non-zero and identifies the mismatched record.",
+]

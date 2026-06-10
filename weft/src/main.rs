@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
@@ -109,6 +110,7 @@ fn load_requirement(path: &Path) -> Result<Requirement, String> {
     Requirement::parse(&src).map_err(|e| format!("{}: {e}", path.display()))
 }
 
+// @implements REQ-007 v2 1d00916a
 fn verify_cmd(path: &Path) -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(path, &mut files);
@@ -144,6 +146,7 @@ fn verify_cmd(path: &Path) -> ExitCode {
     }
 }
 
+// @implements REQ-008 v2 3da61ff3
 // @implements REQ-026 v1 placeholder
 fn get_cmd(req_id: &str, field: &Field) -> ExitCode {
     let mut files = Vec::new();
@@ -179,16 +182,9 @@ fn get_cmd(req_id: &str, field: &Field) -> ExitCode {
     ExitCode::FAILURE
 }
 
+// @implements REQ-009 v2 c30912ae
 fn new_cmd(feat: Option<&str>) -> ExitCode {
     let prds_root = Path::new("docs/prds");
-    let mut files = Vec::new();
-    find_toml_files(prds_root, &mut files);
-
-    let existing_ids: Vec<String> = files
-        .iter()
-        .filter_map(|f| f.file_stem().and_then(|s| s.to_str()).map(String::from))
-        .collect();
-    let id = next_req_id(existing_ids.iter().map(String::as_str));
 
     let dir = match feat {
         Some(feat) => prds_root.join(feat),
@@ -199,14 +195,41 @@ fn new_cmd(feat: Option<&str>) -> ExitCode {
         return ExitCode::FAILURE;
     }
 
-    let path = dir.join(format!("{id}.toml"));
-    if let Err(e) = fs::write(&path, skeleton_toml(&id, feat)) {
-        eprintln!("{}: {e}", path.display());
-        return ExitCode::FAILURE;
-    }
+    let mut files = Vec::new();
+    find_toml_files(prds_root, &mut files);
+    let existing_ids: Vec<String> = files
+        .iter()
+        .filter_map(|f| f.file_stem().and_then(|s| s.to_str()).map(String::from))
+        .collect();
+    let mut id = next_req_id(existing_ids.iter().map(String::as_str));
 
-    println!("{id}: {}", path.display());
-    ExitCode::SUCCESS
+    // Allocating an id and creating its file is not atomic across two
+    // `weft new` invocations, so retry with the next id whenever the chosen
+    // file already exists — `create_new` makes each attempt itself atomic.
+    loop {
+        let path = dir.join(format!("{id}.toml"));
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+        {
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(skeleton_toml(&id, feat).as_bytes()) {
+                    eprintln!("{}: {e}", path.display());
+                    return ExitCode::FAILURE;
+                }
+                println!("{id}: {}", path.display());
+                return ExitCode::SUCCESS;
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                id = next_req_id(std::iter::once(id.as_str()));
+            }
+            Err(e) => {
+                eprintln!("{}: {e}", path.display());
+                return ExitCode::FAILURE;
+            }
+        }
+    }
 }
 
 /// Directories never scanned for Trace Links: VCS metadata and build output.
@@ -297,6 +320,7 @@ fn rewrite_bumped(src: &str, version: u32, hash: &str) -> String {
     result
 }
 
+// @implements REQ-011 v2 5429311c
 fn bump_cmd(req_id: &str) -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);
@@ -339,6 +363,7 @@ fn bump_cmd(req_id: &str) -> ExitCode {
     ExitCode::FAILURE
 }
 
+// @implements REQ-010 v2 59117494
 fn list_cmd(feat: Option<&str>) -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);
@@ -352,6 +377,10 @@ fn list_cmd(feat: Option<&str>) -> ExitCode {
                 return ExitCode::FAILURE;
             }
         };
+
+        if req.status != Status::Active {
+            continue;
+        }
 
         if let Some(feat) = feat {
             if req.feat.as_deref() != Some(feat) {

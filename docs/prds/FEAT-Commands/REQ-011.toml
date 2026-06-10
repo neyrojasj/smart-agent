@@ -1,0 +1,11 @@
+id = "REQ-011"
+version = 2
+feat = "FEAT-Commands"
+hash = "5429311c"
+status = "active"
+statement = "The system must provide a weft bump REQ-NNN command that increments the version and recomputes the hash as a single atomic operation."
+acceptance = [
+    "Given weft bump REQ-NNN is run, then the record's version increments by 1 and the hash is recomputed from the current normative text in the same write.",
+    "Given a record whose normative text has not changed, then weft bump still increments version and recomputes hash.",
+    "Given the resulting file, then weft verify REQ-NNN exits 0 immediately after bump.",
+]

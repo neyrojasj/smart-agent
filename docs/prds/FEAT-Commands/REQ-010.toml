@@ -1,0 +1,11 @@
+id = "REQ-010"
+version = 2
+feat = "FEAT-Commands"
+hash = "59117494"
+status = "active"
+statement = "The system must provide a weft list command that returns each active requirement's id and first-line description, with an optional --feat filter."
+acceptance = [
+    "Given active requirements exist, then weft list prints one line per requirement in the form \"REQ-NNN: <description>\".",
+    "Given weft list --feat FEAT-X is run, then only requirements whose feat equals FEAT-X are returned.",
+    "Given a requirement is deprecated, then it does not appear in weft list output.",
+]

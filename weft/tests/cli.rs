@@ -1,4 +1,5 @@
 use std::fs;
+use std::thread;
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -98,6 +99,19 @@ fn get_returns_acceptance_for_a_fixture_record() {
         );
 }
 
+// @verifies REQ-008 v2 3da61ff3
+#[test]
+fn get_fails_for_nonexistent_requirement() {
+    let dir = project_with_well_formed_record();
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .args(["get", "REQ-999", "--field", "statement"])
+        .current_dir(dir.path())
+        .assert()
+        .failure();
+}
+
 #[test]
 fn verify_passes_for_a_well_formed_record() {
     let dir = project_with_well_formed_record();
@@ -108,6 +122,27 @@ fn verify_passes_for_a_well_formed_record() {
         .current_dir(dir.path())
         .assert()
         .success();
+}
+
+// @verifies REQ-007 v2 1d00916a
+#[test]
+fn verify_fails_with_format_error_for_malformed_toml() {
+    let dir = TempDir::new().expect("create temp dir");
+    let prds_dir = dir.path().join("docs/prds");
+    fs::create_dir_all(&prds_dir).expect("create docs/prds");
+    fs::write(
+        prds_dir.join("REQ-001.toml"),
+        "id = \"REQ-001\nthis is not valid toml",
+    )
+    .expect("write malformed fixture");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("verify")
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("REQ-001"));
 }
 
 /// Sets up a temp project whose only requirement record is `REQ-007.toml`
@@ -205,6 +240,48 @@ fn new_with_feat_places_record_in_feature_folder_and_sets_feat_field() {
         .current_dir(dir.path())
         .assert()
         .success();
+}
+
+// @verifies REQ-009 v2 c30912ae
+#[test]
+fn new_allocates_unique_ids_under_concurrent_invocation() {
+    let dir = project_with_max_req_007();
+    let path = dir.path().to_path_buf();
+
+    let handles: Vec<_> = (0..4)
+        .map(|_| {
+            let path = path.clone();
+            thread::spawn(move || {
+                Command::cargo_bin("weft")
+                    .unwrap()
+                    .arg("new")
+                    .current_dir(&path)
+                    .assert()
+                    .success();
+            })
+        })
+        .collect();
+
+    for handle in handles {
+        handle.join().expect("weft new thread panicked");
+    }
+
+    let mut files = Vec::new();
+    for entry in fs::read_dir(dir.path().join("docs/prds")).expect("read docs/prds") {
+        let entry = entry.expect("dir entry");
+        if entry.path().extension().and_then(|e| e.to_str()) == Some("toml") {
+            files.push(entry.file_name().to_string_lossy().into_owned());
+        }
+    }
+
+    let unique: std::collections::HashSet<_> = files.iter().cloned().collect();
+    assert_eq!(
+        files.len(),
+        unique.len(),
+        "expected unique ids, got: {files:?}"
+    );
+    // REQ-007 (pre-existing) plus 4 newly allocated records.
+    assert_eq!(files.len(), 5, "expected 5 records, got: {files:?}");
 }
 
 /// Sets up a temp project with two requirement records: `REQ-001` (no
@@ -309,6 +386,34 @@ fn list_filters_by_feat() {
     );
 }
 
+// @verifies REQ-010 v2 59117494
+#[test]
+fn list_excludes_deprecated_requirements() {
+    let dir = project_with_two_requirements();
+    let prd_path = dir.path().join("docs/prds/REQ-001.toml");
+    let deprecated = fs::read_to_string(&prd_path)
+        .unwrap()
+        .replace("status = \"active\"", "status = \"deprecated\"");
+    fs::write(&prd_path, deprecated).unwrap();
+
+    let output = Command::cargo_bin("weft")
+        .unwrap()
+        .arg("list")
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let stdout = String::from_utf8(output).unwrap();
+
+    assert!(
+        !stdout.contains("REQ-001"),
+        "did not expect deprecated REQ-001 in: {stdout}"
+    );
+    assert!(stdout.contains("REQ-002"), "expected REQ-002 in: {stdout}");
+}
+
 #[test]
 fn verify_fails_with_bump_message_for_a_stale_hash() {
     let dir = project_with_well_formed_record();
@@ -327,6 +432,7 @@ fn verify_fails_with_bump_message_for_a_stale_hash() {
         .stdout(predicate::str::contains("weft bump REQ-001"));
 }
 
+// @verifies REQ-011 v2 5429311c
 #[test]
 fn bump_recomputes_hash_and_increments_version_after_an_edit() {
     let dir = project_with_well_formed_record();
