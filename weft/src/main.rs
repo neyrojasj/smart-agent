@@ -52,6 +52,11 @@ enum Command {
     Render,
     /// Scaffold docs/prds/, the design-decision docs dir, and weft skill stubs.
     Init,
+    /// Mark a requirement as deprecated (preserved, not deleted).
+    Deprecate {
+        /// The requirement's REQ_ID, e.g. REQ-001.
+        req_id: String,
+    },
 }
 
 #[derive(Clone, ValueEnum)]
@@ -74,6 +79,7 @@ fn main() -> ExitCode {
         Command::Bump { req_id } => bump_cmd(&req_id),
         Command::Render => render_cmd(),
         Command::Init => init_cmd(),
+        Command::Deprecate { req_id } => deprecate_cmd(&req_id),
     }
 }
 
@@ -397,4 +403,53 @@ fn init_cmd() -> ExitCode {
     } else {
         ExitCode::FAILURE
     }
+}
+
+/// Rewrites a requirement record's `status` line to `"deprecated"`, leaving
+/// everything else untouched.  Idempotent: safe to call on a record that is
+/// already deprecated.
+fn rewrite_deprecated(src: &str) -> String {
+    let mut out: Vec<String> = Vec::new();
+    for line in src.lines() {
+        if line.trim_start().starts_with("status =") {
+            out.push("status = \"deprecated\"".to_string());
+        } else {
+            out.push(line.to_string());
+        }
+    }
+    let mut result = out.join("\n");
+    result.push('\n');
+    result
+}
+
+// @implements REQ-019 v1 placeholder
+fn deprecate_cmd(req_id: &str) -> ExitCode {
+    let mut files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut files);
+
+    for file in &files {
+        if file.file_stem().and_then(|s| s.to_str()) != Some(req_id) {
+            continue;
+        }
+
+        let src = match fs::read_to_string(file) {
+            Ok(src) => src,
+            Err(e) => {
+                eprintln!("{}: {e}", file.display());
+                return ExitCode::FAILURE;
+            }
+        };
+
+        let rewritten = rewrite_deprecated(&src);
+        if let Err(e) = fs::write(file, rewritten) {
+            eprintln!("{}: {e}", file.display());
+            return ExitCode::FAILURE;
+        }
+
+        println!("{req_id}: deprecated");
+        return ExitCode::SUCCESS;
+    }
+
+    eprintln!("requirement '{req_id}' not found under docs/prds");
+    ExitCode::FAILURE
 }

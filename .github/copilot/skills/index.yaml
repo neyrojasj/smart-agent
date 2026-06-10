@@ -394,6 +394,32 @@ skills:
       - setup
       - coding
 
+  to-smart-prd:
+    file: "to-smart-prd/SKILL.md"
+    name: "to-smart-prd"
+    description: >
+      Turn a grilling session into machine-first requirement records under
+      docs/prds/. Upserts net-new records (weft new), bumps requirements whose
+      normative text changed (weft bump), and deprecates removed requirements
+      (weft deprecate). User Stories are never persisted.
+    priority: 11
+    triggers:
+      keywords:
+        - to-smart-prd
+        - upsert requirements
+        - write requirement records
+        - requirements from session
+        - requirement records
+      patterns:
+        - "run to-smart-prd"
+        - "upsert.*requirements"
+        - "write.*requirements.*session"
+        - "requirements.*from.*grilling"
+        - "to-smart-prd.*"
+    requires_approval: false
+    can_chain_to:
+      - to-smart-issues
+
 # Routing configuration
 routing:
   # Default skill when no clear match
