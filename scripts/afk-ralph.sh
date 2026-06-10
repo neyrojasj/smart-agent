@@ -67,8 +67,9 @@ $recent
 
 ## How to work
 1. Read the repo's CONTEXT.md glossary and the ADRs in docs/adr/ — follow that language and those decisions.
-2. Use STRICT TDD (red → green → refactor): write a failing test first and watch it fail, write the
-   simplest code to make it pass, then refactor. Lean on the project's tdd skill/conventions.
+2. Use the project's TDD skill at .claude/skills/tdd/SKILL.md — invoke it (the \`tdd\` skill) and follow
+   it for this work. Drive everything with STRICT TDD (red → green → refactor): write a failing test
+   first and watch it fail, write the simplest code to make it pass, then refactor.
 3. Implement ONLY the scope of issue #$num. Touch no unrelated files. Do not start later slices.
 4. Where this tool's own requirements records exist (docs/prds/), keep them traceable with the
    appropriate @implements / @verifies annotations described in the PRD.
