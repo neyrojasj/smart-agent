@@ -1,0 +1,12 @@
+id = "REQ-020"
+version = 2
+feat = "FEAT-Tracing"
+hash = "9abea869"
+status = "active"
+statement = "The system must classify each requirement as Orphaned, Incomplete, Stale, or Traced based on the presence and hash-currency of its trace links."
+acceptance = [
+    "Given a requirement with no trace links, then its Trace State is Orphaned.",
+    "Given a requirement with some but not all of design/code/test links present, then its Trace State is Incomplete.",
+    "Given a requirement with all links present but at least one link's hash does not match the current requirement hash, then its Trace State is Stale.",
+    "Given a requirement with all three links present and all hashes current, then its Trace State is Traced.",
+]

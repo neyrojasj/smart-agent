@@ -187,6 +187,7 @@ pub struct Annotation {
 /// Scans `text` for Trace Links: `@addresses` entries in TOML frontmatter
 /// (DEC/ADR docs), and inline `@implements`/`@verifies` markers, one per
 /// line, in any comment syntax: `@implements REQ-042 v3 a3f9b2c1`.
+// @implements REQ-019 v2 ed4d3199
 pub fn scan_annotations(text: &str) -> Vec<Annotation> {
     let mut out = scan_addresses_frontmatter(text);
     for line in text.lines() {
@@ -209,6 +210,7 @@ pub fn scan_annotations(text: &str) -> Vec<Annotation> {
 /// block at the start of `text` (DEC/ADR docs). Returns an empty vec if
 /// `text` has no frontmatter, the frontmatter is not valid TOML, or it has no
 /// `addresses` array.
+// @implements REQ-016 v2 84ac8548
 fn scan_addresses_frontmatter(text: &str) -> Vec<Annotation> {
     let Some(rest) = text.strip_prefix("+++\n") else {
         return Vec::new();
@@ -247,6 +249,8 @@ fn parse_addresses_entry(s: &str) -> Option<Annotation> {
 
 /// Parses `@implements REQ-042 v3 a3f9b2c1` (or `@verifies ...`) starting at
 /// the marker itself.
+// @implements REQ-017 v2 8af530a5
+// @implements REQ-018 v2 e2253535
 fn parse_inline_annotation(s: &str, kind: AnnotationKind) -> Option<Annotation> {
     let mut tokens = s.split_whitespace();
     tokens.next()?; // the @implements / @verifies marker itself
@@ -292,6 +296,8 @@ impl fmt::Display for TraceState {
 /// Computes `req`'s [`TraceState`] from the Trace Links found by
 /// [`scan_annotations`] across the project (annotations for other
 /// requirements are ignored).
+// @implements REQ-020 v2 9abea869
+// @implements REQ-021 v2 58781e5c
 pub fn trace_state(req: &Requirement, annotations: &[Annotation]) -> TraceState {
     let find = |kind: AnnotationKind| {
         annotations
@@ -323,7 +329,6 @@ pub fn trace_state(req: &Requirement, annotations: &[Annotation]) -> TraceState 
 ///
 /// The output is non-authoritative — the TOML records under `docs/prds/` are
 /// the source of truth. See ADR 0001.
-// @implements REQ-020 v1 placeholder
 pub fn render_markdown(requirements: &[Requirement]) -> String {
     let mut out = String::from("# Requirements\n");
 

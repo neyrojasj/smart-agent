@@ -3,6 +3,8 @@ use weft_core::{
     Status, TraceState,
 };
 
+// @verifies REQ-017 v2 8af530a5
+// @verifies REQ-019 v2 ed4d3199
 #[test]
 fn finds_an_implements_annotation_in_a_code_comment() {
     let src = "// @implements REQ-901 v1 a3f9b2c1\nfn login() {}\n";
@@ -20,6 +22,8 @@ fn finds_an_implements_annotation_in_a_code_comment() {
     );
 }
 
+// @verifies REQ-018 v2 e2253535
+// @verifies REQ-019 v2 ed4d3199
 #[test]
 fn finds_a_verifies_annotation_in_a_test_comment() {
     let src = "# @verifies REQ-902 v3 deadbeef\ndef test_login(): ...\n";
@@ -33,6 +37,24 @@ fn finds_a_verifies_annotation_in_a_test_comment() {
             req_id: "REQ-902".to_string(),
             version: 3,
             hash: "deadbeef".to_string(),
+        }]
+    );
+}
+
+// @verifies REQ-019 v2 ed4d3199
+#[test]
+fn finds_annotations_regardless_of_comment_syntax() {
+    let src = "<!-- @implements REQ-903 v1 cafef00d -->\n<div>login form</div>\n";
+
+    let annotations = scan_annotations(src);
+
+    assert_eq!(
+        annotations,
+        vec![Annotation {
+            kind: AnnotationKind::Implements,
+            req_id: "REQ-903".to_string(),
+            version: 1,
+            hash: "cafef00d".to_string(),
         }]
     );
 }
@@ -60,6 +82,7 @@ fn current_hash() -> String {
     )
 }
 
+// @verifies REQ-020 v2 9abea869
 #[test]
 fn no_links_is_orphaned() {
     let req = requirement("REQ-001", &current_hash());
@@ -67,6 +90,7 @@ fn no_links_is_orphaned() {
     assert_eq!(trace_state(&req, &[]), TraceState::Orphaned);
 }
 
+// @verifies REQ-020 v2 9abea869
 #[test]
 fn missing_a_link_is_incomplete() {
     let hash = current_hash();
@@ -90,6 +114,8 @@ fn missing_a_link_is_incomplete() {
     assert_eq!(trace_state(&req, &annotations), TraceState::Incomplete);
 }
 
+// @verifies REQ-020 v2 9abea869
+// @verifies REQ-021 v2 58781e5c
 #[test]
 fn a_link_pinning_an_old_hash_is_stale() {
     let hash = current_hash();
@@ -118,6 +144,8 @@ fn a_link_pinning_an_old_hash_is_stale() {
     assert_eq!(trace_state(&req, &annotations), TraceState::Stale);
 }
 
+// @verifies REQ-020 v2 9abea869
+// @verifies REQ-021 v2 58781e5c
 #[test]
 fn all_links_present_and_current_is_traced() {
     let hash = current_hash();
@@ -146,6 +174,7 @@ fn all_links_present_and_current_is_traced() {
     assert_eq!(trace_state(&req, &annotations), TraceState::Traced);
 }
 
+// @verifies REQ-016 v2 84ac8548
 #[test]
 fn finds_addresses_annotations_in_toml_frontmatter() {
     let src = "+++\naddresses = [\"REQ-001 v1 a3f9b2c1\", \"REQ-002 v2 deadbeef\"]\n+++\n\n# Decision\n";

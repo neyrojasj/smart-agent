@@ -63,7 +63,6 @@ acceptance = [
     dir
 }
 
-// @verifies REQ-020 v1 placeholder
 #[test]
 fn render_emits_markdown_with_id_version_and_statement() {
     let dir = project_with_two_requirements();
@@ -95,7 +94,6 @@ fn render_emits_markdown_with_id_version_and_statement() {
     assert!(stdout.contains("v2"), "expected v2 in: {stdout}");
 }
 
-// @verifies REQ-020 v1 placeholder
 #[test]
 fn render_includes_acceptance_criteria() {
     let dir = project_with_two_requirements();
@@ -111,7 +109,6 @@ fn render_includes_acceptance_criteria() {
         .stdout(predicate::str::contains(ACCEPTANCE_B[0]));
 }
 
-// @verifies REQ-020 v1 placeholder
 #[test]
 fn render_output_is_valid_markdown_headers() {
     let dir = project_with_two_requirements();

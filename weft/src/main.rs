@@ -394,7 +394,6 @@ fn list_cmd(feat: Option<&str>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-// @implements REQ-020 v1 placeholder
 fn render_cmd() -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);
@@ -415,7 +414,6 @@ fn render_cmd() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-// @implements REQ-021 v1 placeholder
 fn init_cmd() -> ExitCode {
     let dirs = ["docs/prds", "docs/decisions"];
     let mut ok = true;
@@ -454,7 +452,6 @@ fn rewrite_deprecated(src: &str) -> String {
     result
 }
 
-// @implements REQ-019 v1 placeholder
 fn deprecate_cmd(req_id: &str) -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);

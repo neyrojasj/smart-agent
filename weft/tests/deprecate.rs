@@ -1,4 +1,3 @@
-// @verifies REQ-019 v1 placeholder
 use std::fs;
 
 use assert_cmd::Command;
@@ -39,7 +38,6 @@ acceptance = [
     dir
 }
 
-// @verifies REQ-019 v1 placeholder
 #[test]
 fn deprecate_marks_requirement_as_deprecated() {
     let dir = project_with_active_requirement();
@@ -63,7 +61,6 @@ fn deprecate_marks_requirement_as_deprecated() {
     );
 }
 
-// @verifies REQ-019 v1 placeholder
 #[test]
 fn deprecate_is_idempotent_on_already_deprecated_record() {
     let dir = project_with_active_requirement();
@@ -103,7 +100,6 @@ fn deprecate_fails_for_nonexistent_requirement() {
         .failure();
 }
 
-// @verifies REQ-019 v1 placeholder
 #[test]
 fn deprecated_record_still_passes_verify() {
     let dir = project_with_active_requirement();

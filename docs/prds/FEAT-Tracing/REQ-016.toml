@@ -1,0 +1,10 @@
+id = "REQ-016"
+version = 2
+feat = "FEAT-Tracing"
+hash = "84ac8548"
+status = "active"
+statement = "The system must support an @addresses structured field in design-decision frontmatter that carries REQ_ID, version, and hash."
+acceptance = [
+    "Given a design-decision file with an @addresses field listing REQ-NNN vN <hash>, then weft check counts it as the design link for that requirement.",
+    "Given the @addresses hash does not match the requirement's current hash, then the link is counted as Stale.",
+]

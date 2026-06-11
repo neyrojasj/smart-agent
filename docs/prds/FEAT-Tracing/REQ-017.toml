@@ -1,0 +1,10 @@
+id = "REQ-017"
+version = 2
+feat = "FEAT-Tracing"
+hash = "8af530a5"
+status = "active"
+statement = "The system must support @implements REQ-NNN vN <hash> inline annotations in source code files."
+acceptance = [
+    "Given a source file containing the annotation @implements REQ-NNN vN <hash>, then weft check counts it as the code link for that requirement.",
+    "Given the annotation hash does not match the requirement's current hash, then the link is counted as Stale.",
+]

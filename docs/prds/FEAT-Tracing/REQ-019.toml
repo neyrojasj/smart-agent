@@ -1,0 +1,11 @@
+id = "REQ-019"
+version = 2
+feat = "FEAT-Tracing"
+hash = "ed4d3199"
+status = "active"
+statement = "The system must scan trace annotations language-agnostically using line/marker matching, without per-language AST parsing."
+acceptance = [
+    "Given source files in any text-based language, when they contain @implements or @verifies annotations, then weft check detects them.",
+    "Given a new language is introduced, then no new parser is required for weft check to find its annotations.",
+]
+rationale = "Language-agnostic scanning keeps the tool useful across polyglot codebases without per-language maintenance."

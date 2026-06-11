@@ -1,0 +1,11 @@
+id = "REQ-021"
+version = 2
+feat = "FEAT-Tracing"
+hash = "58781e5c"
+status = "active"
+statement = "A requirement must be counted as Traced only when design, code, and test links all exist and all reference the current requirement hash."
+acceptance = [
+    "Given all three links exist but one references an old hash, then the Trace State is Stale, not Traced.",
+    "Given all three links exist and all reference the current hash, then the Trace State is Traced.",
+]
+rationale = "Full-chain enforcement means \"implemented\" carries a verifiable guarantee, not just a partial claim."

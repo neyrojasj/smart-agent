@@ -1,7 +1,6 @@
 use assert_cmd::Command;
 use tempfile::TempDir;
 
-// @verifies REQ-021 v1 placeholder
 #[test]
 fn init_creates_docs_prds_directory() {
     let dir = TempDir::new().expect("create temp dir");
@@ -19,7 +18,6 @@ fn init_creates_docs_prds_directory() {
     );
 }
 
-// @verifies REQ-021 v1 placeholder
 #[test]
 fn init_creates_docs_decisions_directory() {
     let dir = TempDir::new().expect("create temp dir");
@@ -37,7 +35,6 @@ fn init_creates_docs_decisions_directory() {
     );
 }
 
-// @verifies REQ-021 v1 placeholder
 #[test]
 fn init_is_idempotent_on_existing_project() {
     let dir = TempDir::new().expect("create temp dir");

@@ -1,0 +1,10 @@
+id = "REQ-018"
+version = 2
+feat = "FEAT-Tracing"
+hash = "e2253535"
+status = "active"
+statement = "The system must support @verifies REQ-NNN vN <hash> inline annotations in test files."
+acceptance = [
+    "Given a test file containing the annotation @verifies REQ-NNN vN <hash>, then weft check counts it as the test link for that requirement.",
+    "Given the annotation hash does not match the requirement's current hash, then the link is counted as Stale.",
+]
