@@ -38,6 +38,7 @@ acceptance = [
     dir
 }
 
+// @verifies REQ-015 v2 3d05542c
 #[test]
 fn deprecate_marks_requirement_as_deprecated() {
     let dir = project_with_active_requirement();
@@ -88,6 +89,7 @@ fn deprecate_is_idempotent_on_already_deprecated_record() {
     );
 }
 
+// @verifies REQ-015 v2 3d05542c
 #[test]
 fn deprecate_fails_for_nonexistent_requirement() {
     let dir = project_with_active_requirement();

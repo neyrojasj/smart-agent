@@ -84,6 +84,7 @@ fn current_hash() -> String {
     canonical_hash(STATEMENT, &acceptance)
 }
 
+// @verifies REQ-014 v2 d217a603
 #[test]
 fn fully_traced_requirement_passes_check() {
     let hash = current_hash();
@@ -138,6 +139,7 @@ fn old_hash_in_implements_link_is_stale() {
         .stdout(predicate::str::contains("REQ-901: Stale"));
 }
 
+// @verifies REQ-014 v2 d217a603
 #[test]
 fn requirement_with_no_links_is_orphaned() {
     let hash = current_hash();

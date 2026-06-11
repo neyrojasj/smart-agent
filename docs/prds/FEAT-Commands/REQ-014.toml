@@ -1,0 +1,11 @@
+id = "REQ-014"
+version = 2
+feat = "FEAT-Commands"
+hash = "d217a603"
+status = "active"
+statement = "The system must provide a weft check command that reports each active requirement's Trace State (Orphaned, Incomplete, Stale, or Traced)."
+acceptance = [
+    "Given requirements with varying trace link completeness, then weft check prints one line per requirement showing its id and Trace State.",
+    "Given at least one requirement is not Traced, then weft check exits non-zero.",
+    "Given all requirements are Traced, then weft check exits 0.",
+]

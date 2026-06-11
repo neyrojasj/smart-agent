@@ -63,6 +63,7 @@ acceptance = [
     dir
 }
 
+// @verifies REQ-012 v2 8afcf842
 #[test]
 fn render_emits_markdown_with_id_version_and_statement() {
     let dir = project_with_two_requirements();
@@ -107,6 +108,26 @@ fn render_includes_acceptance_criteria() {
         .stdout(predicate::str::contains(ACCEPTANCE_A[0]))
         .stdout(predicate::str::contains(ACCEPTANCE_A[1]))
         .stdout(predicate::str::contains(ACCEPTANCE_B[0]));
+}
+
+// @verifies REQ-012 v2 8afcf842
+#[test]
+fn render_does_not_modify_prd_files() {
+    let dir = project_with_two_requirements();
+    let req_001_path = dir.path().join("docs/prds/REQ-001.toml");
+    let req_002_path = dir.path().join("docs/prds/FEAT-Auth/REQ-002.toml");
+    let before_001 = fs::read_to_string(&req_001_path).unwrap();
+    let before_002 = fs::read_to_string(&req_002_path).unwrap();
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("render")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    assert_eq!(fs::read_to_string(&req_001_path).unwrap(), before_001);
+    assert_eq!(fs::read_to_string(&req_002_path).unwrap(), before_002);
 }
 
 #[test]

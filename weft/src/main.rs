@@ -258,6 +258,7 @@ fn find_scannable_files(root: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
+// @implements REQ-014 v2 d217a603
 fn check_cmd() -> ExitCode {
     let mut req_files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut req_files);
@@ -394,6 +395,7 @@ fn list_cmd(feat: Option<&str>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+// @implements REQ-012 v2 8afcf842
 fn render_cmd() -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);
@@ -414,6 +416,7 @@ fn render_cmd() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+// @implements REQ-013 v2 41174961
 fn init_cmd() -> ExitCode {
     let dirs = ["docs/prds", "docs/decisions"];
     let mut ok = true;
@@ -452,6 +455,7 @@ fn rewrite_deprecated(src: &str) -> String {
     result
 }
 
+// @implements REQ-015 v2 3d05542c
 fn deprecate_cmd(req_id: &str) -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);

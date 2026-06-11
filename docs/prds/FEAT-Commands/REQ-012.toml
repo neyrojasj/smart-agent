@@ -1,0 +1,11 @@
+id = "REQ-012"
+version = 2
+feat = "FEAT-Commands"
+hash = "8afcf842"
+status = "active"
+statement = "The system must provide a weft render command that generates a human-readable Markdown view of all active requirements."
+acceptance = [
+    "Given active requirements exist, then weft render outputs Markdown listing each requirement's id, version, statement, and acceptance criteria.",
+    "Given weft render completes, then the docs/prds/ TOML files are unchanged.",
+]
+rationale = "A rendered Markdown view lets humans review the PRD without it becoming a second normative source of truth."

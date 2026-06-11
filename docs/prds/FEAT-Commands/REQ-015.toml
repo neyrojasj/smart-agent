@@ -1,0 +1,11 @@
+id = "REQ-015"
+version = 2
+feat = "FEAT-Commands"
+hash = "3d05542c"
+status = "active"
+statement = "The system must provide a weft deprecate REQ-NNN command that marks a requirement as deprecated."
+acceptance = [
+    "Given weft deprecate REQ-NNN is run, then the record's status is set to \"deprecated\" and the file remains on disk.",
+    "Given a deprecated requirement, then weft list does not include it in its output.",
+    "Given weft deprecate is run on a non-existent id, then it exits non-zero.",
+]
