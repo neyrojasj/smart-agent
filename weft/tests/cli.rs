@@ -55,7 +55,6 @@ fn get_returns_statement_for_a_fixture_record() {
         .stdout(predicate::str::contains(STATEMENT));
 }
 
-// @verifies REQ-025 v1 placeholder
 #[test]
 fn get_returns_version_for_a_fixture_record() {
     let dir = project_with_well_formed_record();

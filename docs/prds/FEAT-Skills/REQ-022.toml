@@ -1,0 +1,10 @@
+id = "REQ-022"
+version = 2
+feat = "FEAT-Skills"
+hash = "b34eb010"
+status = "active"
+statement = "The system must provide a to-smart-prd skill that consumes a grilling session and upserts requirement records in docs/prds/."
+acceptance = [
+    "Given a grilling session containing stated requirements, when to-smart-prd runs, then each requirement is present as a TOML record in docs/prds/.",
+    "Given to-smart-prd is run twice with the same session content, then no records change on the second run.",
+]

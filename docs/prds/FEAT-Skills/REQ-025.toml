@@ -1,0 +1,10 @@
+id = "REQ-025"
+version = 2
+feat = "FEAT-Skills"
+hash = "6ff51574"
+status = "active"
+statement = "The system must provide a to-smart-issues skill that produces a vertical-slice implementation plan from not-yet-Traced requirements."
+acceptance = [
+    "Given requirements with Trace State Orphaned or Incomplete, when to-smart-issues runs, then one or more issues are created covering those requirements.",
+    "Given no requirements are Orphaned or Incomplete, then to-smart-issues creates no issues.",
+]

@@ -53,6 +53,7 @@ If absent, tell the user to build it first: `cargo build --release`.
 
 ## Workflow
 
+<!-- @implements REQ-022 v2 b34eb010 -->
 ### Step 1 — Extract Requirements from Session
 
 Read the current conversation and extract each distinct requirement. For each:
@@ -122,6 +123,7 @@ For each extracted requirement, decide its action:
    After writing the real content, run `weft bump` once. The resulting version
    is v2; this is the canonical first real version.
 
+<!-- @implements REQ-023 v2 4fa1a337 -->
 #### 3b — Existing requirement, normative text unchanged
 
 Compare the session's statement and acceptance against the current record with:
@@ -147,6 +149,7 @@ The session contains an evolved version of an existing requirement.
    This increments `version` and recomputes `hash` from the new text as a single
    atomic operation.
 
+<!-- @implements REQ-024 v2 00a713df -->
 ### Step 4 — Deprecate Removed Requirements
 
 Any requirement that **was active** in `docs/prds/` but is **absent from the

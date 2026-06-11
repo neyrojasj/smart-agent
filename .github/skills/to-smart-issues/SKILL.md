@@ -17,10 +17,11 @@ version: "1.0"
 - **Name**: to-smart-issues
 - **Version**: 1.0
 - **Input**: A project with `docs/prds/` requirement records and existing annotations
-- **Output**: GitHub issues, one per vertical slice; each issue embeds REQ_ID+version+hash and is tagged `implement` or `rework`
+- **Output**: GitHub issues, one per vertical slice; each issue embeds REQ_ID+version+hash and is tagged `implement` or `rework`. A single tracking issue ties all slices together and closes when every slice issue closes.
 
 ---
 
+<!-- @implements REQ-028 v2 46490789 -->
 ## Purpose
 
 Turn the gap reported by `weft check` into a concrete, ordered implementation
@@ -60,6 +61,7 @@ the issue body as standalone artifacts. Generate them on demand for context only
 
 ## Workflow
 
+<!-- @implements REQ-025 v2 6ff51574 -->
 ### Step 1 — Discover Not-Traced Requirements
 
 ```
@@ -97,6 +99,7 @@ Build an internal working list:
 REQ-NNN | <TraceState> | v<version> | <hash> | <statement first line>
 ```
 
+<!-- @implements REQ-027 v2 af09e7de -->
 ### Step 3 — Group Requirements into Vertical Slices
 
 Apply the following grouping rules:
@@ -140,6 +143,7 @@ EOF
 #### Issue body template
 
 ```markdown
+<!-- @implements REQ-026 v2 f2ba6521 -->
 ## Scope
 
 <one paragraph describing what the slice achieves end-to-end>
@@ -192,15 +196,62 @@ Ensure the labels exist before running `gh issue create`:
 gh label create slice --color "0075ca" --description "Vertical slice of work" 2>/dev/null || true
 gh label create implement --color "e4e669" --description "Net-new implementation" 2>/dev/null || true
 gh label create rework --color "d93f0b" --description "Update stale implementation" 2>/dev/null || true
+gh label create epic --color "5319e7" --description "Tracks a full set of slices to completion" 2>/dev/null || true
 ```
 
-### Step 5 — Report
+### Step 5 — Create Tracking Issue
 
-After creating all issues, emit a concise summary:
+After all slice issues exist, create one tracking issue that lists every slice as a
+GitHub task-list item. GitHub automatically closes the tracking issue when all
+referenced issues are closed.
 
 ```
-✅ Created 3 issue(s):
+gh issue create \
+  --title "<short PRD or feature name>: implementation tracking" \
+  --label "epic" \
+  --body "$(cat <<'EOF'
+<tracking issue body — see template below>
+EOF
+)"
+```
 
+Use the repo name, feature name, or the dominant FEAT label as the short name in
+the title. If all requirements belong to a single FEAT, use that FEAT name.
+If requirements span multiple FEATs, use the repo name or a short description of
+the overall goal.
+
+#### Tracking issue body template
+
+```markdown
+## Goal
+
+<one paragraph: what the completed implementation will deliver — same level as the PRD problem statement>
+
+## Slices
+
+Complete these in order (each slice's scope and trace annotations are in the linked issue):
+
+- [ ] #N Slice 1: <title>
+- [ ] #M Slice 2: <title>
+- [ ] #P Slice 3: <title>
+…
+
+## Done when
+
+`weft check` exits 0 for all requirements listed across the slices above.
+```
+
+The task-list items (`- [ ] #N`) must use the exact issue numbers returned by
+`gh issue create` in Step 4, in the same order as the slices.
+
+### Step 6 — Report
+
+After creating all slice issues and the tracking issue, emit a concise summary:
+
+```
+✅ Created 3 slice issue(s) + 1 tracking issue:
+
+  #45 [epic]     weft: implementation tracking
   #42 [implement] Slice 1: weft verify + hash integrity (REQ-005, REQ-006)
   #43 [implement] Slice 2: weft get + weft list (REQ-007, REQ-009, REQ-010)
   #44 [rework]   Slice 3: annotation scanning update (REQ-012)
@@ -224,6 +275,7 @@ After creating all issues, emit a concise summary:
    create issues if any requirement record has a hash mismatch.
 6. **Order matters** — tracer-bullet order: thinnest end-to-end slice first.
 7. **Issue titles start with `Slice N:`** — so issues sort and relate visually.
+8. **Always create a tracking issue** — one per skill run, labeled `epic`, listing every slice with a `- [ ] #N` task-list item so GitHub auto-closes it when all slices close.
 
 ---
 

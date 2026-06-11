@@ -1,0 +1,10 @@
+id = "REQ-024"
+version = 2
+feat = "FEAT-Skills"
+hash = "00a713df"
+status = "active"
+statement = "The to-smart-prd skill must deprecate active requirements that are absent from the session's intent."
+acceptance = [
+    "Given an active requirement not matched to any session requirement, when the session explicitly removes or supersedes it, then to-smart-prd runs weft deprecate on that record.",
+    "Given ambiguity about whether a requirement was intentionally removed, then to-smart-prd asks the user for confirmation before deprecating.",
+]

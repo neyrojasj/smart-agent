@@ -1,0 +1,10 @@
+id = "REQ-023"
+version = 2
+feat = "FEAT-Skills"
+hash = "4fa1a337"
+status = "active"
+statement = "The to-smart-prd skill must detect when a session requirement matches an existing record and bump it only when the normative text has changed."
+acceptance = [
+    "Given an existing record whose normative text matches the session requirement exactly, then to-smart-prd makes no change to that record.",
+    "Given an existing record whose statement or acceptance differs from the session requirement, then to-smart-prd updates the normative text and runs weft bump.",
+]

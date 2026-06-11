@@ -147,7 +147,6 @@ fn verify_cmd(path: &Path) -> ExitCode {
 }
 
 // @implements REQ-008 v2 3da61ff3
-// @implements REQ-026 v1 placeholder
 fn get_cmd(req_id: &str, field: &Field) -> ExitCode {
     let mut files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut files);

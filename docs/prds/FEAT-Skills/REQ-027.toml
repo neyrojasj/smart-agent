@@ -1,0 +1,10 @@
+id = "REQ-027"
+version = 2
+feat = "FEAT-Skills"
+hash = "af09e7de"
+status = "active"
+statement = "The to-smart-issues skill must distinguish a rework slice (Stale requirement) from an implement slice (Orphaned or Incomplete requirement)."
+acceptance = [
+    "Given a requirement with Trace State Stale, then its generated issue is labelled as a rework slice.",
+    "Given a requirement with Trace State Orphaned or Incomplete, then its generated issue is labelled as an implement slice.",
+]
