@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues for this repository, using the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues are tracked as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

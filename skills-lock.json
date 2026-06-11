@@ -72,6 +72,18 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/zoom-out/SKILL.md",
       "computedHash": "8357aeaece3b709c442eab67e64b86844e05e2f1ea95b109565eba50b6def36e"
+    },
+    "to-smart-issues": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".github/skills/to-smart-issues/SKILL.md",
+      "computedHash": "8217b1d0a33ba30a9bcd7f3633b2da5c8b1599ff07b19463080e368198c65047"
+    },
+    "to-smart-prd": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".github/skills/to-smart-prd/SKILL.md",
+      "computedHash": "5f61ae0edbe2bb01ae5dd153fd2cfa273d3b93e644d2c2d1d4d0fb2a6024f0f3"
     }
   }
 }

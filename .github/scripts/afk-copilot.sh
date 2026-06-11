@@ -1,39 +1,49 @@
 #!/usr/bin/env bash
 #
-# afk-copilot.sh — AFK "Ralph" loop for building a PRD one vertical slice at a time.
+# afk-copilot.sh — AFK "Copilot" loop for building a PRD one vertical slice at a time.
 #
-# For each open issue labelled `slice` (in ascending issue-number order), it spins
-# up a FRESH headless `copilot` session that implements exactly that one slice with
-# TDD and lands a single commit. Continuity between sessions comes from the last 5
-# commits + the issue tracker + the working tree (the Ralph pattern).
+# For each issue file under .scratch/*/issues/ with Status: ready-for-agent (in ascending
+# path order), it spins up a FRESH headless `claude` session that implements exactly that
+# one slice with TDD and lands a single commit. Continuity between sessions comes from the
+# last 5 commits + the issue file + the working tree (the Ralph pattern).
 #
 # Usage:
-#   scripts/afk-copilot.sh [PRD_ISSUE]        # default PRD_ISSUE=1
-#   scripts/afk-copilot.sh 1 --dry-run        # print the prompt for the next slice, don't run
+#   scripts/afk-copilot.sh [PRD_PATH]        # PRD_PATH: .scratch/<feature>/PRD.md or feature slug
+#   scripts/afk-copilot.sh weft --dry-run    # print the prompt for the next slice, don't run
 #
 # Env knobs:
-#   COPILOT_LABEL    issue label that marks a slice            (default: slice)
-#   COPILOT_MODEL    model passed to copilot --model           (default: unset → CLI default)
-#   COPILOT_MAX      safety cap on iterations                  (default: 50)
+#   COPILOT_MAX      safety cap on iterations        (default: 50)
+#
+# Model is hardcoded to claude-sonnet-4-6.
 #
 set -euo pipefail
 
-PRD_ISSUE="${1:-1}"
+PRD_ARG="${1:-}"
 DRY_RUN=false
 [[ "${2:-}" == "--dry-run" ]] && DRY_RUN=true
 
-LABEL="${COPILOT_LABEL:-slice}"
 MAX_ITERS="${COPILOT_MAX:-50}"
+MODEL="claude-sonnet-4-6"
 LOG_DIR="logs/copilot"
-STATUS_FILE=".scratch/afk-copilot-status.txt"
+SCRATCH_DIR=".scratch"
 
 # ---- preflight ----------------------------------------------------------------
-command -v gh >/dev/null      || { echo "✗ gh CLI not found"; exit 1; }
-command -v jq >/dev/null      || { echo "✗ jq not found"; exit 1; }
-command -v copilot >/dev/null || { echo "✗ copilot CLI not found"; exit 1; }
+command -v jq >/dev/null     || { echo "✗ jq not found"; exit 1; }
+command -v claude >/dev/null || { echo "✗ claude CLI not found"; exit 1; }
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "✗ not a git repo"; exit 1; }
+[[ -d "$SCRATCH_DIR" ]] || { echo "✗ $SCRATCH_DIR/ not found — no local issues"; exit 1; }
 mkdir -p "$LOG_DIR"
-mkdir -p ".scratch"
+
+# Validate PRD if given
+if [[ -n "$PRD_ARG" ]]; then
+  prd_path="$PRD_ARG"
+  # If it looks like a feature slug (no slashes, no .md), resolve it
+  if [[ ! "$prd_path" == */* && ! "$prd_path" == *.md ]]; then
+    prd_path="$SCRATCH_DIR/$PRD_ARG/PRD.md"
+  fi
+  [[ -f "$prd_path" ]] || { echo "✗ PRD not found: $prd_path"; exit 1; }
+  echo "→ PRD: $prd_path"
+fi
 
 # Work on the CURRENT branch — never switch or create. But if that branch is the
 # default branch, the loop is about to commit autonomously straight onto it, so
@@ -48,115 +58,138 @@ if [[ "$current_branch" == "main" || "$current_branch" == "master" ]]; then
   esac
 fi
 
-PRD_BODY="$(gh issue view "$PRD_ISSUE" --json body --jq .body)"
-[[ -n "$PRD_BODY" ]] || { echo "✗ PRD issue #$PRD_ISSUE has no body / not found"; exit 1; }
+# ---- issue helpers ------------------------------------------------------------
+find_next_issue() {
+  while IFS= read -r f; do
+    local status
+    status="$(grep -m1 '^Status:' "$f" 2>/dev/null | sed 's/^Status:[[:space:]]*//' | tr -d '[:space:]')"
+    if [[ "$status" == "ready-for-agent" ]]; then
+      echo "$f"
+      return 0
+    fi
+  done < <(find "$SCRATCH_DIR" -path "*/issues/*.md" | sort)
+}
+
+issue_title() {
+  local f="$1"
+  grep -m1 '^# ' "$f" 2>/dev/null | sed 's/^# //' || basename "$f" .md
+}
+
+mark_done() {
+  local f="$1"
+  sed -i '' 's/^Status: ready-for-agent/Status: done/' "$f"
+}
 
 # ---- prompt builder -----------------------------------------------------------
 build_prompt() {
-  local num="$1" title="$2" body="$3" recent="$4"
+  local issue_path="$1" title="$2" recent="$3"
   cat <<EOF
-You are an autonomous engineer building the \`weft\` requirements-traceability tool.
-Work on EXACTLY ONE vertical slice this session, then stop. Do not start any other slice.
+Implement EXACTLY one vertical slice this session, then stop.
 
-## Product context — PRD #$PRD_ISSUE
-$PRD_BODY
+## This session: $title
 
-## Your slice this session — issue #$num: $title
-$body
+Read the full scope, requirements table, and copy-paste-correct trace annotations:
+  $issue_path
 
-## Recent commits (last 5, for continuity with prior sessions)
+## Recent commits (continuity with prior sessions)
 $recent
 
 ## How to work
-1. Read the repo's CONTEXT.md glossary and the ADRs in docs/adr/ — follow that language and those decisions.
-2. Use the project's TDD skill at .claude/skills/tdd/SKILL.md — invoke it (the \`tdd\` skill) and follow
-   it for this work. Drive everything with STRICT TDD (red → green → refactor): write a failing test
-   first and watch it fail, write the simplest code to make it pass, then refactor.
-3. Implement ONLY the scope of issue #$num. Touch no unrelated files. Do not start later slices.
-4. Where this tool's own requirements records exist (docs/prds/), keep them traceable with the
-   appropriate @implements / @verifies annotations described in the PRD.
-5. Run the FULL test suite. It must be green before you commit.
+1. Read CONTEXT.md and docs/adr/ first — follow the domain language and existing decisions.
+2. Run /tdd — use strict red → green → refactor for every change.
+3. Stay within the scope of the issue above. Do not touch unrelated files or start other slices.
+4. Add @implements and @verifies trace annotations to every file you change.
+5. Run the full test suite — it must be green before you commit.
 
 ## Finishing (required)
-- When green, make EXACTLY ONE git commit for this slice.
-- Commit subject MUST start with: \`slice #$num: \`
-- Write the latest status to $STATUS_FILE as ONE word only:
-  - DONE  (slice completed and committed)
-  - HITL  (needs human-in-the-loop; stop and return to user)
-- End the commit message with this trailer line:
-  Co-Authored-By: GitHub Copilot <noreply@github.com>
-- Do NOT push and do NOT open a PR.
-- If you cannot finish the slice, commit NOTHING and explain clearly what blocked you.
+- ONE commit; subject must start with: slice: $title
+- Trailer: Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+- Do NOT push. Do NOT open a PR.
+- Update Status: done in $issue_path after the commit.
+- If blocked, commit nothing and explain what stopped you.
 EOF
 }
 
 # ---- the loop -----------------------------------------------------------------
-last_num=""
+last_path=""
 no_progress=0
 iter=0
 
 while (( iter++ < MAX_ITERS )); do
-  # Filter the label CLIENT-SIDE in jq rather than via `gh --label`: when the
-  # repo has been renamed, gh's server-side label filter doesn't follow the
-  # redirect and silently returns nothing, whereas the unfiltered list does.
-  slice_json="$(gh issue list --state open --json number,title,body,labels \
-                  --jq "[.[] | select(any(.labels[]; .name==\"$LABEL\"))] | sort_by(.number) | .[0] // empty")"
-  if [[ -z "$slice_json" ]]; then
-    echo "✓ No open '$LABEL' issues remain — all slices done."
+  issue_path="$(find_next_issue)"
+  if [[ -z "$issue_path" ]]; then
+    echo "✓ No ready-for-agent issues remain — all slices done."
     exit 0
   fi
 
-  num="$(jq -r '.number' <<<"$slice_json")"
-  title="$(jq -r '.title' <<<"$slice_json")"
-  body="$(jq -r '.body'  <<<"$slice_json")"
+  title="$(issue_title "$issue_path")"
   recent="$(git log -5 --pretty=format:'- %h %s' 2>/dev/null || echo '(no commits yet)')"
 
   echo "──────────────────────────────────────────────────────────────"
-  echo "→ Slice #$num: $title"
-  prompt="$(build_prompt "$num" "$title" "$body" "$recent")"
+  echo "→ $issue_path: $title"
+  prompt="$(build_prompt "$issue_path" "$title" "$recent")"
 
   if $DRY_RUN; then
-    echo "── DRY RUN: prompt for #$num ──"
+    echo "── DRY RUN: prompt for $issue_path ──"
     printf '%s\n' "$prompt"
     exit 0
   fi
 
   head_before="$(git rev-parse HEAD)"
   ts="$(date +%Y%m%d-%H%M%S)"
-  log_file="$LOG_DIR/slice-${num}-${ts}.log"
+  slug="$(basename "$issue_path" .md)"
+  log_file="$LOG_DIR/${slug}-${ts}.log"
+  raw_file="$LOG_DIR/${slug}-${ts}.jsonl"
 
-  echo "  running copilot — streaming steps below (full log → $log_file)"
+  echo "  running claude — streaming steps below (raw events → $raw_file)"
   echo "  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
   # Fresh headless session, AFK (no permission prompts), one slice.
-  # Keep output simple: stream directly to terminal and tee to a log file.
-  copilot -p "$prompt" \
-      --allow-all \
-      --stream on \
-      ${COPILOT_MODEL:+--model "$COPILOT_MODEL"} \
+  # stream-json + --verbose surfaces each assistant message / tool call live;
+  # the jq filter renders those events human-readably while tee keeps full logs.
+  printf '%s' "$prompt" | claude -p \
+      --dangerously-skip-permissions \
+      --verbose --output-format stream-json \
+      --model "$MODEL" \
+    | tee "$raw_file" \
+    | jq --unbuffered -r '
+        if   .type=="system" and .subtype=="init" then "⚙️  session start (model \(.model // "?"))"
+        elif .type=="assistant" then
+          ( .message.content[]?
+            | if   .type=="text"     then .text
+              elif .type=="tool_use" then "🔧 \(.name): \(.input|tostring|.[0:200])"
+              else empty end )
+        elif .type=="user" then
+          ( .message.content[]?
+            | select(.type=="tool_result")
+            | (.content // "")
+            | (if type=="array" then (map(.text // "")|join(" ")) else tostring end)
+            | "   ↳ \(.[0:200])" )
+        elif .type=="result" then "✅ \(.subtype // "done")  (cost $\(.total_cost_usd // 0))"
+        else empty end' 2>/dev/null \
     | tee "$log_file" || true
   echo "  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
 
   head_after="$(git rev-parse HEAD)"
 
   if [[ "$head_before" != "$head_after" ]]; then
-    echo "✓ Slice #$num committed: $(git log -1 --pretty=format:'%h %s')"
-    gh issue close "$num" --comment "Implemented by AFK Copilot loop: $head_after" >/dev/null || true
+    echo "✓ $title committed: $(git log -1 --pretty=format:'%h %s')"
+    mark_done "$issue_path"
     no_progress=0
   else
-    echo "⚠ Slice #$num produced no commit (see $log_file)."
-    if [[ "$num" == "$last_num" ]]; then
+    echo "⚠ $issue_path produced no commit (see $log_file)."
+    if [[ "$issue_path" == "$last_path" ]]; then
       (( no_progress++ ))
     else
       no_progress=1
     fi
     if (( no_progress >= 2 )); then
-      echo "✗ Slice #$num made no progress twice in a row — stopping for human review."
+      echo "✗ $issue_path made no progress twice in a row — stopping for human review."
       exit 1
     fi
     echo "  Retrying once before giving up…"
   fi
 
-  last_num="$num"
+  last_path="$issue_path"
 done
 
 echo "✗ Hit iteration cap ($MAX_ITERS) — stopping."
