@@ -6,7 +6,7 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
     bump, description, next_req_id, render_markdown, scan_annotations, skeleton_toml, trace_state,
-    verify_requirement, Annotation, Requirement, Status, TraceState,
+    verify_not_user_story, verify_requirement, Annotation, Requirement, Status, TraceState,
 };
 
 #[derive(Parser)]
@@ -16,6 +16,11 @@ struct Cli {
     command: Command,
 }
 
+// @implements REQ-029 v2 6f452ce5
+/// The CLI surface. By design there is no `save`/`sync` subcommand: the
+/// legacy Python `smart` installer and its personal-branch save/sync
+/// feature were removed (ADR 0008) — `weft` has a single purpose,
+/// requirements traceability.
 #[derive(Subcommand)]
 enum Command {
     /// Validate requirement records (format + hash integrity).
@@ -119,16 +124,25 @@ fn verify_cmd(path: &Path) -> ExitCode {
     let mut ok = true;
     for file in &files {
         let id = file.file_stem().and_then(|s| s.to_str()).unwrap_or_default();
-        let req = match load_requirement(file) {
+        let src = match fs::read_to_string(file) {
+            Ok(src) => src,
+            Err(e) => {
+                eprintln!("{}: {e}", file.display());
+                ok = false;
+                continue;
+            }
+        };
+        let req = match Requirement::parse(&src) {
             Ok(req) => req,
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{}: {e}", file.display());
                 ok = false;
                 continue;
             }
         };
 
-        let issues = verify_requirement(&req, id);
+        let mut issues = verify_requirement(&req, id);
+        issues.extend(verify_not_user_story(&src));
         if issues.is_empty() {
             println!("{id}: ok");
         } else {

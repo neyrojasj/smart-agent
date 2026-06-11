@@ -69,6 +69,10 @@ pub enum VerifyIssue {
         stored: String,
         derived: String,
     },
+    /// The record contains a top-level User Story field (`as_a`, `i_want`,
+    /// `so_that`, or `user_story`). User Stories are ephemeral and must
+    /// never be persisted in `docs/prds/`.
+    UserStoryRecord(String),
 }
 
 impl fmt::Display for VerifyIssue {
@@ -89,6 +93,11 @@ impl fmt::Display for VerifyIssue {
                 f,
                 "stored hash '{stored}' does not match derived hash '{derived}' \
                  — the requirement was edited without bumping; run `weft bump {id}`"
+            ),
+            VerifyIssue::UserStoryRecord(field) => write!(
+                f,
+                "record contains '{field}', a User Story field — User Stories must never be \
+                 persisted in docs/prds/; generate them ephemerally at implementation time"
             ),
         }
     }
@@ -381,4 +390,22 @@ pub fn verify_requirement(req: &Requirement, filename_id: &str) -> Vec<VerifyIss
     }
 
     issues
+}
+
+/// Top-level TOML keys that mark a record as a User Story rather than a
+/// Requirement. User Stories are ephemeral and must never be persisted.
+const USER_STORY_FIELDS: &[&str] = &["as_a", "i_want", "so_that", "user_story"];
+
+/// Checks `toml_src` for a top-level User Story field (see
+/// [`USER_STORY_FIELDS`]). Requirement records carry only `id`, `version`,
+/// `feat`, `hash`, `status`, `statement`, `acceptance`, `rationale`, and
+/// `notes` — a User Story field at the top level means the file persists a
+/// User Story, which `docs/prds/` must never contain.
+// @implements REQ-030 v2 bf5f866e
+pub fn verify_not_user_story(toml_src: &str) -> Option<VerifyIssue> {
+    let table = toml_src.parse::<toml::Table>().ok()?;
+    USER_STORY_FIELDS
+        .iter()
+        .find(|&&field| table.contains_key(field))
+        .map(|&field| VerifyIssue::UserStoryRecord(field.to_string()))
 }

@@ -1,4 +1,6 @@
-use weft_core::{canonical_hash, verify_requirement, Requirement, Status, VerifyIssue};
+use weft_core::{
+    canonical_hash, verify_not_user_story, verify_requirement, Requirement, Status, VerifyIssue,
+};
 
 const STATEMENT: &str = "The system must allow users to log in with email and password.";
 const ACCEPTANCE: &[&str] = &[
@@ -155,4 +157,47 @@ acceptance = []
     assert!(issues
         .iter()
         .any(|i| matches!(i, VerifyIssue::EmptyAcceptance)));
+}
+
+// @verifies REQ-030 v2 bf5f866e
+#[test]
+fn record_with_user_story_fields_is_rejected() {
+    let hash = current_hash();
+    let toml_src = format!(
+        r#"
+id = "REQ-001"
+version = 1
+hash = "{hash}"
+status = "active"
+statement = "{STATEMENT}"
+acceptance = [
+    "{a0}",
+    "{a1}",
+]
+as_a = "developer"
+i_want = "to log in with email and password"
+so_that = "I can access my account"
+"#,
+        a0 = ACCEPTANCE[0],
+        a1 = ACCEPTANCE[1],
+    );
+
+    let issue = verify_not_user_story(&toml_src);
+
+    assert!(
+        matches!(issue, Some(VerifyIssue::UserStoryRecord(_))),
+        "expected a UserStoryRecord issue, got {issue:?}"
+    );
+}
+
+// @verifies REQ-030 v2 bf5f866e
+#[test]
+fn record_without_user_story_fields_passes() {
+    let hash = current_hash();
+    let toml_src = fixture_toml(&hash, "REQ-001");
+
+    assert!(
+        verify_not_user_story(&toml_src).is_none(),
+        "a normal requirement record must not be flagged as a User Story"
+    );
 }

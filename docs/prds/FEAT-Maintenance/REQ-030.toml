@@ -1,0 +1,11 @@
+id = "REQ-030"
+version = 2
+feat = "FEAT-Maintenance"
+hash = "bf5f866e"
+status = "active"
+statement = "User stories must never be persisted in docs/prds/; they are generated ephemerally at implementation time only."
+acceptance = [
+    "Given the docs/prds/ directory, then no file in it contains a user story as a top-level record.",
+    "Given to-smart-prd runs, then it writes only Requirement TOML records and does not create user story files.",
+]
+rationale = "Persisting user stories would create a second artifact competing with the Requirement as the source of truth."

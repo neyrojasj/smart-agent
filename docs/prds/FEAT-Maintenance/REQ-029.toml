@@ -1,0 +1,11 @@
+id = "REQ-029"
+version = 2
+feat = "FEAT-Maintenance"
+hash = "6f452ce5"
+status = "active"
+statement = "The system must remove the legacy Python smart installer and its save/sync features from the repository."
+acceptance = [
+    "Given the repository, then no Python smart installer scripts or save/sync command implementations exist.",
+    "Given the weft CLI, then it provides no save or sync subcommands.",
+]
+rationale = "A single tool with a single purpose avoids user confusion and maintenance burden from two competing systems."
