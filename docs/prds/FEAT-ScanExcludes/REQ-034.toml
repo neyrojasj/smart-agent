@@ -1,0 +1,14 @@
+id = "REQ-034"
+version = 2
+feat = "FEAT-ScanExcludes"
+hash = "b68c2987"
+status = "active"
+statement = "The system must exclude files and directories listed in an optional .weftignore file at the project root, in addition to the hardcoded SCAN_EXCLUDES (.git, target, node_modules), when scanning for Trace Link annotations."
+acceptance = [
+    "Given a .weftignore file exists at the project root with one entry per line, then weft check and weft seal must not scan any file or directory whose basename matches an entry, at any depth.",
+    "Given a .weftignore entry has a trailing slash, then the trailing slash is stripped before matching, so 'logs' and 'logs/' are equivalent.",
+    "Given a .weftignore line is blank or begins with #, then it is ignored.",
+    "Given no .weftignore file exists at the project root, then scanning behavior is unchanged from SCAN_EXCLUDES alone.",
+    "Given a path's basename matches either SCAN_EXCLUDES or a .weftignore entry, then it is excluded from scanning — the two exclude sets are additive.",
+]
+rationale = "Files under .scratch/ (issue drafts embedding example @implements/@verifies annotations for copy-paste) and logs/ (AI agent transcripts echoing annotation-shaped text) were being scanned and sealed into weft.lock, causing weft check to report unrelated requirements as Drifted whenever those logs changed. The exclude set is project-specific, so it must be configurable rather than hardcoded."

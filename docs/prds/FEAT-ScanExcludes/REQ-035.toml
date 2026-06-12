@@ -1,0 +1,11 @@
+id = "REQ-035"
+version = 2
+feat = "FEAT-ScanExcludes"
+hash = "1e646999"
+status = "active"
+statement = "The weft init command must create a default .weftignore file at the project root containing .scratch and logs, if one does not already exist."
+acceptance = [
+    "Given weft init is run in a project with no .weftignore file, then a .weftignore file is created at the project root containing .scratch and logs, one per line.",
+    "Given weft init is run in a project that already has a .weftignore file, then the existing file is left unchanged.",
+]
+rationale = ".scratch and logs are directories this toolchain itself creates (issue drafts and AI agent run logs) that are never source or test artifacts, so new projects should be safe from REQ-034's false-Drift problem out of the box."
