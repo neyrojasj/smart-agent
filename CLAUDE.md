@@ -11,3 +11,7 @@ Triage uses the default five-label vocabulary with no overrides. See `docs/agent
 ### Domain docs
 
 Domain docs are single-context (root `CONTEXT.md` + root `docs/adr/`). See `docs/agents/domain.md`.
+
+### Architecture
+
+New and touched code follows deep-modules + SOLID-via-traits. See `docs/agents/architecture.md`.
