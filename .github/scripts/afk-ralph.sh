@@ -8,7 +8,7 @@
 # last 5 commits + the issue file + the working tree (the Ralph pattern).
 #
 # Usage:
-#   scripts/afk-ralph.sh [PRD_PATH]        # PRD_PATH: .scratch/<feature>/PRD.md or feature slug
+#   scripts/afk-ralph.sh [FEATURE]         # FEATURE: .scratch/<feature>/, PRD.md path, or slug
 #   scripts/afk-ralph.sh weft --dry-run    # print the prompt for the next slice, don't run
 #
 # Env knobs:
@@ -18,7 +18,7 @@
 #
 set -euo pipefail
 
-PRD_ARG="${1:-}"
+FEATURE_ARG="${1:-}"
 DRY_RUN=false
 [[ "${2:-}" == "--dry-run" ]] && DRY_RUN=true
 
@@ -34,14 +34,28 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "✗ not a git rep
 [[ -d "$SCRATCH_DIR" ]] || { echo "✗ $SCRATCH_DIR/ not found — no local issues"; exit 1; }
 mkdir -p "$LOG_DIR"
 
-# Validate PRD if given
-if [[ -n "$PRD_ARG" ]]; then
-  prd_path="$PRD_ARG"
-  # If it looks like a feature slug (no slashes, no .md), resolve it
-  if [[ ! "$prd_path" == */* && ! "$prd_path" == *.md ]]; then
-    prd_path="$SCRATCH_DIR/$PRD_ARG/PRD.md"
+# Resolve the feature folder and PRD path from the argument.
+# Accepts: a folder (.scratch/feat-foo/ or feat-foo), a PRD.md path, or nothing (all features).
+FEATURE_DIR=""
+if [[ -n "$FEATURE_ARG" ]]; then
+  arg="$FEATURE_ARG"
+  # Strip trailing slash
+  arg="${arg%/}"
+  if [[ -d "$arg" ]]; then
+    # Direct folder path
+    FEATURE_DIR="$arg"
+  elif [[ -d "$SCRATCH_DIR/$arg" ]]; then
+    # Bare slug
+    FEATURE_DIR="$SCRATCH_DIR/$arg"
+  elif [[ -f "$arg" && "$arg" == *.md ]]; then
+    # PRD.md path — feature folder is its parent
+    FEATURE_DIR="$(dirname "$arg")"
+  else
+    echo "✗ Cannot resolve feature folder from: $FEATURE_ARG"; exit 1
   fi
+  prd_path="$FEATURE_DIR/PRD.md"
   [[ -f "$prd_path" ]] || { echo "✗ PRD not found: $prd_path"; exit 1; }
+  echo "→ Feature: $FEATURE_DIR"
   echo "→ PRD: $prd_path"
 fi
 
@@ -60,6 +74,7 @@ fi
 
 # ---- issue helpers ------------------------------------------------------------
 find_next_issue() {
+  local search_root="${FEATURE_DIR:-$SCRATCH_DIR}"
   while IFS= read -r f; do
     local status
     status="$(grep -m1 '^Status:' "$f" 2>/dev/null | sed 's/^Status:[[:space:]]*//' | tr -d '[:space:]')"
@@ -67,7 +82,7 @@ find_next_issue() {
       echo "$f"
       return 0
     fi
-  done < <(find "$SCRATCH_DIR" -path "*/issues/*.md" | sort)
+  done < <(find "$search_root" -path "*/issues/*.md" | sort)
 }
 
 issue_title() {

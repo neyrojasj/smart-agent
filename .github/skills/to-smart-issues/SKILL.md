@@ -2,12 +2,13 @@
 name: to-smart-issues
 description: >
   Consume the not-yet-Traced requirements reported by `weft check` and produce
-  a vertical-slice implementation plan as GitHub issues. Each issue spans one or
-  more whole requirements taken end-to-end to the Traced state, embeds the exact
-  REQ_ID + version + hash so @implements/@verifies annotations are copy-paste
-  correct, and is tagged `implement` (Orphaned/Incomplete) or `rework` (Stale).
-  Fully-Traced requirements produce no work.
-version: "1.0"
+  a vertical-slice implementation plan as local markdown files under `.scratch/`.
+  Each issue spans one or more whole requirements taken end-to-end to the Traced
+  state, embeds the exact REQ_ID + version + hash so @implements/@verifies
+  annotations are copy-paste correct, and is tagged `implement`
+  (Orphaned/Incomplete) or `rework` (Stale). A PRD.md tracking file ties all
+  slices together. Fully-Traced requirements produce no work.
+version: "1.1"
 ---
 
 # to-smart-issues Skill
@@ -15,9 +16,9 @@ version: "1.0"
 ## Identity
 
 - **Name**: to-smart-issues
-- **Version**: 1.0
+- **Version**: 1.1
 - **Input**: A project with `docs/prds/` requirement records and existing annotations
-- **Output**: GitHub issues, one per vertical slice; each issue embeds REQ_ID+version+hash and is tagged `implement` or `rework`. A single tracking issue ties all slices together and closes when every slice issue closes.
+- **Output**: Local markdown files under `.scratch/<feature-slug>/` — one issue file per vertical slice plus a `PRD.md` tracking file. Each issue embeds REQ_ID+version+hash and is tagged `implement` or `rework`.
 
 ---
 
@@ -53,9 +54,9 @@ the issue body as standalone artifacts. Generate them on demand for context only
 
 - `weft` CLI must be installed and on the `PATH`. Run `weft --help` to verify.
   If absent, tell the user to build it first: `cargo build --release`.
-- `gh` CLI must be available and authenticated for issue creation.
-  Run `gh auth status` to verify.
 - Requirement records must be up to date and pass `weft verify`.
+- The `.scratch/` directory must exist at the project root (created by convention;
+  create it if absent).
 
 ---
 
@@ -125,25 +126,35 @@ Apply the following grouping rules:
 
 Each group becomes one issue.
 
-### Step 4 — Create Issues
+### Step 4 — Write Issue Files
 
-For each slice, create a GitHub issue:
+Determine the feature slug from the dominant FEAT label (e.g. `FEAT-FileDrift` →
+`feat-file-drift`). If requirements span multiple FEATs, use a short kebab-case
+description of the overall goal.
 
+Create the directory structure:
 ```
-gh issue create \
-  --title "Slice N: <short description>" \
-  --label "slice" \
-  --label "<implement|rework>" \
-  --body "$(cat <<'EOF'
-<issue body — see template below>
-EOF
-)"
+.scratch/<feature-slug>/
+.scratch/<feature-slug>/issues/
 ```
 
-#### Issue body template
+For each slice, write one file at:
+```
+.scratch/<feature-slug>/issues/<NN>-<short-slug>.md
+```
+
+where `<NN>` is zero-padded slice number (`01`, `02`, …) and `<short-slug>` is a
+3-5 word kebab-case description of the slice.
+
+#### Issue file template
 
 ```markdown
 <!-- @implements REQ-026 v2 f2ba6521 -->
+# Slice N: <short description>
+
+Status: needs-triage
+Labels: slice, <implement|rework>
+
 ## Scope
 
 <one paragraph describing what the slice achieves end-to-end>
@@ -184,56 +195,38 @@ Test:
 <implement | rework>
 ```
 
-#### Labels to apply
+#### Status line
 
-| Condition | Labels |
-|-----------|--------|
-| All requirements Orphaned or Incomplete | `slice`, `implement` |
-| Any requirement Stale | `slice`, `rework` |
+Set `Status: needs-triage` on every new issue file. This follows the triage
+vocabulary in `docs/agents/triage-labels.md`.
 
-Ensure the labels exist before running `gh issue create`:
+### Step 5 — Write PRD Tracking File
+
+After all slice issue files are written, create the tracking PRD at:
 ```
-gh label create slice --color "0075ca" --description "Vertical slice of work" 2>/dev/null || true
-gh label create implement --color "e4e669" --description "Net-new implementation" 2>/dev/null || true
-gh label create rework --color "d93f0b" --description "Update stale implementation" 2>/dev/null || true
-gh label create epic --color "5319e7" --description "Tracks a full set of slices to completion" 2>/dev/null || true
+.scratch/<feature-slug>/PRD.md
 ```
 
-### Step 5 — Create Tracking Issue
+Use the FEAT name or a short description of the overall goal as the title.
 
-After all slice issues exist, create one tracking issue that lists every slice as a
-GitHub task-list item. GitHub automatically closes the tracking issue when all
-referenced issues are closed.
-
-```
-gh issue create \
-  --title "<short PRD or feature name>: implementation tracking" \
-  --label "epic" \
-  --body "$(cat <<'EOF'
-<tracking issue body — see template below>
-EOF
-)"
-```
-
-Use the repo name, feature name, or the dominant FEAT label as the short name in
-the title. If all requirements belong to a single FEAT, use that FEAT name.
-If requirements span multiple FEATs, use the repo name or a short description of
-the overall goal.
-
-#### Tracking issue body template
+#### PRD.md template
 
 ```markdown
+# <Feature name>: Implementation Tracking
+
+Status: needs-triage
+Labels: epic
+
 ## Goal
 
 <one paragraph: what the completed implementation will deliver — same level as the PRD problem statement>
 
 ## Slices
 
-Complete these in order (each slice's scope and trace annotations are in the linked issue):
+Complete these in order (each slice's scope and trace annotations are in the linked file):
 
-- [ ] #N Slice 1: <title>
-- [ ] #M Slice 2: <title>
-- [ ] #P Slice 3: <title>
+- [ ] [Slice 1: <title>](issues/01-<slug>.md)
+- [ ] [Slice 2: <title>](issues/02-<slug>.md)
 …
 
 ## Done when
@@ -241,20 +234,20 @@ Complete these in order (each slice's scope and trace annotations are in the lin
 `weft check` exits 0 for all requirements listed across the slices above.
 ```
 
-The task-list items (`- [ ] #N`) must use the exact issue numbers returned by
-`gh issue create` in Step 4, in the same order as the slices.
+The task-list items must link to the exact filenames written in Step 4, in the
+same order as the slices.
 
 ### Step 6 — Report
 
-After creating all slice issues and the tracking issue, emit a concise summary:
+After writing all slice files and the PRD tracking file, emit a concise summary:
 
 ```
-✅ Created 3 slice issue(s) + 1 tracking issue:
+✅ Created 3 slice file(s) + PRD tracking file:
 
-  #45 [epic]     weft: implementation tracking
-  #42 [implement] Slice 1: weft verify + hash integrity (REQ-005, REQ-006)
-  #43 [implement] Slice 2: weft get + weft list (REQ-007, REQ-009, REQ-010)
-  #44 [rework]   Slice 3: annotation scanning update (REQ-012)
+  .scratch/feat-weft/PRD.md                              [epic]
+  .scratch/feat-weft/issues/01-verify-hash-integrity.md  [implement] Slice 1: weft verify + hash integrity (REQ-005, REQ-006)
+  .scratch/feat-weft/issues/02-get-and-list.md           [implement] Slice 2: weft get + weft list (REQ-007, REQ-009, REQ-010)
+  .scratch/feat-weft/issues/03-annotation-scan-update.md [rework]   Slice 3: annotation scanning update (REQ-012)
 
 ⏭  Skipped (already Traced): REQ-001, REQ-002, REQ-003, REQ-004
 ```
@@ -269,13 +262,16 @@ After creating all slice issues and the tracking issue, emit a concise summary:
    so annotations written by the engineer are copy-paste correct.
 3. **`rework` and `implement` never mix in one slice** — the work shapes are
    different; keep them separate.
-4. **Traced requirements produce no issues** — `weft check` reporting `Traced`
+4. **Traced requirements produce no files** — `weft check` reporting `Traced`
    means the requirement is done; do not create placeholder issues.
-5. **Verify before creating issues** — run `weft verify` first; refuse to
-   create issues if any requirement record has a hash mismatch.
+5. **Verify before writing files** — run `weft verify` first; refuse to
+   write any files if any requirement record has a hash mismatch.
 6. **Order matters** — tracer-bullet order: thinnest end-to-end slice first.
-7. **Issue titles start with `Slice N:`** — so issues sort and relate visually.
-8. **Always create a tracking issue** — one per skill run, labeled `epic`, listing every slice with a `- [ ] #N` task-list item so GitHub auto-closes it when all slices close.
+7. **Issue file titles start with `Slice N:`** — so files sort and relate visually.
+8. **Always write a PRD tracking file** — one `PRD.md` per skill run, labeled `epic`,
+   listing every slice as a `- [ ] [Slice N: <title>](issues/<file>.md)` task-list item.
+9. **Follow the local issue tracker convention** — files go under `.scratch/<feature-slug>/`
+   as defined in `docs/agents/issue-tracker.md`. Every issue file gets `Status: needs-triage`.
 
 ---
 
@@ -284,11 +280,11 @@ After creating all slice issues and the tracking issue, emit a concise summary:
 | Situation | Action |
 |-----------|--------|
 | `weft` not found | Tell user to `cargo build --release` first |
-| `gh` not found or not authenticated | Tell user to install and run `gh auth login` |
 | `weft verify` reports hash mismatch | Run `weft bump REQ-NNN` on the affected record; re-verify before continuing |
-| `weft check` exits 0 (all Traced) | Report success and stop; no issues to create |
+| `weft check` exits 0 (all Traced) | Report success and stop; no files to write |
 | Requirement too large to slice alone | Recommend splitting the requirement via `to-smart-prd` |
-| Ambiguous FEAT grouping | Ask user to confirm grouping before creating issues |
+| Ambiguous FEAT grouping | Ask user to confirm grouping before writing files |
+| `.scratch/` directory does not exist | Create it with `mkdir -p .scratch` before writing |
 
 ---
 
