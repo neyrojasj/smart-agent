@@ -152,7 +152,7 @@ where `<NN>` is zero-padded slice number (`01`, `02`, …) and `<short-slug>` is
 <!-- @implements REQ-026 v2 f2ba6521 -->
 # Slice N: <short description>
 
-Status: needs-triage
+Status: ready-for-agent
 Labels: slice, <implement|rework>
 
 ## Scope
@@ -197,29 +197,36 @@ Test:
 
 #### Status line
 
-Set `Status: needs-triage` on every new issue file. This follows the triage
-vocabulary in `docs/agents/triage-labels.md`.
+Set `Status: ready-for-agent` on every new issue file — the slice is already
+scoped and verified by `weft check`, so no manual triage step is needed.
 
-### Step 5 — Write PRD Tracking File
+### Step 5 — Update PRD Tracking File
 
-After all slice issue files are written, create the tracking PRD at:
-```
-.scratch/<feature-slug>/PRD.md
-```
+After all slice issue files are written, update `.scratch/<feature-slug>/PRD.md`
+with the implementation plan.
 
-Use the FEAT name or a short description of the overall goal as the title.
+**Check whether `PRD.md` already exists** (written by a prior `to-smart-prd` run):
 
-#### PRD.md template
+- **If it exists:** locate the `## Slices` section and replace its body (from
+  the line after `## Slices` up to the next `##` heading or end of file) with
+  the slice task-list and updated `## Done when` block. Leave every other
+  section (Problem Statement, Solution, Implementation Decisions, Testing
+  Decisions, Out of Scope) completely untouched.
+
+- **If it does not exist:** create the file using the full standalone template
+  below.
+
+#### Full PRD.md template (standalone — no prior to-smart-prd run)
 
 ```markdown
 # <Feature name>: Implementation Tracking
 
-Status: needs-triage
+Status: ready-for-agent
 Labels: epic
 
 ## Goal
 
-<one paragraph: what the completed implementation will deliver — same level as the PRD problem statement>
+<one paragraph: what the completed implementation will deliver>
 
 ## Slices
 
@@ -232,6 +239,18 @@ Complete these in order (each slice's scope and trace annotations are in the lin
 ## Done when
 
 `weft check` exits 0 for all requirements listed across the slices above.
+```
+
+#### Slices section replacement (existing PRD.md)
+
+Replace only the body of the `## Slices` section with:
+
+```markdown
+Complete these in order (each slice's scope and trace annotations are in the linked file):
+
+- [ ] [Slice 1: <title>](issues/01-<slug>.md)
+- [ ] [Slice 2: <title>](issues/02-<slug>.md)
+…
 ```
 
 The task-list items must link to the exact filenames written in Step 4, in the
@@ -268,10 +287,12 @@ After writing all slice files and the PRD tracking file, emit a concise summary:
    write any files if any requirement record has a hash mismatch.
 6. **Order matters** — tracer-bullet order: thinnest end-to-end slice first.
 7. **Issue file titles start with `Slice N:`** — so files sort and relate visually.
-8. **Always write a PRD tracking file** — one `PRD.md` per skill run, labeled `epic`,
-   listing every slice as a `- [ ] [Slice N: <title>](issues/<file>.md)` task-list item.
+8. **Compose with, never overwrite, an existing PRD.md** — if `to-smart-prd`
+   already wrote the file, update only the `## Slices` section; all prose
+   sections (Problem Statement, Solution, Implementation Decisions, Testing
+   Decisions, Out of Scope) must be left untouched.
 9. **Follow the local issue tracker convention** — files go under `.scratch/<feature-slug>/`
-   as defined in `docs/agents/issue-tracker.md`. Every issue file gets `Status: needs-triage`.
+   as defined in `docs/agents/issue-tracker.md`. Every issue file gets `Status: ready-for-agent`.
 
 ---
 

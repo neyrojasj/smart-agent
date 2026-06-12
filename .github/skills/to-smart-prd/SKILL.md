@@ -46,8 +46,10 @@ stories are generated on demand from it at implementation time.
 
 ## Prerequisites
 
-`weft` CLI must be installed and on the `PATH`. Run `weft --help` to verify.
-If absent, tell the user to build it first: `cargo build --release`.
+- `weft` CLI must be installed and on the `PATH`. Run `weft --help` to verify.
+  If absent, tell the user to build it first: `cargo build --release`.
+- The `.scratch/` directory must exist at the project root (created by
+  convention; create it with `mkdir -p .scratch` if absent).
 
 ---
 
@@ -173,7 +175,64 @@ weft verify [docs/prds]
 
 Every touched record must report `ok`. Fix any issues before proceeding.
 
-### Step 6 — Report
+### Step 6 — Write PRD Overview
+
+Derive the feature slug from the dominant `feat` field of the touched records
+(e.g. `FEAT-FileDrift` → `feat-file-drift`). If records span multiple FEATs,
+use a short kebab-case description of the overall goal.
+
+Create the directory if it does not exist:
+```
+mkdir -p .scratch/<feature-slug>
+```
+
+Write `.scratch/<feature-slug>/PRD.md`. Synthesize the prose sections from the
+grilling session context — do NOT ask the user for more information.
+
+If the file already exists (e.g. from a previous run), preserve any existing
+`## Slices` section and update only the prose sections above it.
+
+#### PRD.md template
+
+```markdown
+# <Feature Name>
+
+Status: ready-for-agent
+Labels: epic
+
+## Problem Statement
+
+<user-facing problem being solved — synthesized from the grilling session>
+
+## Solution
+
+<high-level description of what is being built and how it solves the problem>
+
+## Implementation Decisions
+
+<feature-level design choices: seams, module boundaries, schema shape,
+API contracts, key interactions — omit file paths and code snippets unless
+a prototype snippet encodes a decision more precisely than prose can>
+
+## Testing Decisions
+
+<which seams will be tested, what constitutes a good test for this feature,
+any prior art in the codebase to follow>
+
+## Out of Scope
+
+<explicit exclusions discussed in the session, if any>
+
+## Slices
+
+_(not yet planned — run `/to-smart-issues` to generate the implementation plan)_
+
+## Done when
+
+`weft check` exits 0 for all requirements in this feature.
+```
+
+### Step 7 — Report
 
 Emit a concise summary:
 
@@ -184,6 +243,8 @@ Emit a concise summary:
 ⏭  Unchanged:  REQ-001, REQ-002, REQ-004
 
 weft verify: all ok
+
+📄 PRD overview: .scratch/feat-auth/PRD.md
 ```
 
 ---
@@ -203,6 +264,9 @@ weft verify: all ok
    normative text. Never leave a record whose stored hash diverges from its content.
 7. **Verify before finishing** — `weft verify` must report `ok` for every touched
    record before the skill reports success.
+8. **Always write the PRD overview** — `.scratch/<feature-slug>/PRD.md` must be
+   written (or updated) on every run. If it already has a `## Slices` section
+   from a prior `to-smart-issues` run, preserve it.
 
 ---
 
