@@ -256,23 +256,40 @@ fn new_cmd(feat: Option<&str>) -> ExitCode {
 /// Directories never scanned for Trace Links: VCS metadata and build output.
 const SCAN_EXCLUDES: &[&str] = &[".git", "target", "node_modules"];
 
+/// The path to the optional, project-specific scan-exclude file (ADR 0010).
+const WEFTIGNORE_PATH: &str = ".weftignore";
+
+/// Reads project-specific scan excludes from `.weftignore` at `root`, one
+/// basename per line. Blank lines and lines starting with `#` are skipped,
+/// and a trailing `/` is stripped. Returns an empty list if the file doesn't
+/// exist.
+// @implements REQ-034 v2 b68c2987
+fn load_weftignore(root: &Path) -> Vec<String> {
+    let Ok(src) = fs::read_to_string(root.join(WEFTIGNORE_PATH)) else {
+        return Vec::new();
+    };
+    src.lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(|line| line.trim_end_matches('/').to_string())
+        .collect()
+}
+
 /// Recursively collects every file under `root`, skipping [`SCAN_EXCLUDES`]
-/// directories.
-fn find_scannable_files(root: &Path, out: &mut Vec<PathBuf>) {
+/// directories and any name listed in `extra_excludes` (from `.weftignore`).
+fn find_scannable_files(root: &Path, extra_excludes: &[String], out: &mut Vec<PathBuf>) {
     let Ok(entries) = fs::read_dir(root) else {
         return;
     };
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
-            if path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| SCAN_EXCLUDES.contains(&n))
-            {
+            if path.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                SCAN_EXCLUDES.contains(&n) || extra_excludes.iter().any(|e| e == n)
+            }) {
                 continue;
             }
-            find_scannable_files(&path, out);
+            find_scannable_files(&path, extra_excludes, out);
         } else {
             out.push(path);
         }
@@ -293,12 +310,13 @@ fn normalize_path(path: &Path) -> String {
         .into_owned()
 }
 
-/// Scans every file under `root` (skipping [`SCAN_EXCLUDES`] directories) for
-/// Trace Links, returning each file's normalized path paired with the
-/// annotations found in it (possibly empty).
+/// Scans every file under `root` (skipping [`SCAN_EXCLUDES`] directories and
+/// any `.weftignore` entries) for Trace Links, returning each file's
+/// normalized path paired with the annotations found in it (possibly empty).
 fn scan_file_annotations(root: &Path) -> Vec<(String, Vec<Annotation>)> {
+    let extra_excludes = load_weftignore(root);
     let mut scan_files = Vec::new();
-    find_scannable_files(root, &mut scan_files);
+    find_scannable_files(root, &extra_excludes, &mut scan_files);
 
     scan_files
         .into_iter()
@@ -484,6 +502,7 @@ fn render_cmd() -> ExitCode {
 }
 
 // @implements REQ-013 v2 41174961
+// @implements REQ-035 v2 1e646999
 fn init_cmd() -> ExitCode {
     let dirs = ["docs/prds", "docs/decisions"];
     let mut ok = true;
@@ -495,6 +514,17 @@ fn init_cmd() -> ExitCode {
             ok = false;
         } else {
             println!("created {}", path.display());
+        }
+    }
+
+    let weftignore = Path::new(WEFTIGNORE_PATH);
+    if !weftignore.exists() {
+        match fs::write(weftignore, ".scratch\nlogs\n") {
+            Ok(()) => println!("created {}", weftignore.display()),
+            Err(e) => {
+                eprintln!("{}: {e}", weftignore.display());
+                ok = false;
+            }
         }
     }
 

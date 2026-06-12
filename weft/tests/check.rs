@@ -166,6 +166,33 @@ fn requirement_with_no_links_is_orphaned() {
         .stdout(predicate::str::contains("REQ-901: Orphaned"));
 }
 
+// @verifies REQ-034 v2 b68c2987
+#[test]
+fn weftignore_excludes_listed_directory_from_scan() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+
+    // Trace Links for code + test live only inside a directory listed in
+    // `.weftignore`, so they must not be picked up by the scan.
+    fs::write(dir.path().join(".weftignore"), "ignored\n").expect("write .weftignore");
+    let ignored_dir = dir.path().join("ignored");
+    fs::create_dir_all(&ignored_dir).expect("create ignored dir");
+    let code = format!(
+        "// @implements REQ-901 v1 {hash}\n// @verifies REQ-901 v1 {hash}\nfn login() {{}}\n"
+    );
+    fs::write(ignored_dir.join("login.rs"), code).expect("write code");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("check")
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("REQ-901: Incomplete"));
+}
+
 #[test]
 fn deprecated_requirement_with_no_links_does_not_fail_check() {
     let hash = current_hash();
