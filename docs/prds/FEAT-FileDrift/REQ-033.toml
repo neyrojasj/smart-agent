@@ -1,0 +1,14 @@
+id = "REQ-033"
+version = 2
+feat = "FEAT-FileDrift"
+hash = "04d42b48"
+status = "active"
+statement = "The system must report a Drifted Trace State for a requirement when all three Trace Links are present and Current but at least one annotated file's current SHA-256 differs from its stored File Hash in weft.lock (or has no entry in weft.lock), and must include the names of the changed files in the check output."
+acceptance = [
+    "Given a requirement is Complete and all Trace Links are Current, and an annotated file has been modified since last Seal, then weft check reports REQ-NNN: Drifted (file1, file2).",
+    "Given a requirement is Complete and all Trace Links are Current, and an annotated file has no entry in weft.lock, then weft check reports REQ-NNN: Drifted (file1).",
+    "Given a requirement is Stale, then weft check reports Stale — Stale takes precedence over Drifted.",
+    "Given all annotated files for a requirement match their stored File Hashes and all Trace Links are Current, then weft check reports Traced.",
+    "Given weft check exits non-zero when any requirement is not Traced, then Drifted requirements must cause a non-zero exit.",
+]
+rationale = "Drifted is semantically distinct from Stale: Stale means the requirement moved under the implementation; Drifted means the implementation moved under the requirement. Different causes require different remediations (weft bump vs weft seal)."

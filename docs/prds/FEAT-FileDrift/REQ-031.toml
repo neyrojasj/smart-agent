@@ -1,0 +1,12 @@
+id = "REQ-031"
+version = 2
+feat = "FEAT-FileDrift"
+hash = "6cdbe6cb"
+status = "active"
+statement = "The system must maintain a flat TOML lock file at docs/prds/weft.lock that maps each annotated file path to its SHA-256 digest at last Seal time."
+acceptance = [
+    "Given weft seal is run, then docs/prds/weft.lock is created or updated with SHA-256 digests for every file that contains at least one Trace Link annotation.",
+    "Given weft.lock exists, then its structure is flat TOML with file paths as string keys and 64-character lowercase hex SHA-256 digests as string values.",
+    "Given a file no longer contains any Trace Link annotation, then weft seal removes its entry from weft.lock.",
+]
+rationale = "The lock file is the only place that can store file-level hashes without creating a circular dependency — a file cannot store its own hash."

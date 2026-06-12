@@ -1,0 +1,12 @@
+id = "REQ-032"
+version = 2
+feat = "FEAT-FileDrift"
+hash = "a2441bcc"
+status = "active"
+statement = "The system must provide a weft seal command that records the current SHA-256 of every annotated file into weft.lock, with an optional REQ_ID argument to restrict sealing to files annotated for that requirement."
+acceptance = [
+    "Given weft seal is run with no arguments, then the File Hash for every file containing any Trace Link annotation is updated in weft.lock.",
+    "Given weft seal REQ-NNN is run, then only the File Hashes for files annotated with that REQ_ID are updated in weft.lock.",
+    "Given weft seal completes successfully, then weft check no longer reports Drifted for any sealed requirement whose Trace Links were already Current.",
+]
+rationale = "Targeted sealing (per REQ_ID) lets an AI agent re-seal only the files it has reviewed, avoiding false acknowledgement of unreviewed files."

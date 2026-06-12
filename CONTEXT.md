@@ -93,11 +93,44 @@ independent of freshness or test results.
 _Avoid_: Done, finished.
 
 **Trace State**:
-The static verdict for a requirement, combining two axes the tool can check
-without executing anything — completeness (are all three Trace Links present?)
-and freshness (does each link's frozen hash match the requirement's current
-Content Hash?). Values: **Orphaned** (no links), **Incomplete** (a link
-missing), **Stale** (a link pins an old hash), or **Traced** (Complete and all
-links Current). The tool never executes tests; keeping the linked tests green
+The static verdict for a requirement, combining three axes the tool can check
+without executing anything — completeness (are all three Trace Links present?),
+freshness (does each link's frozen hash match the requirement's current Content
+Hash?), and artifact integrity (do annotated files match their sealed File
+Hashes in `weft.lock`?). Values: **Orphaned** (no links), **Incomplete** (a
+link missing), **Stale** (a link pins an old hash), **Drifted** (Complete and
+all links Current, but ≥1 annotated file has changed since last Seal), or
+**Traced** (Complete, all links Current, and all annotated files match their
+sealed hashes). The tool never executes tests; keeping the linked tests green
 is the user's responsibility, outside the tool's scope.
 _Avoid_: Status, coverage, verified (the tool does not verify test results).
+
+**Drifted**:
+The Trace State reported when a requirement is Complete and all Trace Link
+hashes are Current, but at least one annotated file has changed since it was
+last Sealed. Signals that a human or AI must re-confirm the implementation
+still satisfies the requirement before running `weft seal`.
+_Avoid_: Stale (`Stale` means the *requirement* changed; `Drifted` means an
+*artifact* changed).
+
+**Seal**:
+The act of recording the current File Hash of every annotated file into
+`weft.lock`, performed after a human or AI confirms the current file contents
+still satisfy their annotated requirements. Invoked via `weft seal` (all
+requirements) or `weft seal REQ-NNN` (targeted).
+_Avoid_: Bless, lock, approve.
+
+**File Hash**:
+The SHA-256 digest of an annotated file's full contents, stored in `weft.lock`
+at Seal time. The enforcement mechanism for artifact-level drift detection:
+when a file's current digest differs from its stored File Hash, the requirement
+is reported Drifted.
+_Avoid_: Checksum, fingerprint (use File Hash to distinguish from Content Hash,
+which applies to requirement records only).
+
+**Weft Lock**:
+The committed artifact (`docs/prds/weft.lock`) that maps each annotated file
+path to its File Hash at last Seal. Flat TOML, keyed by file path. Must be
+committed alongside source changes; regenerated via `weft seal` after
+reviewing artifact-level drift.
+_Avoid_: Manifest, snapshot.
