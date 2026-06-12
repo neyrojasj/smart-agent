@@ -1,5 +1,6 @@
 //! weft-core: requirement record parsing, canonical hashing, and verification.
 
+use std::collections::BTreeMap;
 use std::fmt;
 
 use serde::Deserialize;
@@ -275,9 +276,10 @@ fn parse_inline_annotation(s: &str, kind: AnnotationKind) -> Option<Annotation> 
 }
 
 /// The static verdict for a requirement: do its Trace Links exist
-/// (completeness), and do their frozen hashes match the requirement's
-/// current Content Hash (freshness)?
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// (completeness), do their frozen hashes match the requirement's current
+/// Content Hash (freshness), and do its annotated files match their sealed
+/// File Hashes in `weft.lock` (artifact integrity)?
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TraceState {
     /// No Trace Links at all.
     Orphaned,
@@ -286,19 +288,26 @@ pub enum TraceState {
     /// All three Trace Links are present, but at least one pins a hash that
     /// no longer matches the requirement's current Content Hash.
     Stale,
-    /// All three Trace Links are present and current.
+    /// All three Trace Links are present and current, but at least one
+    /// annotated file's current SHA-256 differs from (or is absent from) its
+    /// stored File Hash in `weft.lock`. Carries the names of the changed
+    /// files.
+    // @implements REQ-033 v2 04d42b48
+    Drifted(Vec<String>),
+    /// All three Trace Links are present and current, and every annotated
+    /// file matches its sealed File Hash.
     Traced,
 }
 
 impl fmt::Display for TraceState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            TraceState::Orphaned => "Orphaned",
-            TraceState::Incomplete => "Incomplete",
-            TraceState::Stale => "Stale",
-            TraceState::Traced => "Traced",
-        };
-        write!(f, "{s}")
+        match self {
+            TraceState::Orphaned => write!(f, "Orphaned"),
+            TraceState::Incomplete => write!(f, "Incomplete"),
+            TraceState::Stale => write!(f, "Stale"),
+            TraceState::Drifted(files) => write!(f, "Drifted ({})", files.join(", ")),
+            TraceState::Traced => write!(f, "Traced"),
+        }
     }
 }
 
@@ -332,6 +341,102 @@ pub fn trace_state(req: &Requirement, annotations: &[Annotation]) -> TraceState 
         return TraceState::Stale;
     }
     TraceState::Traced
+}
+
+/// Refines [`trace_state`]'s verdict with artifact integrity: if the base
+/// state is `Traced` but `drifted` (the annotated files whose current
+/// SHA-256 no longer matches their stored File Hash) is non-empty, the
+/// requirement is `Drifted` instead. `Stale` takes precedence over `Drifted`
+/// — fix requirement drift first.
+// @implements REQ-033 v2 04d42b48
+pub fn trace_state_with_drift(
+    req: &Requirement,
+    annotations: &[Annotation],
+    drifted: Vec<String>,
+) -> TraceState {
+    let state = trace_state(req, annotations);
+    if state == TraceState::Traced && !drifted.is_empty() {
+        TraceState::Drifted(drifted)
+    } else {
+        state
+    }
+}
+
+/// The File Hash of `bytes`: its SHA-256 digest as a 64-character lowercase
+/// hex string, stored in `weft.lock` at Seal time.
+// @implements REQ-031 v2 6cdbe6cb
+pub fn file_hash(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Parses `weft.lock`'s flat TOML body into a file path -> File Hash map.
+/// Returns an empty map if `toml_src` is empty or malformed (e.g. the lock
+/// file does not exist yet).
+// @implements REQ-031 v2 6cdbe6cb
+pub fn parse_lock(toml_src: &str) -> BTreeMap<String, String> {
+    toml::from_str(toml_src).unwrap_or_default()
+}
+
+/// Renders a file path -> File Hash map as `weft.lock`'s flat TOML body,
+/// sorted by path for a stable diff.
+// @implements REQ-031 v2 6cdbe6cb
+pub fn render_lock(entries: &BTreeMap<String, String>) -> String {
+    let mut out = String::new();
+    for (path, hash) in entries {
+        out.push_str(&format!("\"{path}\" = \"{hash}\"\n"));
+    }
+    out
+}
+
+/// All distinct file paths in `file_annotations` carrying at least one Trace
+/// Link for `req_id`, sorted.
+// @implements REQ-032 v2 a2441bcc
+// @implements REQ-033 v2 04d42b48
+pub fn files_for_requirement(req_id: &str, file_annotations: &[(String, Vec<Annotation>)]) -> Vec<String> {
+    let mut paths: Vec<String> = file_annotations
+        .iter()
+        .filter(|(_, annotations)| annotations.iter().any(|a| a.req_id == req_id))
+        .map(|(path, _)| path.clone())
+        .collect();
+    paths.sort();
+    paths.dedup();
+    paths
+}
+
+/// All distinct file paths in `file_annotations` carrying at least one Trace
+/// Link (for any requirement), sorted.
+// @implements REQ-031 v2 6cdbe6cb
+// @implements REQ-032 v2 a2441bcc
+pub fn all_annotated_files(file_annotations: &[(String, Vec<Annotation>)]) -> Vec<String> {
+    let mut paths: Vec<String> = file_annotations
+        .iter()
+        .filter(|(_, annotations)| !annotations.is_empty())
+        .map(|(path, _)| path.clone())
+        .collect();
+    paths.sort();
+    paths.dedup();
+    paths
+}
+
+/// The subset of `paths` whose current File Hash (in `current_hashes`) is
+/// missing from `lock` or differs from the stored File Hash, sorted.
+// @implements REQ-033 v2 04d42b48
+pub fn drifted_paths(
+    paths: &[String],
+    lock: &BTreeMap<String, String>,
+    current_hashes: &BTreeMap<String, String>,
+) -> Vec<String> {
+    let mut drifted: Vec<String> = paths
+        .iter()
+        .filter(|path| match (current_hashes.get(*path), lock.get(*path)) {
+            (Some(current), Some(sealed)) => current != sealed,
+            _ => true,
+        })
+        .cloned()
+        .collect();
+    drifted.sort();
+    drifted
 }
 
 /// Renders a human-readable Markdown view of a set of requirements.

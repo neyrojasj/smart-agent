@@ -5,8 +5,10 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
-    bump, description, next_req_id, render_markdown, scan_annotations, skeleton_toml, trace_state,
-    verify_not_user_story, verify_requirement, Annotation, Requirement, Status, TraceState,
+    all_annotated_files, bump, description, drifted_paths, file_hash, files_for_requirement,
+    next_req_id, parse_lock, render_lock, render_markdown, scan_annotations, skeleton_toml,
+    trace_state_with_drift, verify_not_user_story, verify_requirement, Annotation, Requirement,
+    Status, TraceState,
 };
 
 #[derive(Parser)]
@@ -63,6 +65,11 @@ enum Command {
         /// The requirement's REQ_ID, e.g. REQ-001.
         req_id: String,
     },
+    /// Record the current SHA-256 of annotated files into docs/prds/weft.lock.
+    Seal {
+        /// Restrict sealing to files annotated with this REQ_ID, e.g. REQ-001.
+        req_id: Option<String>,
+    },
 }
 
 #[derive(Clone, ValueEnum)]
@@ -87,6 +94,7 @@ fn main() -> ExitCode {
         Command::Render => render_cmd(),
         Command::Init => init_cmd(),
         Command::Deprecate { req_id } => deprecate_cmd(&req_id),
+        Command::Seal { req_id } => seal_cmd(req_id.as_deref()),
     }
 }
 
@@ -271,7 +279,39 @@ fn find_scannable_files(root: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
+/// The path to the Weft Lock: the committed record of each annotated file's
+/// File Hash at last Seal.
+const LOCK_PATH: &str = "docs/prds/weft.lock";
+
+/// Strips a leading `./` from `path` so paths read consistently whether they
+/// were collected by walking `.` or referenced directly, matching the
+/// `weft.lock` path format (e.g. `src/login.rs`, not `./src/login.rs`).
+fn normalize_path(path: &Path) -> String {
+    path.strip_prefix("./")
+        .unwrap_or(path)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Scans every file under `root` (skipping [`SCAN_EXCLUDES`] directories) for
+/// Trace Links, returning each file's normalized path paired with the
+/// annotations found in it (possibly empty).
+fn scan_file_annotations(root: &Path) -> Vec<(String, Vec<Annotation>)> {
+    let mut scan_files = Vec::new();
+    find_scannable_files(root, &mut scan_files);
+
+    scan_files
+        .into_iter()
+        .filter_map(|file| {
+            let src = fs::read_to_string(&file).ok()?;
+            let annotations = scan_annotations(&src);
+            Some((normalize_path(&file), annotations))
+        })
+        .collect()
+}
+
 // @implements REQ-014 v2 d217a603
+// @implements REQ-033 v2 04d42b48
 fn check_cmd() -> ExitCode {
     let mut req_files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut req_files);
@@ -290,19 +330,33 @@ fn check_cmd() -> ExitCode {
     requirements.retain(|req| req.status == Status::Active);
     requirements.sort_by(|a, b| a.id.cmp(&b.id));
 
-    let mut scan_files = Vec::new();
-    find_scannable_files(Path::new("."), &mut scan_files);
+    let file_annotations = scan_file_annotations(Path::new("."));
+    let annotations: Vec<Annotation> = file_annotations
+        .iter()
+        .flat_map(|(_, annotations)| annotations.iter().cloned())
+        .collect();
 
-    let mut annotations: Vec<Annotation> = Vec::new();
-    for file in &scan_files {
-        if let Ok(src) = fs::read_to_string(file) {
-            annotations.extend(scan_annotations(&src));
-        }
-    }
+    let lock = fs::read_to_string(LOCK_PATH)
+        .map(|src| parse_lock(&src))
+        .unwrap_or_default();
+
+    let current_hashes: std::collections::BTreeMap<String, String> =
+        all_annotated_files(&file_annotations)
+            .into_iter()
+            .filter_map(|path| {
+                let bytes = fs::read(&path).ok()?;
+                Some((path, file_hash(&bytes)))
+            })
+            .collect();
 
     let mut ok = true;
     for req in &requirements {
-        let state = trace_state(req, &annotations);
+        let drifted = drifted_paths(
+            &files_for_requirement(&req.id, &file_annotations),
+            &lock,
+            &current_hashes,
+        );
+        let state = trace_state_with_drift(req, &annotations, drifted);
         if state != TraceState::Traced {
             ok = false;
         }
@@ -466,6 +520,55 @@ fn rewrite_deprecated(src: &str) -> String {
     let mut result = out.join("\n");
     result.push('\n');
     result
+}
+
+// @implements REQ-031 v2 6cdbe6cb
+// @implements REQ-032 v2 a2441bcc
+fn seal_cmd(req_id: Option<&str>) -> ExitCode {
+    let file_annotations = scan_file_annotations(Path::new("."));
+
+    let existing_lock = fs::read_to_string(LOCK_PATH)
+        .map(|src| parse_lock(&src))
+        .unwrap_or_default();
+
+    let targets = match req_id {
+        Some(req_id) => files_for_requirement(req_id, &file_annotations),
+        None => all_annotated_files(&file_annotations),
+    };
+
+    let mut lock = match req_id {
+        // Targeted seal updates entries for the targeted files only, leaving
+        // every other entry untouched.
+        Some(_) => existing_lock,
+        // A full seal rebuilds the lock from scratch, pruning entries for
+        // files that no longer carry any Trace Link.
+        None => std::collections::BTreeMap::new(),
+    };
+
+    for path in &targets {
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                eprintln!("{path}: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+        lock.insert(path.clone(), file_hash(&bytes));
+    }
+
+    if let Some(parent) = Path::new(LOCK_PATH).parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            eprintln!("{}: {e}", parent.display());
+            return ExitCode::FAILURE;
+        }
+    }
+    if let Err(e) = fs::write(LOCK_PATH, render_lock(&lock)) {
+        eprintln!("{LOCK_PATH}: {e}");
+        return ExitCode::FAILURE;
+    }
+
+    println!("sealed {} file(s) into {LOCK_PATH}", targets.len());
+    ExitCode::SUCCESS
 }
 
 // @implements REQ-015 v2 3d05542c

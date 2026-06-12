@@ -85,6 +85,7 @@ fn current_hash() -> String {
 }
 
 // @verifies REQ-014 v2 d217a603
+// @verifies REQ-033 v2 04d42b48
 #[test]
 fn fully_traced_requirement_passes_check() {
     let hash = current_hash();
@@ -93,6 +94,15 @@ fn fully_traced_requirement_passes_check() {
     write_design_doc(&dir, &hash);
     write_code(&dir, &hash);
     write_test(&dir, &hash);
+
+    // Seal first: until `weft seal` has run, annotated files have no entry
+    // in weft.lock and are reported Drifted (ADR 0009 first-time setup).
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("seal")
+        .current_dir(dir.path())
+        .assert()
+        .success();
 
     Command::cargo_bin("weft")
         .unwrap()

@@ -1,5 +1,5 @@
 +++
-addresses = []
+addresses = ["REQ-031 v2 6cdbe6cb", "REQ-032 v2 a2441bcc", "REQ-033 v2 04d42b48"]
 +++
 
 # 0009 — File-hash drift detection via weft.lock and Seal
