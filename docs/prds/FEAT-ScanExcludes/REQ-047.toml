@@ -1,0 +1,15 @@
+id = "REQ-047"
+version = 2
+feat = "FEAT-ScanExcludes"
+hash = "c4c2f006"
+status = "active"
+statement = "The annotation scanner must treat a single reserved example REQ_ID (REQ-000) as a never-real illustrative placeholder: any @addresses, @implements, or @verifies annotation citing it is ignored at scan time, contributing no Trace Link and never reported as a dangling annotation, so annotation syntax can be documented inline without creating false links or warning noise."
+acceptance = [
+    "Given a file contains the inline annotation @implements REQ-000 v3 a3f9b2c1, when weft check runs, then it contributes no Trace Link to any requirement and is not reported as a dangling annotation.",
+    "Given a file contains @verifies REQ-000 ... or an @addresses frontmatter entry citing REQ-000, then it is likewise ignored at scan time.",
+    "Given a project's existing requirement ids, when weft new allocates the next id, then it never yields REQ-000 (ids start at REQ-001), so no real requirement can collide with the reserved id.",
+    "Given a requirement record whose id is REQ-000, when weft verify runs, then it is rejected as the reserved example id.",
+    "Given an annotation cites any other id that is not an active requirement (e.g. REQ-999), then weft check still reports it as a dangling annotation, preserving existing dangling detection.",
+]
+rationale = "The scanner matches annotation markers by naive line/text scan across all non-excluded files (REQ-019, ADR 0003), so a file that documents the annotation syntax has its examples mis-detected as real Trace Links. When REQ-042 was later allocated, syntax examples in lib.rs and ADR 0002 became false @implements links to it. The only escape today is accidental - a non-numeric version token like vN fails parsing - which is fragile and prevents showing the real v3 <hash> shape. A single reserved example id makes the escape explicit and id-based while preserving the language-agnostic, no-AST scan: REQ-000 is already unreachable by weft new (ids start at REQ-001) and is format-valid, so examples stay copy-paste-realistic. One mechanism removes both the false-link harm and the dangling-annotation noise. See ADR 0015."
+notes = "Whole-file excludes (.weftignore, ADR 0010) cannot solve this: lib.rs and ADR 0002 carry both real Trace Links and examples in the same file. An inline weft:example marker (rejected for now) remains a possible future complement if marking a real-numbered id as an example is ever needed."

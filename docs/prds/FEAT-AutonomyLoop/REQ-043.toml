@@ -1,0 +1,15 @@
+id = "REQ-043"
+version = 3
+feat = "FEAT-AutonomyLoop"
+hash = "ceb81bfe"
+status = "active"
+statement = "The system must provide a weft test command that executes the configured test command and records, for each active requirement, the result of the command responsible for it (passed, failed, or unrun) into a committed Run Lock file at docs/prds/weft.run.toml, pinning each result to the requirement's content hash and annotated-file hashes at run time."
+acceptance = [
+    "Given a default test command and no overrides, when weft test runs and the command exits zero, then every active requirement is recorded as passed, pinned to its current content hash and file hashes.",
+    "Given the responsible command exits non-zero, when weft test runs, then the requirements responsible to that command are recorded as failed and weft test exits non-zero.",
+    "Given a requirement with a per-FEAT or per-requirement command override, when weft test runs, then that requirement's recorded result reflects its override command's exit status independently of the default command.",
+    "Given an optional REQ_ID argument, when weft test REQ-NNN runs, then only that requirement's recorded result is updated.",
+    "Given no configured test command, when weft test runs, then it exits non-zero reporting that no test command is configured.",
+]
+rationale = "Verification has to be persisted, the way Seal persists File Hashes in weft.lock, so that check and gate can report a Verified state without re-running the suite and so the result is reviewable and committed alongside the code that earned it. Recording the result of the command responsible for a requirement (rather than claiming to know the requirement's specific test ran) keeps weft language-agnostic: it reads an exit code, not test-framework internals."
+notes = "The Run Lock (docs/prds/weft.run.toml) is the dynamic analogue of the Weft Lock (docs/prds/weft.lock). A recorded pass is pinned to the requirement's content hash and annotated-file hashes at run time, so any later edit invalidates it and the requirement drops below Verified (see REQ-044)."

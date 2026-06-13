@@ -1,27 +1,25 @@
 #!/usr/bin/env bash
-# PreToolUse hook (matcher: Read|Grep|Glob|Bash).
+# PreToolUse hook (matcher: *, i.e. every tool call).
 #
-# When the active model is Opus (or a future tier above it), blocks direct
-# investigation tool calls (Read/Grep/Glob, plus `grep` invoked via Bash) and
-# instructs the model to delegate the research to a Sonnet subagent via the
-# Agent tool instead. Sonnet, Haiku, and any other models pass through.
+# When the active model is Opus (or a future tier above it), blocks ALL tool
+# calls except a small orchestration set (Agent, AskUserQuestion, plan-mode
+# and task-tracking tools). Opus job on this project is to think, plan, and
+# delegate ALL execution to Sonnet 4.6 subagents via the Agent tool - not to
+# call tools directly.
+#
+# Sonnet, Haiku, and any other models pass through untouched.
 set -euo pipefail
 
 input="$(cat)"
 tool_name="$(jq -r '.tool_name' <<< "$input")"
 
+# Tools Opus may call directly: spawning subagents, planning, task tracking,
+# and user interaction. Everything else (Read, Edit, Write, Bash, Grep, Glob,
+# WebFetch, MCP tools, etc.) must be delegated to a Sonnet subagent.
 case "$tool_name" in
-  Read|Grep|Glob) ;;
-  Bash)
-    command_str="$(jq -r '.tool_input.command // ""' <<< "$input")"
-    # Only gate Bash invocations that run `grep` (as its own command, e.g.
-    # `grep ...`, `... | grep ...`, `cmd && grep ...`). Other Bash commands
-    # (ls, find, cat, etc.) pass through untouched.
-    if ! grep -qE '(^|[|;&]|\s)grep(\s|$)' <<< "$command_str"; then
-      exit 0
-    fi
+  Agent|AskUserQuestion|EnterPlanMode|ExitPlanMode|TaskCreate|TaskUpdate|TaskGet|TaskList|TaskOutput|TaskStop|ScheduleWakeup|mcp__ccd_session__mark_chapter)
+    exit 0
     ;;
-  *) exit 0 ;;
 esac
 
 transcript="$(jq -r '.transcript_path' <<< "$input")"
@@ -35,22 +33,20 @@ fi
 
 case "$model" in
   *opus*)
-    reason=$(cat <<'EOF'
-Direct Read/Grep/Glob calls (and `grep` run via Bash) are disabled for Opus-tier models on this project. Delegate this investigation to a subagent running on Sonnet instead.
+    reason="You are running as Opus on this project, and direct tool use is disabled for you. Your job here is to think and orchestrate, not to execute: read the request, plan the approach, and delegate ALL execution (file reads, edits, searches, commands, web lookups, everything) to Sonnet 4.6 subagents via the Agent tool (model: sonnet).
 
-Call the Agent tool now with model: "sonnet" (subagent_type: "Explore" for pure search/navigation, or "general-purpose" for broader research), passing a SELF-CONTAINED prompt that includes:
+Call the Agent tool now with a SELF-CONTAINED prompt that includes:
 
-1. GOAL — the exact question to answer or fact to locate.
-2. SCOPE — exact paths, directories, file globs, or grep patterns to search. Be specific; do not make the subagent guess where to look.
-3. OUTPUT FORMAT — the precise shape of the answer you need back (e.g. "a list of file:line matches with one line of context each", "the current value of X", "yes/no plus the deciding evidence").
-4. CONTEXT — naming conventions, what to ignore, edge cases, and anything else needed to interpret results correctly without asking follow-up questions.
-5. EXHAUSTIVENESS — tell it to be thorough within scope, then stop and report — not to broaden the search on its own.
+1. GOAL - the exact outcome you need, stated as a result, not a restatement of the user's request.
+2. SCOPE - exact paths, files, globs, commands, or APIs to touch. Be specific; do not make the subagent guess where to look or what to change.
+3. CONTEXT - naming conventions, relevant prior findings, constraints, edge cases, and anything else needed to act correctly without asking follow-up questions. The subagent has no memory of this conversation.
+4. OUTPUT FORMAT - the precise shape of what should come back (e.g. a list of file:line matches with context, a diff summary, pass/fail plus evidence).
+5. BOUNDARIES - what the subagent should and should not change, and when to stop and report rather than improvising further.
 
-The subagent is read-only: it must not edit files, run commands that change repository state, or create commits — only report findings back.
+Write the prompt as if briefing a competent but unfamiliar colleague who cannot ask follow-up questions: a vague brief produces a vague result. Break the work into coherent subagent calls, one per independent piece of work, and fire independent ones in parallel within a single message. After each subagent reports back, synthesize the results, decide the next step, and continue orchestrating until the task is complete.
 
-Write the prompt as if briefing a competent but unfamiliar colleague who cannot ask follow-up questions: a vague brief produces a vague result. If you need several independent pieces of information, prefer one subagent call per coherent topic over many tiny ones.
-EOF
-    )
+You may use AskUserQuestion, EnterPlanMode/ExitPlanMode, TaskCreate/TaskUpdate/TaskGet/TaskList, and ScheduleWakeup directly for planning and coordination. Every other tool must be delegated to a Sonnet subagent."
+
     jq -n --arg reason "$reason" '{
       hookSpecificOutput: {
         hookEventName: "PreToolUse",

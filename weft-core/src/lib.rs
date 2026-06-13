@@ -74,6 +74,9 @@ pub enum VerifyIssue {
     /// `so_that`, or `user_story`). User Stories are ephemeral and must
     /// never be persisted in `docs/prds/`.
     UserStoryRecord(String),
+    /// `id` is [`EXAMPLE_REQ_ID`], the reserved id for illustrative
+    /// annotation examples — it can never be a real requirement.
+    ReservedExampleId,
 }
 
 impl fmt::Display for VerifyIssue {
@@ -100,9 +103,24 @@ impl fmt::Display for VerifyIssue {
                 "record contains '{field}', a User Story field — User Stories must never be \
                  persisted in docs/prds/; generate them ephemerally at implementation time"
             ),
+            VerifyIssue::ReservedExampleId => write!(
+                f,
+                "'{EXAMPLE_REQ_ID}' is reserved for illustrative annotation examples and cannot \
+                 be used as a real requirement id"
+            ),
         }
     }
 }
+
+/// The reserved REQ_ID for illustrative annotation examples (ADR 0015). An
+/// `@addresses`, `@implements`, or `@verifies` annotation citing this id is
+/// dropped by [`scan_annotations`] — it contributes no Trace Link and is
+/// never reported as a dangling annotation — so annotation syntax can be
+/// documented inline, e.g. `@implements REQ-000 v3 a3f9b2c1`. `weft new`
+/// never allocates this id (ids start at `REQ-001`), and [`verify_requirement`]
+/// rejects a record that claims it.
+// @implements REQ-047 v2 c4c2f006
+pub const EXAMPLE_REQ_ID: &str = "REQ-000";
 
 /// `id` must be `REQ-` followed by exactly three ASCII digits.
 fn is_valid_id_format(id: &str) -> bool {
@@ -219,8 +237,11 @@ pub struct Annotation {
 
 /// Scans `text` for Trace Links: `@addresses` entries in TOML frontmatter
 /// (DEC/ADR docs), and inline `@implements`/`@verifies` markers, one per
-/// line, in any comment syntax: `@implements REQ-042 v3 a3f9b2c1`.
+/// line, in any comment syntax: `@implements REQ-000 v3 a3f9b2c1`. An
+/// annotation citing [`EXAMPLE_REQ_ID`] is dropped — it is an illustrative
+/// example, not a real Trace Link (ADR 0015).
 // @implements REQ-019 v2 ed4d3199
+// @implements REQ-047 v2 c4c2f006
 pub fn scan_annotations(text: &str) -> Vec<Annotation> {
     let mut out = scan_addresses_frontmatter(text);
     for line in text.lines() {
@@ -236,6 +257,7 @@ pub fn scan_annotations(text: &str) -> Vec<Annotation> {
             }
         }
     }
+    out.retain(|a| a.req_id != EXAMPLE_REQ_ID);
     out
 }
 
@@ -265,7 +287,7 @@ fn scan_addresses_frontmatter(text: &str) -> Vec<Annotation> {
         .collect()
 }
 
-/// Parses an `addresses` entry of the form `REQ-042 v3 a3f9b2c1` (no
+/// Parses an `addresses` entry of the form `REQ-000 v3 a3f9b2c1` (no
 /// `@addresses` marker — the field name itself is the marker).
 fn parse_addresses_entry(s: &str) -> Option<Annotation> {
     let mut tokens = s.split_whitespace();
@@ -280,7 +302,7 @@ fn parse_addresses_entry(s: &str) -> Option<Annotation> {
     })
 }
 
-/// Parses `@implements REQ-042 v3 a3f9b2c1` (or `@verifies ...`) starting at
+/// Parses `@implements REQ-000 v3 a3f9b2c1` (or `@verifies ...`) starting at
 /// the marker itself.
 // @implements REQ-017 v2 8af530a5
 // @implements REQ-018 v2 e2253535
@@ -736,6 +758,10 @@ pub fn verify_requirement(req: &Requirement, filename_id: &str) -> Vec<VerifyIss
 
     if !is_valid_id_format(&req.id) {
         issues.push(VerifyIssue::InvalidIdFormat(req.id.clone()));
+    }
+
+    if req.id == EXAMPLE_REQ_ID {
+        issues.push(VerifyIssue::ReservedExampleId);
     }
 
     if req.id != filename_id {

@@ -201,3 +201,18 @@ fn record_without_user_story_fields_passes() {
         "a normal requirement record must not be flagged as a User Story"
     );
 }
+
+// @verifies REQ-047 v2 c4c2f006
+#[test]
+fn req_000_is_rejected_as_the_reserved_example_id() {
+    let hash = current_hash();
+    let toml_src = fixture_toml(&hash, "REQ-000");
+    let req = Requirement::parse(&toml_src).expect("should parse");
+
+    let issues = verify_requirement(&req, "REQ-000");
+
+    assert!(
+        issues.iter().any(|i| matches!(i, VerifyIssue::ReservedExampleId)),
+        "expected a ReservedExampleId issue, got {issues:?}"
+    );
+}

@@ -283,3 +283,56 @@ fn finds_addresses_annotations_in_toml_frontmatter() {
         ]
     );
 }
+
+// @verifies REQ-047 v2 c4c2f006
+#[test]
+fn ignores_an_implements_annotation_citing_the_reserved_example_id() {
+    let src = "// @implements REQ-000 v3 a3f9b2c1\nfn login() {}\n";
+
+    let annotations = scan_annotations(src);
+
+    assert_eq!(annotations, vec![]);
+}
+
+// @verifies REQ-047 v2 c4c2f006
+#[test]
+fn ignores_a_verifies_annotation_citing_the_reserved_example_id() {
+    let src = "# @verifies REQ-000 v3 a3f9b2c1\ndef test_login(): ...\n";
+
+    let annotations = scan_annotations(src);
+
+    assert_eq!(annotations, vec![]);
+}
+
+// @verifies REQ-047 v2 c4c2f006
+#[test]
+fn ignores_an_addresses_annotation_citing_the_reserved_example_id_in_frontmatter() {
+    let src = "+++\naddresses = [\"REQ-000 v3 a3f9b2c1\", \"REQ-002 v2 deadbeef\"]\n+++\n\n# Decision\n";
+
+    let annotations = scan_annotations(src);
+
+    assert_eq!(
+        annotations,
+        vec![Annotation {
+            kind: AnnotationKind::Addresses,
+            req_id: "REQ-002".to_string(),
+            version: 2,
+            hash: "deadbeef".to_string(),
+        }]
+    );
+}
+
+// @verifies REQ-047 v2 c4c2f006
+#[test]
+fn an_annotation_citing_a_non_reserved_unknown_id_is_still_dangling() {
+    let file_annotations = vec![(
+        "src/lib.rs".to_string(),
+        scan_annotations("// @implements REQ-999 v1 deadbeef\nfn x() {}\n"),
+    )];
+    let active_ids = vec!["REQ-001".to_string()];
+
+    let dangling = dangling_annotations(&file_annotations, &active_ids);
+
+    assert_eq!(dangling.len(), 1);
+    assert_eq!(dangling[0].1.req_id, "REQ-999");
+}

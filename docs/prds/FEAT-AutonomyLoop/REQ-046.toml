@@ -1,0 +1,15 @@
+id = "REQ-046"
+version = 3
+feat = "FEAT-AutonomyLoop"
+hash = "fb90b6b7"
+status = "active"
+statement = "The system must provide a weft next command that selects the single highest-priority requirement that is not yet Verified, using a fixed regressions-first priority order over its blocking condition, and emits a self-contained payload describing how to advance it."
+acceptance = [
+    "Given one or more requirements are not Verified, when weft next runs, then it selects exactly one using the fixed priority order: Traced-with-failing-tests, then Drifted, then Stale, then Incomplete, then Orphaned, then Traced-without-a-recorded-test-run.",
+    "Given a selected requirement, when weft next emits its payload, then the payload includes the requirement's full record, its current Trace State with the specific blocking gap, and an explicit action verb from the closed set: implement, rework, reseal, fix-tests, run-tests.",
+    "Given the action is implement or rework, when weft next emits its payload, then it includes the exact annotation string for each missing or stale link kind, carrying the requirement's current version and hash.",
+    "Given every active requirement is already Verified, when weft next runs, then it reports that there is no next work item and exits zero.",
+    "Given the --json flag, when weft next runs, then the payload is emitted as a single structured JSON object.",
+]
+rationale = "To drive a project end-to-end on its own, an agent needs a deterministic 'what do I do next' source rather than a human choosing the order. Regressions-first ordering prevents the agent building new Orphaned work on top of a known-bad (Drifted or Stale) requirement, echoing the false-done danger ADR 0009 was written to prevent. The explicit action verb makes next a hard machine contract a non-LLM harness could drive, not a hint an agent must interpret."
+notes = "Composes existing capabilities: gap detail (REQ-036, REQ-037) and the annotate command (REQ-039). Traced-with-failing-tests and Traced-without-a-recorded-test-run are sub-conditions of the Traced/Verified boundary introduced by REQ-044, not new Trace States. The priority order is a fixed total order so selection is reproducible."

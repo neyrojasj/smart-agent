@@ -1,0 +1,14 @@
+id = "REQ-044"
+version = 2
+feat = "FEAT-AutonomyLoop"
+hash = "a74590fa"
+status = "active"
+statement = "The system must define a Verified Trace State, reported for a requirement that is Traced and whose most recent recorded test result is passed for the requirement's current content hash and current annotated-file hashes; if either hash has changed since the recorded pass, the requirement must not be reported Verified."
+acceptance = [
+    "Given a requirement that is Traced and whose last recorded test result is passed at its current content hash and current file hashes, when weft check runs, then it reports the requirement as Verified.",
+    "Given a Verified requirement whose annotated file is then edited, when weft check runs, then it no longer reports Verified (it falls back to Drifted or a lower state).",
+    "Given a requirement whose content hash changed since its recorded pass, when weft check runs, then it does not report Verified.",
+    "Given a requirement that is Traced but has no recorded passing test result, when weft check runs, then it reports Traced, not Verified.",
+]
+rationale = "Traced proves only that the trace links are present and fresh, not that the implementation works, so an autonomous agent can reach all-green Traced with hollow or failing tests. Verified is the tier above Traced that an AI cannot reach without the linked tests actually passing, making it a real completion signal rather than a structural one."
+notes = "Verified sits strictly above Traced and is additive to the existing Trace State enumeration, following the precedent set when Drifted was introduced (REQ-033) without rewriting the enumeration requirement REQ-020. The freshness rule reuses the Content Hash and File Hash mechanisms already in the system."

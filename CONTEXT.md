@@ -5,6 +5,9 @@ The language of a Rust tool that verifies an unbroken trace from a requirement
 passing tests — and reports when a requirement has changed but its
 implementation has not kept up.
 
+> **Running `weft`:** use the path `target/debug/weft` to invoke the command
+> (e.g. `target/debug/weft check`).
+
 ## Language
 
 **Requirement**:
@@ -99,10 +102,12 @@ freshness (does each link's frozen hash match the requirement's current Content
 Hash?), and artifact integrity (do annotated files match their sealed File
 Hashes in `weft.lock`?). Values: **Orphaned** (no links), **Incomplete** (a
 link missing), **Stale** (a link pins an old hash), **Drifted** (Complete and
-all links Current, but ≥1 annotated file has changed since last Seal), or
+all links Current, but ≥1 annotated file has changed since last Seal),
 **Traced** (Complete, all links Current, and all annotated files match their
-sealed hashes). The tool never executes tests; keeping the linked tests green
-is the user's responsibility, outside the tool's scope.
+sealed hashes), or **Verified** (Traced, and the most recent recorded
+Verification Run passed at the current Content Hash and current File Hashes).
+Test execution is opt-in via a configured Test Command; with none configured
+the tool runs no tests and Verified is unreachable.
 _Avoid_: Status, coverage, verified (the tool does not verify test results).
 
 **Drifted**:
@@ -134,3 +139,49 @@ path to its File Hash at last Seal. Flat TOML, keyed by file path. Must be
 committed alongside source changes; regenerated via `weft seal` after
 reviewing artifact-level drift.
 _Avoid_: Manifest, snapshot.
+
+**Test Command**:
+The project-declared command weft executes to determine whether a
+requirement's tests pass, configured in a `[test]` section of `weft.toml` as
+a default with optional per-FEAT or per-requirement overrides. weft runs it
+as an opaque string and reads only its exit code, never parsing the
+language's test framework — preserving language-agnosticism.
+_Avoid_: Test runner (weft is not a runner), suite.
+
+**Verification Run**:
+The act of executing the Test Command and recording each requirement's
+result, performed by `weft test`. The dynamic counterpart to Seal.
+_Avoid_: Test run (too generic), CI run.
+
+**Run Lock**:
+The committed artifact (`docs/prds/weft.run.toml`) that records, per
+requirement, the result of its last Verification Run (passed/failed) pinned
+to the content hash and annotated-file hashes at run time. The dynamic
+analogue of the Weft Lock; a recorded pass is invalidated automatically when
+any pinned hash changes.
+_Avoid_: Test cache, results file (it is committed and hash-pinned, not
+ambient).
+
+**Verified**:
+The Trace State above Traced — a requirement that is Traced and whose most
+recent recorded Verification Run passed at its current content hash and
+current annotated-file hashes. Verified means the Test Command responsible
+for the requirement passed, NOT that the requirement's specific test provably
+executed, which weft cannot determine language-agnostically. Invalidated by
+any edit that changes a pinned hash.
+_Avoid_: Passing, green, Tested (Verified is hash-pinned and sits atop the
+full static chain).
+
+**Completion Gate**:
+The project-level done check (`weft gate`) that exits zero only when every
+active requirement is Verified — the autonomous agent's single termination
+condition. Distinct from `weft check`, which is per-requirement and gates on
+drift.
+_Avoid_: Check (different exit contract).
+
+**Work Driver**:
+The `weft next` command that selects the single highest-priority
+not-yet-Verified requirement (regressions-first) and emits it with an
+explicit action verb, letting an agent advance the project one requirement at
+a time.
+_Avoid_: Queue, scheduler.

@@ -1,0 +1,13 @@
+id = "REQ-045"
+version = 2
+feat = "FEAT-AutonomyLoop"
+hash = "12e173a6"
+status = "active"
+statement = "The system must provide a completion gate, invoked as weft gate, that exits zero only when every active requirement is in the Verified Trace State and exits non-zero otherwise, printing the requirements that are not yet Verified together with their current Trace State."
+acceptance = [
+    "Given every active requirement is Verified, when weft gate runs, then it exits zero.",
+    "Given at least one active requirement is not Verified, when weft gate runs, then it exits non-zero and lists each non-Verified requirement with its current Trace State.",
+    "Given a deprecated requirement, when weft gate runs, then that requirement is excluded from the gate's consideration.",
+]
+rationale = "An autonomous agent needs one deterministic command that answers 'is the whole project actually done?' so its outer loop has a single, unfakeable termination condition. weft check already gates on drift; the completion gate raises the bar to Verified so the loop cannot terminate on merely-Traced work."
+notes = "Distinct from weft check: check reports per-requirement state and gates on drift, whereas gate is a binary project-level done check keyed on the Verified state introduced in REQ-044."

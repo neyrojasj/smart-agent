@@ -9,7 +9,7 @@ addresses = [
 
 Each requirement carries a `hash` over its **normative region** (`statement` +
 ordered `acceptance`). Every trace annotation freezes the hash it was written
-against — `@implements REQ-042 v3 a3f9b2`. Drift is then mechanical: the tool
+against — `@implements REQ-000 v3 a3f9b2`. Drift is then mechanical: the tool
 compares the frozen hash to the requirement's current hash. The integer
 `version` is only a human-facing label; the **hash is the enforcement
 mechanism**.

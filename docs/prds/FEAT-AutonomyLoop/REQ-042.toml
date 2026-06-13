@@ -1,0 +1,13 @@
+id = "REQ-042"
+version = 2
+feat = "FEAT-AutonomyLoop"
+hash = "37857355"
+status = "active"
+statement = "The system must read a test command from project configuration (a [test] section in a weft.toml at the project root) that weft can execute to determine whether a requirement's verifying tests pass."
+acceptance = [
+    "Given a weft.toml with a [test] section defining a command string, when weft loads configuration, then it exposes that command as the configured test command.",
+    "Given a weft.toml that supports a per-FEAT or per-requirement command override, when a requirement has an override, then weft uses the override in preference to the default command for that requirement.",
+    "Given no weft.toml or no [test] section, when a command that requires the test command runs, then weft reports that no test command is configured rather than silently treating requirements as verified.",
+]
+rationale = "Trace State has been static-only by design (ADR 0003): weft never executes tests, so a Traced requirement only proves the trace links are present and fresh, not that the implementation works. To let an AI close the loop autonomously without faking green, weft needs a configured, project-owned way to actually run the verifying tests. Configuration keeps weft language-agnostic — the project declares how to run its own tests."
+notes = "Crosses the static-only boundary of ADR 0003 and therefore requires a new ADR recording the decision. The command is project-supplied (e.g. `cargo test`, `pytest`, `npm test`) so weft never needs per-language test-framework integration."
