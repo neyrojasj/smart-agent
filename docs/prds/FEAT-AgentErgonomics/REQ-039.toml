@@ -1,0 +1,13 @@
+id = "REQ-039"
+version = 3
+feat = "FEAT-AgentErgonomics"
+hash = "2900b820"
+status = "active"
+statement = "The system must provide a weft annotate REQ-NNN --kind <addresses|implements|verifies> command that prints the exact Trace Link line to paste into a source or design file, using the requirement's current version and hash."
+acceptance = [
+    "Given weft annotate REQ-020 --kind implements, then the output reflects REQ-020's current version and hash, formatted as the implements-kind Trace Link line (the marker followed by REQ-NNN, vN, and the hash).",
+    "Given --kind addresses, then the output is the @addresses entry shape used in design-decision frontmatter, including the requirement's current version and hash.",
+    "Given REQ-NNN does not exist, then weft annotate exits non-zero with an error message.",
+    "Given the requirement's hash changes after a weft bump, then a subsequent weft annotate reflects the new hash.",
+]
+rationale = "Hand-transcribing REQ_ID, version, and hash into @implements/@verifies/@addresses annotations is the most common source of Stale results — a single mis-copied hash digit silently breaks traceability. Generating the line removes that error class."

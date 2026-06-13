@@ -1,0 +1,12 @@
+id = "REQ-041"
+version = 2
+feat = "FEAT-AgentErgonomics"
+hash = "7194e93b"
+status = "active"
+statement = "weft check must detect and report Trace Link annotations (@addresses, @implements, @verifies) whose REQ_ID does not match any active requirement, identifying them as dangling annotations together with their file location."
+acceptance = [
+    "Given a source file contains @implements REQ-099 v1 abcd1234 and REQ-099 does not exist or is deprecated, then weft check reports a dangling annotation at the file's path and line number.",
+    "Given a dangling annotation is found, then weft check exits non-zero, consistent with its existing failure semantics.",
+    "Given all annotations in the project reference active requirement ids, then weft check reports no dangling annotations.",
+]
+rationale = "The current classification only looks from requirement to annotation; an annotation that outlives its requirement (e.g. after the requirement is renumbered or deprecated) is invisible. Dangling annotations silently misrepresent which code implements which requirement, undermining the inverse traceability that REQ-038 and REQ-039 add."

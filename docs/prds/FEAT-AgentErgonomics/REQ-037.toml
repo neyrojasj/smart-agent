@@ -1,0 +1,16 @@
+id = "REQ-037"
+version = 2
+feat = "FEAT-AgentErgonomics"
+hash = "2371e246"
+status = "active"
+statement = "weft check must support a --json output mode that emits, for each active requirement, a structured record containing its id, Trace State, and the same gap detail as the human-readable output (missing Trace Link kinds, stale Trace Link kinds with recorded and current hashes, and drifted file paths)."
+acceptance = [
+    "Given weft check --json, then stdout is a single JSON array with one object per active requirement, ordered by id.",
+    "Given a requirement's object, then it has fields id, state, missing_links, stale_links, and drifted_files.",
+    "Given a requirement is Incomplete, then missing_links lists each absent Trace Link kind as a string.",
+    "Given a requirement is Stale, then stale_links is an array of objects each with kind, recorded_hash, and current_hash.",
+    "Given a requirement is Drifted, then drifted_files lists the changed file paths.",
+    "Given a requirement is Traced, then missing_links, stale_links, and drifted_files are all empty arrays.",
+    "Given weft check --json, then the command's exit code semantics (non-zero if any requirement is not Traced) are unchanged from REQ-014.",
+]
+rationale = "Agents driving weft consume check's output by parsing English sentences, which is brittle. A stable JSON schema lets skills and CI tooling consume exact state without text parsing."

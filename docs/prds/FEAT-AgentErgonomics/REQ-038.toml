@@ -1,0 +1,13 @@
+id = "REQ-038"
+version = 2
+feat = "FEAT-AgentErgonomics"
+hash = "82357796"
+status = "active"
+statement = "The system must provide a weft trace REQ-NNN command that prints, for each Trace Link found for that requirement, its kind (addresses, implements, verifies) and the file path and line number where the annotation occurs."
+acceptance = [
+    "Given REQ-NNN has an @implements annotation in src/foo.rs at line 42, then weft trace REQ-NNN includes a line identifying implements at src/foo.rs:42.",
+    "Given REQ-NNN has Trace Links of multiple kinds, then weft trace REQ-NNN lists each one, one per line.",
+    "Given REQ-NNN has no Trace Links, then weft trace REQ-NNN reports that the requirement is Orphaned and lists nothing.",
+    "Given REQ-NNN does not exist, then weft trace REQ-NNN exits non-zero with an error message, consistent with weft get's error handling.",
+]
+rationale = "Today an agent that wants to view the implementation or test for a given requirement must grep the repository for the REQ_ID by hand, repeating work the annotation scanner already does internally. A reverse lookup from requirement to artifact location is the missing half of traceability."

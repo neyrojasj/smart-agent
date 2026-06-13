@@ -1,0 +1,14 @@
+id = "REQ-036"
+version = 2
+feat = "FEAT-AgentErgonomics"
+hash = "4cbbd466"
+status = "active"
+statement = "weft check must report, for each non-Traced requirement, the specific gap that prevents it from being Traced: for Incomplete, the missing Trace Link kind(s); for Stale, the stale Trace Link kind(s) together with their recorded hash and the requirement's current hash; for Drifted, the changed file paths (already supported)."
+acceptance = [
+    "Given a requirement is Incomplete, then weft check reports REQ-NNN: Incomplete (missing <kind>[, <kind>]) listing every Trace Link kind (addresses, implements, verifies) that is absent.",
+    "Given a requirement is Stale, then weft check reports REQ-NNN: Stale (<kind> has <recorded_hash>, current <current_hash>) for each stale Trace Link.",
+    "Given a requirement is Orphaned, then weft check reports REQ-NNN: Orphaned with no additional detail.",
+    "Given a requirement is Drifted, then weft check continues to report the changed file names as before.",
+    "Given a requirement is Traced, then weft check reports REQ-NNN: Traced with no additional detail.",
+]
+rationale = "Today weft check collapses all of this detail to a single state word, so an AI agent re-driving requirement-driven development must re-scan the repository to discover what is actually missing or stale. The classification logic in trace_state already computes this detail; check should surface it instead of discarding it."

@@ -1,0 +1,12 @@
+id = "REQ-040"
+version = 2
+feat = "FEAT-AgentErgonomics"
+hash = "1ead8691"
+status = "active"
+statement = "weft check must support a --summary flag that prints a rollup count of active requirements in each Trace State in addition to the per-requirement listing."
+acceptance = [
+    "Given weft check --summary, then the output includes a count of requirements in each of the states Orphaned, Incomplete, Stale, Drifted, and Traced.",
+    "Given all requirements are Traced, then the summary reports N/N Traced and weft check --summary exits zero.",
+    "Given at least one requirement is not Traced, then weft check --summary exits non-zero, consistent with weft check's existing exit code semantics (REQ-014).",
+]
+rationale = "A one-line rollup is what a commit gate or PR comment needs; without it, callers must count check's per-line output themselves."
