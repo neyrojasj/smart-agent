@@ -373,6 +373,10 @@ pub enum TraceState {
     /// All three Trace Links are present and current, and every annotated
     /// file matches its sealed File Hash.
     Traced,
+    /// `Traced`, and the most recent recorded Verification Run passed at the
+    /// requirement's current Content Hash and current annotated-file hashes.
+    // @implements REQ-044 v2 a74590fa
+    Verified,
 }
 
 impl fmt::Display for TraceState {
@@ -383,6 +387,7 @@ impl fmt::Display for TraceState {
             TraceState::Stale => write!(f, "Stale"),
             TraceState::Drifted(files) => write!(f, "Drifted ({})", files.join(", ")),
             TraceState::Traced => write!(f, "Traced"),
+            TraceState::Verified => write!(f, "Verified"),
         }
     }
 }
@@ -398,6 +403,7 @@ impl TraceState {
             TraceState::Stale => "Stale",
             TraceState::Drifted(_) => "Drifted",
             TraceState::Traced => "Traced",
+            TraceState::Verified => "Verified",
         }
     }
 }
@@ -443,7 +449,7 @@ pub fn summarize_trace_states(states: &[TraceState]) -> TraceSummary {
             TraceState::Incomplete => summary.incomplete += 1,
             TraceState::Stale => summary.stale += 1,
             TraceState::Drifted(_) => summary.drifted += 1,
-            TraceState::Traced => summary.traced += 1,
+            TraceState::Traced | TraceState::Verified => summary.traced += 1,
         }
     }
     summary
@@ -645,6 +651,41 @@ pub fn check_requirement(
         id: req.id.clone(),
         state,
         gap,
+    }
+}
+
+/// Refines `check`'s [`TraceState`] from `Traced` to [`TraceState::Verified`]
+/// if `run_record` records a [`TestResult::Passed`] result pinned to `req`'s
+/// current Content Hash and to `current_file_hashes` — the current SHA-256
+/// File Hashes of `req`'s annotated files. Any other state (Drifted and
+/// below), a missing `run_record`, or a pinned hash that no longer matches
+/// either of those, leaves `check` unchanged.
+// @implements REQ-044 v2 a74590fa
+pub fn verify_check(
+    check: RequirementCheck,
+    req: &Requirement,
+    run_record: Option<&RunRecord>,
+    current_file_hashes: &BTreeMap<String, String>,
+) -> RequirementCheck {
+    if check.state != TraceState::Traced {
+        return check;
+    }
+
+    let verified = matches!(
+        run_record,
+        Some(record)
+            if record.result == TestResult::Passed
+                && record.content_hash == req.hash
+                && record.file_hashes == *current_file_hashes
+    );
+
+    if verified {
+        RequirementCheck {
+            state: TraceState::Verified,
+            ..check
+        }
+    } else {
+        check
     }
 }
 

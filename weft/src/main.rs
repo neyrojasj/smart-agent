@@ -10,8 +10,8 @@ use weft_core::{
     description, drifted_paths, file_hash, files_for_requirement, next_req_id, parse_lock,
     parse_run_lock, parse_test_config, render_lock, render_markdown, render_run_lock,
     resolve_test_command, scan_annotations, skeleton_toml, summarize_trace_states,
-    verify_not_user_story, verify_requirement, Annotation, Requirement, RunRecord, Status,
-    TestResult, TraceState,
+    verify_check, verify_not_user_story, verify_requirement, Annotation, Requirement, RunRecord,
+    Status, TestResult, TraceState,
 };
 
 #[derive(Parser)]
@@ -388,6 +388,7 @@ fn scan_file_annotations(root: &Path) -> Vec<(String, Vec<Annotation>)> {
 // @implements REQ-037 v2 2371e246
 // @implements REQ-040 v2 1ead8691
 // @implements REQ-041 v2 7194e93b
+// @implements REQ-044 v2 a74590fa
 fn check_cmd(summary: bool, json: bool) -> ExitCode {
     let mut req_files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut req_files);
@@ -425,17 +426,24 @@ fn check_cmd(summary: bool, json: bool) -> ExitCode {
             })
             .collect();
 
+    let run_lock = fs::read_to_string(RUN_LOCK_PATH)
+        .map(|src| parse_run_lock(&src))
+        .unwrap_or_default();
+
     let mut ok = true;
     let mut states = Vec::new();
     let mut checks = Vec::new();
     for req in &requirements {
-        let drifted = drifted_paths(
-            &files_for_requirement(&req.id, &file_annotations),
-            &lock,
-            &current_hashes,
-        );
+        let req_files = files_for_requirement(&req.id, &file_annotations);
+        let drifted = drifted_paths(&req_files, &lock, &current_hashes);
+        let req_file_hashes: BTreeMap<String, String> = req_files
+            .iter()
+            .filter_map(|path| current_hashes.get(path).map(|hash| (path.clone(), hash.clone())))
+            .collect();
+
         let check = check_requirement(req, &annotations, drifted);
-        if check.state != TraceState::Traced {
+        let check = verify_check(check, req, run_lock.get(&req.id), &req_file_hashes);
+        if !matches!(check.state, TraceState::Traced | TraceState::Verified) {
             ok = false;
         }
         if !summary && !json {
