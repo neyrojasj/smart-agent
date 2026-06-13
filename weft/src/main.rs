@@ -1,3 +1,4 @@
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -7,8 +8,10 @@ use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
     all_annotated_files, annotation_line, bump, check_requirement, dangling_annotations,
     description, drifted_paths, file_hash, files_for_requirement, next_req_id, parse_lock,
-    render_lock, render_markdown, scan_annotations, skeleton_toml, summarize_trace_states,
-    verify_not_user_story, verify_requirement, Annotation, Requirement, Status, TraceState,
+    parse_run_lock, parse_test_config, render_lock, render_markdown, render_run_lock,
+    resolve_test_command, scan_annotations, skeleton_toml, summarize_trace_states,
+    verify_not_user_story, verify_requirement, Annotation, Requirement, RunRecord, Status,
+    TestResult, TraceState,
 };
 
 #[derive(Parser)]
@@ -85,6 +88,13 @@ enum Command {
         /// The requirement's REQ_ID, e.g. REQ-001.
         req_id: String,
     },
+    /// Run the configured Test Command for each active requirement (or a
+    /// single REQ_ID) and record pass/fail/unrun into docs/prds/weft.run.toml.
+    Test {
+        /// Restrict the run to this REQ_ID, updating only its recorded
+        /// result.
+        req_id: Option<String>,
+    },
     /// Print the exact Trace Link line for a requirement, using its current
     /// version and hash.
     Annotate {
@@ -125,13 +135,15 @@ fn main() -> ExitCode {
         Command::Init => init_cmd(),
         Command::Deprecate { req_id } => deprecate_cmd(&req_id),
         Command::Seal { req_id } => seal_cmd(req_id.as_deref()),
+        Command::Test { req_id } => test_cmd(req_id.as_deref()),
         Command::Trace { req_id } => trace_cmd(&req_id),
         Command::Annotate { req_id, kind } => annotate_cmd(&req_id, &kind),
     }
 }
 
 /// Recursively collects `.toml` files under `root` (or returns `root` itself
-/// if it is already a file).
+/// if it is already a file), skipping the Run Lock (`weft.run.toml`) — a
+/// committed artifact, not a requirement record.
 fn find_toml_files(root: &Path, out: &mut Vec<PathBuf>) {
     if root.is_file() {
         out.push(root.to_path_buf());
@@ -144,7 +156,9 @@ fn find_toml_files(root: &Path, out: &mut Vec<PathBuf>) {
         let path = entry.path();
         if path.is_dir() {
             find_toml_files(&path, out);
-        } else if path.extension().and_then(|e| e.to_str()) == Some("toml") {
+        } else if path.extension().and_then(|e| e.to_str()) == Some("toml")
+            && path.file_name().and_then(|n| n.to_str()) != Some("weft.run.toml")
+        {
             out.push(path);
         }
     }
@@ -331,6 +345,14 @@ fn find_scannable_files(root: &Path, extra_excludes: &[String], out: &mut Vec<Pa
 /// The path to the Weft Lock: the committed record of each annotated file's
 /// File Hash at last Seal.
 const LOCK_PATH: &str = "docs/prds/weft.lock";
+
+/// The path to the Run Lock: the committed record of each requirement's last
+/// Verification Run, pinned to its Content Hash and annotated-file hashes.
+const RUN_LOCK_PATH: &str = "docs/prds/weft.run.toml";
+
+/// The path to the project's configuration: a `[test]` section declares the
+/// Test Command (ADR 0014).
+const WEFT_TOML_PATH: &str = "weft.toml";
 
 /// Strips a leading `./` from `path` so paths read consistently whether they
 /// were collected by walking `.` or referenced directly, matching the
@@ -662,6 +684,129 @@ fn seal_cmd(req_id: Option<&str>) -> ExitCode {
 
     println!("sealed {} file(s) into {LOCK_PATH}", targets.len());
     ExitCode::SUCCESS
+}
+
+/// Runs `cmd` as an opaque shell command via `sh -c`, returning whether it
+/// exited successfully. weft reads only the exit code — never the command's
+/// output or test-framework internals — to preserve language-agnosticism
+/// (ADR 0014).
+fn run_test_command(cmd: &str) -> bool {
+    std::process::Command::new("sh")
+        .arg("-c")
+        .arg(cmd)
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+// @implements REQ-042 v2 37857355
+// @implements REQ-043 v3 ceb81bfe
+fn test_cmd(req_id: Option<&str>) -> ExitCode {
+    let config = fs::read_to_string(WEFT_TOML_PATH)
+        .ok()
+        .and_then(|src| parse_test_config(&src));
+
+    let Some(config) = config else {
+        eprintln!("no test command configured: add a [test] section to weft.toml");
+        return ExitCode::FAILURE;
+    };
+
+    let mut req_files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut req_files);
+    req_files.sort();
+
+    let mut requirements = Vec::new();
+    for file in &req_files {
+        match load_requirement(file) {
+            Ok(req) => requirements.push(req),
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+    requirements.retain(|req| req.status == Status::Active);
+    requirements.sort_by(|a, b| a.id.cmp(&b.id));
+
+    if let Some(req_id) = req_id {
+        if !requirements.iter().any(|req| req.id == req_id) {
+            eprintln!("requirement '{req_id}' not found under docs/prds");
+            return ExitCode::FAILURE;
+        }
+        requirements.retain(|req| req.id == req_id);
+    }
+
+    let file_annotations = scan_file_annotations(Path::new("."));
+
+    let existing_lock = fs::read_to_string(RUN_LOCK_PATH)
+        .map(|src| parse_run_lock(&src))
+        .unwrap_or_default();
+
+    // A targeted run preserves every other requirement's recorded result; a
+    // full run rebuilds the Run Lock from scratch, like a full `weft seal`.
+    let mut lock = match req_id {
+        Some(_) => existing_lock,
+        None => BTreeMap::new(),
+    };
+
+    let mut ok = true;
+    let mut command_results: HashMap<String, bool> = HashMap::new();
+
+    for req in &requirements {
+        let result = match resolve_test_command(&config, req) {
+            None => TestResult::Unrun,
+            Some(cmd) => {
+                let passed = *command_results
+                    .entry(cmd.to_string())
+                    .or_insert_with(|| run_test_command(cmd));
+                if passed {
+                    TestResult::Passed
+                } else {
+                    TestResult::Failed
+                }
+            }
+        };
+
+        if result != TestResult::Passed {
+            ok = false;
+        }
+        println!("{}: {result}", req.id);
+
+        let file_hashes: BTreeMap<String, String> =
+            files_for_requirement(&req.id, &file_annotations)
+                .into_iter()
+                .filter_map(|path| {
+                    let bytes = fs::read(&path).ok()?;
+                    Some((path, file_hash(&bytes)))
+                })
+                .collect();
+
+        lock.insert(
+            req.id.clone(),
+            RunRecord {
+                result,
+                content_hash: req.hash.clone(),
+                file_hashes,
+            },
+        );
+    }
+
+    if let Some(parent) = Path::new(RUN_LOCK_PATH).parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            eprintln!("{}: {e}", parent.display());
+            return ExitCode::FAILURE;
+        }
+    }
+    if let Err(e) = fs::write(RUN_LOCK_PATH, render_run_lock(&lock)) {
+        eprintln!("{RUN_LOCK_PATH}: {e}");
+        return ExitCode::FAILURE;
+    }
+
+    if ok {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
 }
 
 // @implements REQ-038 v2 82357796

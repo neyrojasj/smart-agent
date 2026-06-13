@@ -787,6 +787,100 @@ pub fn verify_requirement(req: &Requirement, filename_id: &str) -> Vec<VerifyIss
     issues
 }
 
+/// The `[test]` section of `weft.toml`: a default Test Command plus optional
+/// per-FEAT or per-requirement overrides, keyed by FEAT label or REQ_ID.
+// @implements REQ-042 v2 37857355
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+pub struct TestConfig {
+    pub command: Option<String>,
+    #[serde(default)]
+    pub overrides: BTreeMap<String, String>,
+}
+
+/// The top-level shape of `weft.toml` — currently only its `[test]` section
+/// is meaningful to weft.
+#[derive(Debug, Default, Deserialize)]
+struct WeftToml {
+    test: Option<TestConfig>,
+}
+
+/// Parses the `[test]` section of `weft.toml`'s TOML source — the project's
+/// configured Test Command. Returns `None` if `toml_src` has no `[test]`
+/// section (or is not valid TOML): callers must then report that no Test
+/// Command is configured rather than treating requirements as passed.
+// @implements REQ-042 v2 37857355
+pub fn parse_test_config(toml_src: &str) -> Option<TestConfig> {
+    toml::from_str::<WeftToml>(toml_src).ok()?.test
+}
+
+/// Resolves the Test Command responsible for `req`: a per-requirement
+/// override (`config.overrides[req.id]`) takes precedence over a per-FEAT
+/// override (`config.overrides[req.feat]`), which takes precedence over the
+/// default `config.command`. `None` if no override applies and no default
+/// command is configured.
+// @implements REQ-042 v2 37857355
+pub fn resolve_test_command<'a>(config: &'a TestConfig, req: &Requirement) -> Option<&'a str> {
+    if let Some(cmd) = config.overrides.get(&req.id) {
+        return Some(cmd.as_str());
+    }
+    if let Some(feat) = &req.feat {
+        if let Some(cmd) = config.overrides.get(feat) {
+            return Some(cmd.as_str());
+        }
+    }
+    config.command.as_deref()
+}
+
+/// The outcome of the Test Command responsible for a requirement at a
+/// Verification Run, recorded in `docs/prds/weft.run.toml` by `weft test`.
+// @implements REQ-043 v3 ceb81bfe
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TestResult {
+    Passed,
+    Failed,
+    Unrun,
+}
+
+impl fmt::Display for TestResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TestResult::Passed => write!(f, "passed"),
+            TestResult::Failed => write!(f, "failed"),
+            TestResult::Unrun => write!(f, "unrun"),
+        }
+    }
+}
+
+/// A single requirement's Run Lock entry: the [`TestResult`] of its last
+/// Verification Run, pinned to the requirement's Content Hash
+/// (`content_hash`) and the SHA-256 File Hashes of its annotated files
+/// (`file_hashes`) at run time. A later change to either pinned value
+/// invalidates the recorded pass.
+// @implements REQ-043 v3 ceb81bfe
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RunRecord {
+    pub result: TestResult,
+    pub content_hash: String,
+    #[serde(default)]
+    pub file_hashes: BTreeMap<String, String>,
+}
+
+/// Parses the Run Lock's TOML body into a REQ_ID -> [`RunRecord`] map.
+/// Returns an empty map if `toml_src` is empty or malformed (e.g. the Run
+/// Lock does not exist yet).
+// @implements REQ-043 v3 ceb81bfe
+pub fn parse_run_lock(toml_src: &str) -> BTreeMap<String, RunRecord> {
+    toml::from_str(toml_src).unwrap_or_default()
+}
+
+/// Renders a REQ_ID -> [`RunRecord`] map as the Run Lock's TOML body, sorted
+/// by REQ_ID for a stable diff.
+// @implements REQ-043 v3 ceb81bfe
+pub fn render_run_lock(entries: &BTreeMap<String, RunRecord>) -> String {
+    toml::to_string_pretty(entries).unwrap_or_default()
+}
+
 /// Top-level TOML keys that mark a record as a User Story rather than a
 /// Requirement. User Stories are ephemeral and must never be persisted.
 const USER_STORY_FIELDS: &[&str] = &["as_a", "i_want", "so_that", "user_story"];
