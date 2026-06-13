@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep|Glob|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/hooks/require-research-subagent.sh"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
