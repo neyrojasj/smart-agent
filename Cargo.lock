@@ -743,6 +743,7 @@ dependencies = [
  "assert_cmd",
  "clap",
  "predicates",
+ "serde_json",
  "tempfile",
  "weft-core",
 ]
@@ -752,6 +753,7 @@ name = "weft-core"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "sha2",
  "toml",
  "unicode-normalization",

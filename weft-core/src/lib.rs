@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use unicode_normalization::UnicodeNormalization;
 
@@ -194,6 +194,19 @@ impl fmt::Display for AnnotationKind {
     }
 }
 
+impl AnnotationKind {
+    /// The bare chain-stop name, without the `@` marker — used in gap detail
+    /// reported by [`check_requirement`] (e.g. `"implements"`).
+    // @implements REQ-036 v2 4cbbd466
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AnnotationKind::Addresses => "addresses",
+            AnnotationKind::Implements => "implements",
+            AnnotationKind::Verifies => "verifies",
+        }
+    }
+}
+
 /// A single Trace Link found by scanning a file: a requirement id pinned to
 /// the version and Content Hash that were current when the link was written.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -352,6 +365,21 @@ impl fmt::Display for TraceState {
     }
 }
 
+impl TraceState {
+    /// The state's name alone, without `Drifted`'s file list — the `state`
+    /// field of [`RequirementCheck`]'s JSON representation.
+    // @implements REQ-037 v2 2371e246
+    pub fn name(&self) -> &'static str {
+        match self {
+            TraceState::Orphaned => "Orphaned",
+            TraceState::Incomplete => "Incomplete",
+            TraceState::Stale => "Stale",
+            TraceState::Drifted(_) => "Drifted",
+            TraceState::Traced => "Traced",
+        }
+    }
+}
+
 /// A rollup count of [`TraceState`]s, one bucket per state — printed by
 /// `weft check --summary` as an alternative to the per-requirement listing.
 // @implements REQ-040 v2 1ead8691
@@ -447,6 +475,154 @@ pub fn trace_state_with_drift(
         TraceState::Drifted(drifted)
     } else {
         state
+    }
+}
+
+/// A Trace Link that is present but pins a hash that no longer matches the
+/// requirement's current Content Hash, with both hashes for comparison.
+// @implements REQ-036 v2 4cbbd466
+// @implements REQ-037 v2 2371e246
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct StaleLink {
+    pub kind: String,
+    pub recorded_hash: String,
+    pub current_hash: String,
+}
+
+/// The specific gap that prevents a requirement from being `Traced`: missing
+/// Trace Link kinds (Incomplete), stale Trace Links with their recorded and
+/// current hashes (Stale), or drifted file paths (Drifted). Empty for
+/// `Orphaned` and `Traced`.
+// @implements REQ-036 v2 4cbbd466
+// @implements REQ-037 v2 2371e246
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize)]
+pub struct TraceGap {
+    pub missing_links: Vec<String>,
+    pub stale_links: Vec<StaleLink>,
+    pub drifted_files: Vec<String>,
+}
+
+/// A requirement's [`TraceState`] plus the structured [`TraceGap`] explaining
+/// why it is not `Traced`. The single underlying result shared by `weft
+/// check`'s human-readable ([`fmt::Display`]) and `--json`
+/// ([`serde::Serialize`]) renderers, so the two views can never diverge.
+// @implements REQ-036 v2 4cbbd466
+// @implements REQ-037 v2 2371e246
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RequirementCheck {
+    pub id: String,
+    pub state: TraceState,
+    pub gap: TraceGap,
+}
+
+impl fmt::Display for RequirementCheck {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.state {
+            TraceState::Incomplete => write!(
+                f,
+                "{}: Incomplete (missing {})",
+                self.id,
+                self.gap.missing_links.join(", ")
+            ),
+            TraceState::Stale => {
+                let parts: Vec<String> = self
+                    .gap
+                    .stale_links
+                    .iter()
+                    .map(|link| {
+                        format!(
+                            "{} has {}, current {}",
+                            link.kind, link.recorded_hash, link.current_hash
+                        )
+                    })
+                    .collect();
+                write!(f, "{}: Stale ({})", self.id, parts.join("; "))
+            }
+            other => write!(f, "{}: {other}", self.id),
+        }
+    }
+}
+
+impl Serialize for RequirementCheck {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut out = serializer.serialize_struct("RequirementCheck", 5)?;
+        out.serialize_field("id", &self.id)?;
+        out.serialize_field("state", self.state.name())?;
+        out.serialize_field("missing_links", &self.gap.missing_links)?;
+        out.serialize_field("stale_links", &self.gap.stale_links)?;
+        out.serialize_field("drifted_files", &self.gap.drifted_files)?;
+        out.end()
+    }
+}
+
+/// Computes `req`'s [`RequirementCheck`]: its [`TraceState`] (via
+/// [`trace_state_with_drift`]) plus the [`TraceGap`] detail explaining the
+/// gap — which Trace Link kinds are missing (Incomplete), which are stale
+/// together with their recorded and current hashes (Stale), or which files
+/// have drifted (Drifted).
+// @implements REQ-036 v2 4cbbd466
+// @implements REQ-037 v2 2371e246
+pub fn check_requirement(
+    req: &Requirement,
+    annotations: &[Annotation],
+    drifted: Vec<String>,
+) -> RequirementCheck {
+    let find = |kind: AnnotationKind| {
+        annotations
+            .iter()
+            .find(|a| a.kind == kind && a.req_id == req.id)
+    };
+
+    let links = [
+        (AnnotationKind::Addresses, find(AnnotationKind::Addresses)),
+        (AnnotationKind::Implements, find(AnnotationKind::Implements)),
+        (AnnotationKind::Verifies, find(AnnotationKind::Verifies)),
+    ];
+
+    let state = trace_state_with_drift(req, annotations, drifted);
+
+    let gap = match &state {
+        TraceState::Incomplete => TraceGap {
+            missing_links: links
+                .iter()
+                .filter(|(_, a)| a.is_none())
+                .map(|(kind, _)| kind.as_str().to_string())
+                .collect(),
+            ..TraceGap::default()
+        },
+        TraceState::Stale => TraceGap {
+            stale_links: links
+                .iter()
+                .filter_map(|(kind, a)| {
+                    let a = (*a)?;
+                    if a.hash != req.hash {
+                        Some(StaleLink {
+                            kind: kind.as_str().to_string(),
+                            recorded_hash: a.hash.clone(),
+                            current_hash: req.hash.clone(),
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            ..TraceGap::default()
+        },
+        TraceState::Drifted(files) => TraceGap {
+            drifted_files: files.clone(),
+            ..TraceGap::default()
+        },
+        _ => TraceGap::default(),
+    };
+
+    RequirementCheck {
+        id: req.id.clone(),
+        state,
+        gap,
     }
 }
 

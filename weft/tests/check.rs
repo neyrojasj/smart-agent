@@ -301,6 +301,123 @@ fn dangling_annotation_to_deprecated_requirement_is_reported() {
         .stdout(predicate::str::contains("REQ-901"));
 }
 
+// @verifies REQ-036 v2 4cbbd466
+#[test]
+fn human_output_reports_missing_link_kind_for_incomplete_requirement() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+    write_code(&dir, &hash);
+    // no test file: @verifies is missing
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("check")
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(
+            "REQ-901: Incomplete (missing verifies)",
+        ));
+}
+
+// @verifies REQ-036 v2 4cbbd466
+#[test]
+fn human_output_reports_stale_link_with_recorded_and_current_hash() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+    write_code(&dir, "deadbeef"); // pins a hash that no longer matches the requirement
+    write_test(&dir, &hash);
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("check")
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(format!(
+            "REQ-901: Stale (implements has deadbeef, current {hash})"
+        )));
+}
+
+// @verifies REQ-037 v2 2371e246
+#[test]
+fn json_flag_emits_structured_array_with_gap_detail() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+    write_code(&dir, "deadbeef"); // stale @implements link
+    write_test(&dir, &hash);
+
+    let output = Command::cargo_bin("weft")
+        .unwrap()
+        .args(["check", "--json"])
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).expect("valid json");
+    assert_eq!(
+        json,
+        serde_json::json!([{
+            "id": "REQ-901",
+            "state": "Stale",
+            "missing_links": [],
+            "stale_links": [
+                {"kind": "implements", "recorded_hash": "deadbeef", "current_hash": hash}
+            ],
+            "drifted_files": []
+        }])
+    );
+}
+
+// @verifies REQ-037 v2 2371e246
+#[test]
+fn json_flag_reports_traced_requirement_with_empty_gap_arrays() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+    write_code(&dir, &hash);
+    write_test(&dir, &hash);
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("seal")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let output = Command::cargo_bin("weft")
+        .unwrap()
+        .args(["check", "--json"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).expect("valid json");
+    assert_eq!(
+        json,
+        serde_json::json!([{
+            "id": "REQ-901",
+            "state": "Traced",
+            "missing_links": [],
+            "stale_links": [],
+            "drifted_files": []
+        }])
+    );
+}
+
 #[test]
 fn deprecated_requirement_with_no_links_does_not_fail_check() {
     let hash = current_hash();

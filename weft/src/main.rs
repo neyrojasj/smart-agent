@@ -5,9 +5,9 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
-    all_annotated_files, annotation_line, bump, dangling_annotations, description, drifted_paths,
-    file_hash, files_for_requirement, next_req_id, parse_lock, render_lock, render_markdown,
-    scan_annotations, skeleton_toml, summarize_trace_states, trace_state_with_drift,
+    all_annotated_files, annotation_line, bump, check_requirement, dangling_annotations,
+    description, drifted_paths, file_hash, files_for_requirement, next_req_id, parse_lock,
+    render_lock, render_markdown, scan_annotations, skeleton_toml, summarize_trace_states,
     verify_not_user_story, verify_requirement, Annotation, Requirement, Status, TraceState,
 };
 
@@ -55,6 +55,10 @@ enum Command {
         /// instead of the per-requirement listing.
         #[arg(long)]
         summary: bool,
+        /// Emit a JSON array, one object per active requirement, with id,
+        /// state, and gap detail (missing_links, stale_links, drifted_files).
+        #[arg(long)]
+        json: bool,
     },
     /// Increment a requirement's version and recompute its hash, together.
     Bump {
@@ -115,7 +119,7 @@ fn main() -> ExitCode {
         Command::Get { req_id, field } => get_cmd(&req_id, &field),
         Command::New { feat } => new_cmd(feat.as_deref()),
         Command::List { feat } => list_cmd(feat.as_deref()),
-        Command::Check { summary } => check_cmd(summary),
+        Command::Check { summary, json } => check_cmd(summary, json),
         Command::Bump { req_id } => bump_cmd(&req_id),
         Command::Render => render_cmd(),
         Command::Init => init_cmd(),
@@ -358,9 +362,11 @@ fn scan_file_annotations(root: &Path) -> Vec<(String, Vec<Annotation>)> {
 
 // @implements REQ-014 v2 d217a603
 // @implements REQ-033 v2 04d42b48
+// @implements REQ-036 v2 4cbbd466
+// @implements REQ-037 v2 2371e246
 // @implements REQ-040 v2 1ead8691
 // @implements REQ-041 v2 7194e93b
-fn check_cmd(summary: bool) -> ExitCode {
+fn check_cmd(summary: bool, json: bool) -> ExitCode {
     let mut req_files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut req_files);
     req_files.sort();
@@ -399,29 +405,36 @@ fn check_cmd(summary: bool) -> ExitCode {
 
     let mut ok = true;
     let mut states = Vec::new();
+    let mut checks = Vec::new();
     for req in &requirements {
         let drifted = drifted_paths(
             &files_for_requirement(&req.id, &file_annotations),
             &lock,
             &current_hashes,
         );
-        let state = trace_state_with_drift(req, &annotations, drifted);
-        if state != TraceState::Traced {
+        let check = check_requirement(req, &annotations, drifted);
+        if check.state != TraceState::Traced {
             ok = false;
         }
-        if !summary {
-            println!("{}: {state}", req.id);
+        if !summary && !json {
+            println!("{check}");
         }
-        states.push(state);
+        states.push(check.state.clone());
+        checks.push(check);
     }
 
-    if summary {
+    if json {
+        println!("{}", serde_json::to_string(&checks).expect("serialize check results"));
+    } else if summary {
         println!("{}", summarize_trace_states(&states));
     }
 
     let active_ids: Vec<String> = requirements.iter().map(|req| req.id.clone()).collect();
     for (path, annotation) in dangling_annotations(&file_annotations, &active_ids) {
         ok = false;
+        if json {
+            continue;
+        }
         let line = fs::read_to_string(path)
             .ok()
             .and_then(|src| annotation_line(&src, annotation));

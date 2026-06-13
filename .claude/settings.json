@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./target/debug/weft check 2>&1"
+            "command": "./target/debug/weft check --json 2>&1"
           }
         ]
       }
