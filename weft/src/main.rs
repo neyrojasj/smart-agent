@@ -5,10 +5,10 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
-    all_annotated_files, bump, description, drifted_paths, file_hash, files_for_requirement,
-    next_req_id, parse_lock, render_lock, render_markdown, scan_annotations, skeleton_toml,
-    trace_state_with_drift, verify_not_user_story, verify_requirement, Annotation, Requirement,
-    Status, TraceState,
+    all_annotated_files, annotation_line, bump, dangling_annotations, description, drifted_paths,
+    file_hash, files_for_requirement, next_req_id, parse_lock, render_lock, render_markdown,
+    scan_annotations, skeleton_toml, summarize_trace_states, trace_state_with_drift,
+    verify_not_user_story, verify_requirement, Annotation, Requirement, Status, TraceState,
 };
 
 #[derive(Parser)]
@@ -50,7 +50,12 @@ enum Command {
         feat: Option<String>,
     },
     /// Report each requirement's Trace State; exit non-zero on any drift.
-    Check,
+    Check {
+        /// Print a rollup count of active requirements per Trace State
+        /// instead of the per-requirement listing.
+        #[arg(long)]
+        summary: bool,
+    },
     /// Increment a requirement's version and recompute its hash, together.
     Bump {
         /// The requirement's REQ_ID, e.g. REQ-001.
@@ -89,7 +94,7 @@ fn main() -> ExitCode {
         Command::Get { req_id, field } => get_cmd(&req_id, &field),
         Command::New { feat } => new_cmd(feat.as_deref()),
         Command::List { feat } => list_cmd(feat.as_deref()),
-        Command::Check => check_cmd(),
+        Command::Check { summary } => check_cmd(summary),
         Command::Bump { req_id } => bump_cmd(&req_id),
         Command::Render => render_cmd(),
         Command::Init => init_cmd(),
@@ -330,7 +335,9 @@ fn scan_file_annotations(root: &Path) -> Vec<(String, Vec<Annotation>)> {
 
 // @implements REQ-014 v2 d217a603
 // @implements REQ-033 v2 04d42b48
-fn check_cmd() -> ExitCode {
+// @implements REQ-040 v2 1ead8691
+// @implements REQ-041 v2 7194e93b
+fn check_cmd(summary: bool) -> ExitCode {
     let mut req_files = Vec::new();
     find_toml_files(Path::new("docs/prds"), &mut req_files);
     req_files.sort();
@@ -368,6 +375,7 @@ fn check_cmd() -> ExitCode {
             .collect();
 
     let mut ok = true;
+    let mut states = Vec::new();
     for req in &requirements {
         let drifted = drifted_paths(
             &files_for_requirement(&req.id, &file_annotations),
@@ -378,7 +386,26 @@ fn check_cmd() -> ExitCode {
         if state != TraceState::Traced {
             ok = false;
         }
-        println!("{}: {state}", req.id);
+        if !summary {
+            println!("{}: {state}", req.id);
+        }
+        states.push(state);
+    }
+
+    if summary {
+        println!("{}", summarize_trace_states(&states));
+    }
+
+    let active_ids: Vec<String> = requirements.iter().map(|req| req.id.clone()).collect();
+    for (path, annotation) in dangling_annotations(&file_annotations, &active_ids) {
+        ok = false;
+        let line = fs::read_to_string(path)
+            .ok()
+            .and_then(|src| annotation_line(&src, annotation));
+        match line {
+            Some(line) => println!("{path}:{line}: dangling {} {}", annotation.kind, annotation.req_id),
+            None => println!("{path}: dangling {} {}", annotation.kind, annotation.req_id),
+        }
     }
 
     if ok {

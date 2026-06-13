@@ -193,6 +193,114 @@ fn weftignore_excludes_listed_directory_from_scan() {
         .stdout(predicate::str::contains("REQ-901: Incomplete"));
 }
 
+// @verifies REQ-040 v2 1ead8691
+#[test]
+fn summary_flag_prints_trace_state_rollup_instead_of_per_requirement_listing() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+    write_code(&dir, &hash);
+    write_test(&dir, &hash);
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("seal")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .args(["check", "--summary"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("1/1 Traced"))
+        .stdout(predicate::str::contains("REQ-901:").not());
+}
+
+// @verifies REQ-040 v2 1ead8691
+#[test]
+fn summary_flag_still_fails_on_incomplete_requirements() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+    write_code(&dir, &hash);
+    // no test file: @verifies is missing
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .args(["check", "--summary"])
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("Incomplete: 1"))
+        .stdout(predicate::str::contains("0/1 Traced"));
+}
+
+// @verifies REQ-041 v2 7194e93b
+#[test]
+fn dangling_annotation_to_unknown_requirement_is_reported_with_file_and_line() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_requirement(&dir, &hash);
+    write_design_doc(&dir, &hash);
+    write_code(&dir, &hash);
+    write_test(&dir, &hash);
+
+    // An annotation pointing at a requirement that does not exist anywhere
+    // under docs/prds.
+    let src_dir = dir.path().join("src");
+    fs::write(
+        src_dir.join("orphan.rs"),
+        "fn other() {}\n// @implements REQ-999 v1 deadbeef\n",
+    )
+    .expect("write orphan code");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("seal")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("check")
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("src/orphan.rs:2"))
+        .stdout(predicate::str::contains("REQ-999"));
+}
+
+// @verifies REQ-041 v2 7194e93b
+#[test]
+fn dangling_annotation_to_deprecated_requirement_is_reported() {
+    let hash = current_hash();
+    let dir = TempDir::new().expect("create temp dir");
+    write_deprecated_requirement(&dir, &hash);
+    write_code(&dir, &hash); // @implements REQ-901, but REQ-901 is deprecated
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("seal")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("check")
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("src/login.rs:1"))
+        .stdout(predicate::str::contains("REQ-901"));
+}
+
 #[test]
 fn deprecated_requirement_with_no_links_does_not_fail_check() {
     let hash = current_hash();

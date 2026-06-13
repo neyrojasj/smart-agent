@@ -1,6 +1,6 @@
 use weft_core::{
-    canonical_hash, scan_annotations, trace_state, Annotation, AnnotationKind, Requirement,
-    Status, TraceState,
+    annotation_line, canonical_hash, dangling_annotations, scan_annotations, summarize_trace_states,
+    trace_state, Annotation, AnnotationKind, Requirement, Status, TraceState, TraceSummary,
 };
 
 // @verifies REQ-017 v2 8af530a5
@@ -172,6 +172,90 @@ fn all_links_present_and_current_is_traced() {
     ];
 
     assert_eq!(trace_state(&req, &annotations), TraceState::Traced);
+}
+
+// @verifies REQ-040 v2 1ead8691
+#[test]
+fn summarizes_trace_states_into_per_state_counts() {
+    let states = vec![
+        TraceState::Traced,
+        TraceState::Traced,
+        TraceState::Incomplete,
+        TraceState::Orphaned,
+    ];
+
+    let summary = summarize_trace_states(&states);
+
+    assert_eq!(
+        summary,
+        TraceSummary {
+            orphaned: 1,
+            incomplete: 1,
+            stale: 0,
+            drifted: 0,
+            traced: 2,
+        }
+    );
+    assert_eq!(summary.total(), 4);
+    assert_eq!(
+        summary.to_string(),
+        "Orphaned: 1\nIncomplete: 1\nStale: 0\nDrifted: 0\nTraced: 2\n2/4 Traced"
+    );
+}
+
+// @verifies REQ-041 v2 7194e93b
+#[test]
+fn finds_the_line_number_of_an_annotation() {
+    let src = "fn login() {}\n// @implements REQ-901 v1 a3f9b2c1\nfn other() {}\n";
+    let annotation = Annotation {
+        kind: AnnotationKind::Implements,
+        req_id: "REQ-901".to_string(),
+        version: 1,
+        hash: "a3f9b2c1".to_string(),
+    };
+
+    assert_eq!(annotation_line(src, &annotation), Some(2));
+}
+
+// @verifies REQ-041 v2 7194e93b
+#[test]
+fn annotation_line_is_none_when_not_found() {
+    let src = "fn login() {}\n";
+    let annotation = Annotation {
+        kind: AnnotationKind::Implements,
+        req_id: "REQ-901".to_string(),
+        version: 1,
+        hash: "a3f9b2c1".to_string(),
+    };
+
+    assert_eq!(annotation_line(src, &annotation), None);
+}
+
+// @verifies REQ-041 v2 7194e93b
+#[test]
+fn dangling_annotations_finds_links_to_unknown_or_deprecated_requirements() {
+    let file_annotations = vec![(
+        "src/login.rs".to_string(),
+        vec![
+            Annotation {
+                kind: AnnotationKind::Implements,
+                req_id: "REQ-001".to_string(),
+                version: 1,
+                hash: "a3f9b2c1".to_string(),
+            },
+            Annotation {
+                kind: AnnotationKind::Implements,
+                req_id: "REQ-099".to_string(),
+                version: 1,
+                hash: "deadbeef".to_string(),
+            },
+        ],
+    )];
+    let active_ids = vec!["REQ-001".to_string()];
+
+    let dangling = dangling_annotations(&file_annotations, &active_ids);
+
+    assert_eq!(dangling, vec![("src/login.rs", &file_annotations[0].1[1])]);
 }
 
 // @verifies REQ-016 v2 84ac8548

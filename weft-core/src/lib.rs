@@ -184,6 +184,16 @@ pub enum AnnotationKind {
     Verifies,
 }
 
+impl fmt::Display for AnnotationKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnnotationKind::Addresses => write!(f, "@addresses"),
+            AnnotationKind::Implements => write!(f, "@implements"),
+            AnnotationKind::Verifies => write!(f, "@verifies"),
+        }
+    }
+}
+
 /// A single Trace Link found by scanning a file: a requirement id pinned to
 /// the version and Content Hash that were current when the link was written.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -275,6 +285,37 @@ fn parse_inline_annotation(s: &str, kind: AnnotationKind) -> Option<Annotation> 
     })
 }
 
+/// Finds the 1-based line number of `annotation` within `text`, by locating
+/// the line containing the same `req_id`/`version`/`hash` text that
+/// [`scan_annotations`] matched. Returns `None` if no line contains it (e.g.
+/// the text has changed since `annotation` was scanned).
+// @implements REQ-041 v2 7194e93b
+pub fn annotation_line(text: &str, annotation: &Annotation) -> Option<usize> {
+    let needle = format!("{} v{} {}", annotation.req_id, annotation.version, annotation.hash);
+    text.lines()
+        .position(|line| line.contains(&needle))
+        .map(|line| line + 1)
+}
+
+/// All `(path, annotation)` pairs from `file_annotations` whose `req_id` does
+/// not match any id in `active_ids` — Trace Links pointing at a requirement
+/// that is unknown or deprecated.
+// @implements REQ-041 v2 7194e93b
+pub fn dangling_annotations<'a>(
+    file_annotations: &'a [(String, Vec<Annotation>)],
+    active_ids: &[String],
+) -> Vec<(&'a str, &'a Annotation)> {
+    file_annotations
+        .iter()
+        .flat_map(|(path, annotations)| {
+            annotations
+                .iter()
+                .filter(|a| !active_ids.iter().any(|id| id == &a.req_id))
+                .map(move |a| (path.as_str(), a))
+        })
+        .collect()
+}
+
 /// The static verdict for a requirement: do its Trace Links exist
 /// (completeness), do their frozen hashes match the requirement's current
 /// Content Hash (freshness), and do its annotated files match their sealed
@@ -309,6 +350,53 @@ impl fmt::Display for TraceState {
             TraceState::Traced => write!(f, "Traced"),
         }
     }
+}
+
+/// A rollup count of [`TraceState`]s, one bucket per state — printed by
+/// `weft check --summary` as an alternative to the per-requirement listing.
+// @implements REQ-040 v2 1ead8691
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct TraceSummary {
+    pub orphaned: usize,
+    pub incomplete: usize,
+    pub stale: usize,
+    pub drifted: usize,
+    pub traced: usize,
+}
+
+impl TraceSummary {
+    /// The total number of requirements summarized.
+    pub fn total(&self) -> usize {
+        self.orphaned + self.incomplete + self.stale + self.drifted + self.traced
+    }
+}
+
+impl fmt::Display for TraceSummary {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Orphaned: {}", self.orphaned)?;
+        writeln!(f, "Incomplete: {}", self.incomplete)?;
+        writeln!(f, "Stale: {}", self.stale)?;
+        writeln!(f, "Drifted: {}", self.drifted)?;
+        writeln!(f, "Traced: {}", self.traced)?;
+        write!(f, "{}/{} Traced", self.traced, self.total())
+    }
+}
+
+/// Buckets `states` into a [`TraceSummary`], one count per [`TraceState`]
+/// variant.
+// @implements REQ-040 v2 1ead8691
+pub fn summarize_trace_states(states: &[TraceState]) -> TraceSummary {
+    let mut summary = TraceSummary::default();
+    for state in states {
+        match state {
+            TraceState::Orphaned => summary.orphaned += 1,
+            TraceState::Incomplete => summary.incomplete += 1,
+            TraceState::Stale => summary.stale += 1,
+            TraceState::Drifted(_) => summary.drifted += 1,
+            TraceState::Traced => summary.traced += 1,
+        }
+    }
+    summary
 }
 
 /// Computes `req`'s [`TraceState`] from the Trace Links found by
