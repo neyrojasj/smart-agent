@@ -75,6 +75,27 @@ enum Command {
         /// Restrict sealing to files annotated with this REQ_ID, e.g. REQ-001.
         req_id: Option<String>,
     },
+    /// Print each Trace Link found for a requirement, with its kind and
+    /// file:line location.
+    Trace {
+        /// The requirement's REQ_ID, e.g. REQ-001.
+        req_id: String,
+    },
+    /// Print the exact Trace Link line for a requirement, using its current
+    /// version and hash.
+    Annotate {
+        /// The requirement's REQ_ID, e.g. REQ-001.
+        req_id: String,
+        #[arg(long, value_enum)]
+        kind: AnnotateKind,
+    },
+}
+
+#[derive(Clone, ValueEnum)]
+enum AnnotateKind {
+    Addresses,
+    Implements,
+    Verifies,
 }
 
 #[derive(Clone, ValueEnum)]
@@ -100,6 +121,8 @@ fn main() -> ExitCode {
         Command::Init => init_cmd(),
         Command::Deprecate { req_id } => deprecate_cmd(&req_id),
         Command::Seal { req_id } => seal_cmd(req_id.as_deref()),
+        Command::Trace { req_id } => trace_cmd(&req_id),
+        Command::Annotate { req_id, kind } => annotate_cmd(&req_id, &kind),
     }
 }
 
@@ -626,6 +649,75 @@ fn seal_cmd(req_id: Option<&str>) -> ExitCode {
 
     println!("sealed {} file(s) into {LOCK_PATH}", targets.len());
     ExitCode::SUCCESS
+}
+
+// @implements REQ-038 v2 82357796
+fn trace_cmd(req_id: &str) -> ExitCode {
+    let mut files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut files);
+
+    let found = files
+        .iter()
+        .any(|file| file.file_stem().and_then(|s| s.to_str()) == Some(req_id));
+    if !found {
+        eprintln!("requirement '{req_id}' not found under docs/prds");
+        return ExitCode::FAILURE;
+    }
+
+    let file_annotations = scan_file_annotations(Path::new("."));
+    let mut links: Vec<(String, String, usize)> = Vec::new();
+    for (path, annotations) in &file_annotations {
+        for annotation in annotations {
+            if annotation.req_id != req_id {
+                continue;
+            }
+            if let Some(line) =
+                annotation_line(&fs::read_to_string(path).unwrap_or_default(), annotation)
+            {
+                links.push((annotation.kind.to_string(), path.clone(), line));
+            }
+        }
+    }
+
+    if links.is_empty() {
+        println!("Orphaned");
+    } else {
+        for (kind, path, line) in links {
+            println!("{kind} {path}:{line}");
+        }
+    }
+
+    ExitCode::SUCCESS
+}
+
+// @implements REQ-039 v3 2900b820
+fn annotate_cmd(req_id: &str, kind: &AnnotateKind) -> ExitCode {
+    let mut files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut files);
+
+    for file in &files {
+        if file.file_stem().and_then(|s| s.to_str()) != Some(req_id) {
+            continue;
+        }
+
+        let req = match load_requirement(file) {
+            Ok(req) => req,
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+        };
+
+        match kind {
+            AnnotateKind::Addresses => println!("\"{req_id} v{} {}\"", req.version, req.hash),
+            AnnotateKind::Implements => println!("@implements {req_id} v{} {}", req.version, req.hash),
+            AnnotateKind::Verifies => println!("@verifies {req_id} v{} {}", req.version, req.hash),
+        }
+        return ExitCode::SUCCESS;
+    }
+
+    eprintln!("requirement '{req_id}' not found under docs/prds");
+    ExitCode::FAILURE
 }
 
 // @implements REQ-015 v2 3d05542c
