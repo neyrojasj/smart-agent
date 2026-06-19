@@ -1,10 +1,12 @@
 id = "REQ-013"
-version = 2
+version = 4
 feat = "FEAT-Commands"
-hash = "41174961"
+hash = "c6954fdc"
 status = "active"
-statement = "The system must provide a weft init command that scaffolds docs/prds/, a design-decisions directory, and the weft skills into the current project."
+statement = "The system must provide a weft init command that scaffolds docs/prds/, a design-decisions directory, and the agent tools from agent-tools/skills/ into the AI-provider-specific directory for the current project."
 acceptance = [
     "Given weft init is run in an empty project, then docs/prds/ and docs/decisions/ are created.",
+    "Given weft init detects a Claude Code project (presence of .claude/), then it copies skills from agent-tools/skills/ into .claude/skills/.",
+    "Given weft init detects a Copilot project (presence of .github/copilot-instructions.md or .github/copilot/), then it copies agent tools from agent-tools/skills/ into the appropriate Copilot directory.",
     "Given weft init is run a second time, then it does not overwrite existing files and exits 0.",
 ]

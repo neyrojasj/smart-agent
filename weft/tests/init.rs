@@ -3,7 +3,7 @@ use std::fs;
 use assert_cmd::Command;
 use tempfile::TempDir;
 
-// @verifies REQ-013 v2 41174961
+// @verifies REQ-013 v4 c6954fdc
 #[test]
 fn init_creates_docs_prds_directory() {
     let dir = TempDir::new().expect("create temp dir");
@@ -100,7 +100,7 @@ fn init_is_idempotent_on_existing_project() {
         .success();
 }
 
-// @verifies REQ-013 v2 41174961
+// @verifies REQ-013 v4 c6954fdc
 #[test]
 fn init_second_run_does_not_overwrite_existing_prd_record() {
     let dir = TempDir::new().expect("create temp dir");
