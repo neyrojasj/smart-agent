@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
-use std::io::Write;
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+
+include!(concat!(env!("OUT_DIR"), "/skills_registry.rs"));
 
 use clap::{Parser, Subcommand, ValueEnum};
 use weft_core::{
@@ -609,8 +611,9 @@ fn render_cmd() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-// @implements REQ-013 v4 c6954fdc
+// @implements REQ-013 v5 b7c46a27
 // @implements REQ-035 v2 1e646999
+// @implements REQ-048 v2 94fdea44
 fn init_cmd() -> ExitCode {
     let dirs = ["docs/prds", "docs/decisions"];
     let mut ok = true;
@@ -636,11 +639,90 @@ fn init_cmd() -> ExitCode {
         }
     }
 
-    if ok {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::FAILURE
+    if !ok {
+        return ExitCode::FAILURE;
     }
+
+    let provider = detect_or_prompt_provider();
+    let skills_dest = match provider.as_str() {
+        "claude" => PathBuf::from(".claude/skills"),
+        "copilot" => PathBuf::from(".github/copilot"),
+        _ => {
+            println!("note: AI provider not selected, skipping skill installation");
+            return ExitCode::SUCCESS;
+        }
+    };
+
+    if let Err(e) = fs::create_dir_all(&skills_dest) {
+        eprintln!("{}: {e}", skills_dest.display());
+        return ExitCode::FAILURE;
+    }
+
+    if let Err(e) = install_embedded_skills(&skills_dest) {
+        eprintln!("{e}");
+        return ExitCode::FAILURE;
+    }
+
+    ExitCode::SUCCESS
+}
+
+fn detect_or_prompt_provider() -> String {
+    if Path::new(".claude").is_dir() {
+        println!("detected Claude Code project (.claude/ found)");
+        return "claude".to_string();
+    }
+    if Path::new(".github/copilot-instructions.md").exists()
+        || Path::new(".github/copilot").is_dir()
+    {
+        println!("detected Copilot project (.github/copilot found)");
+        return "copilot".to_string();
+    }
+
+    print!("AI provider not detected. Choose [claude/copilot]: ");
+    let _ = io::stdout().flush();
+    let stdin = io::stdin();
+    let answer = stdin.lock().lines().next().unwrap_or(Ok(String::new())).unwrap_or_default();
+    match answer.trim().to_lowercase().as_str() {
+        "claude" => "claude".to_string(),
+        "copilot" => "copilot".to_string(),
+        other => {
+            eprintln!("unknown provider: {other:?}, expected claude or copilot");
+            String::new()
+        }
+    }
+}
+
+// @implements REQ-048 v2 94fdea44
+fn install_embedded_skills(dest: &Path) -> Result<(), String> {
+    // Group entries by top-level skill directory name
+    let mut skill_names: Vec<&str> = EMBEDDED_SKILLS
+        .iter()
+        .filter_map(|(rel_path, _)| rel_path.split('/').next())
+        .collect();
+    skill_names.sort_unstable();
+    skill_names.dedup();
+
+    for skill_name in skill_names {
+        let skill_dest = dest.join(skill_name);
+        if skill_dest.exists() {
+            println!("skipped {} (already exists)", skill_dest.display());
+            continue;
+        }
+        for &(rel_path, content) in EMBEDDED_SKILLS {
+            if !rel_path.starts_with(skill_name) {
+                continue;
+            }
+            let file_dest = dest.join(rel_path);
+            if let Some(parent) = file_dest.parent() {
+                fs::create_dir_all(parent)
+                    .map_err(|e| format!("{}: {e}", parent.display()))?;
+            }
+            fs::write(&file_dest, content)
+                .map_err(|e| format!("{}: {e}", file_dest.display()))?;
+        }
+        println!("installed {}", skill_dest.display());
+    }
+    Ok(())
 }
 
 /// Rewrites a requirement record's `status` line to `"deprecated"`, leaving

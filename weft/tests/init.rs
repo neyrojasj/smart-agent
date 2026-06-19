@@ -3,7 +3,44 @@ use std::fs;
 use assert_cmd::Command;
 use tempfile::TempDir;
 
-// @verifies REQ-013 v4 c6954fdc
+// @verifies REQ-048 v2 94fdea44
+#[test]
+fn init_installs_skills_from_binary_without_agent_tools_directory() {
+    let dir = TempDir::new().expect("create temp dir");
+    // .claude/ triggers Claude provider detection without any stdin prompt
+    fs::create_dir_all(dir.path().join(".claude")).expect("create .claude dir");
+
+    assert!(
+        !dir.path().join("agent-tools").exists(),
+        "precondition: no agent-tools/ directory must exist"
+    );
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let skills_dir = dir.path().join(".claude/skills");
+    assert!(
+        skills_dir.is_dir(),
+        "expected .claude/skills/ to be created by init"
+    );
+
+    let skill_count = fs::read_dir(&skills_dir)
+        .expect("read .claude/skills")
+        .flatten()
+        .filter(|e| e.path().is_dir())
+        .count();
+
+    assert!(
+        skill_count > 0,
+        "expected at least one skill installed from the embedded registry"
+    );
+}
+
+// @verifies REQ-013 v5 b7c46a27
 #[test]
 fn init_creates_docs_prds_directory() {
     let dir = TempDir::new().expect("create temp dir");
@@ -100,7 +137,7 @@ fn init_is_idempotent_on_existing_project() {
         .success();
 }
 
-// @verifies REQ-013 v4 c6954fdc
+// @verifies REQ-013 v5 b7c46a27
 #[test]
 fn init_second_run_does_not_overwrite_existing_prd_record() {
     let dir = TempDir::new().expect("create temp dir");
