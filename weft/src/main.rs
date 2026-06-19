@@ -611,6 +611,114 @@ fn render_cmd() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// Parses the YAML frontmatter of a SKILL.md file and extracts the `name` and
+/// `description` fields. Handles both inline (`description: text`) and folded-
+/// block (`description: >\n  line1\n  line2`) forms by joining continuation
+/// lines with a single space.
+fn parse_skill_frontmatter(content: &str) -> Option<(String, String)> {
+    let trimmed = content.trim_start_matches('\n');
+    if !trimmed.starts_with("---") {
+        return None;
+    }
+    let after_open = trimmed["---".len()..].trim_start_matches('\n');
+    let close = after_open.find("\n---")?;
+    let frontmatter = &after_open[..close];
+
+    let mut name: Option<String> = None;
+    let mut description: Option<String> = None;
+    let mut in_desc_block = false;
+    let mut desc_lines: Vec<&str> = Vec::new();
+
+    for line in frontmatter.lines() {
+        if in_desc_block {
+            if line.starts_with("  ") || line.starts_with('\t') {
+                desc_lines.push(line.trim());
+                continue;
+            }
+            in_desc_block = false;
+        }
+        if let Some(val) = line.strip_prefix("name:") {
+            name = Some(val.trim().to_string());
+        } else if let Some(rest) = line.strip_prefix("description:") {
+            let rest = rest.trim();
+            if rest == ">" {
+                in_desc_block = true;
+                desc_lines.clear();
+            } else {
+                description = Some(rest.to_string());
+            }
+        }
+    }
+
+    if description.is_none() && !desc_lines.is_empty() {
+        description = Some(desc_lines.join(" "));
+    }
+
+    match (name, description) {
+        (Some(n), Some(d)) => Some((n, d)),
+        _ => None,
+    }
+}
+
+/// Builds the CONTEXT.md content from the list of installed skills.
+fn build_context_md(skills: &[(String, String)]) -> String {
+    let mut out = String::from(
+        "# Project Context\n\
+         \n\
+         ## Requirements\n\
+         \n\
+         This project uses **weft** for requirements traceability. Load the `weft` skill\n\
+         for any requirements-related activity (weft CLI, trace annotations, Trace State\n\
+         workflow, `.scratch/` issue tracker conventions).\n\
+         \n\
+         Run `target/debug/weft` (or the installed `weft` binary) to invoke commands.\n\
+         \n\
+         ## Issue Tracker\n\
+         \n\
+         Issues and implementation plans live under `.scratch/`, one subdirectory per\n\
+         feature (e.g. `.scratch/feat-auth/`). Load the `issue-tracker` skill when\n\
+         creating, reading, or planning work in `.scratch/`.\n\
+         \n\
+         ## Architecture Decisions\n\
+         \n\
+         - `docs/adr/` — Architecture Decision Records\n\
+         - `docs/decisions/` — Design decisions\n\
+         \n\
+         ## Installed Skills\n\
+         \n\
+         | Skill | Trigger |\n\
+         |-------|---------|\n",
+    );
+
+    for (name, description) in skills {
+        out.push_str(&format!("| `{name}` | {description} |\n"));
+    }
+
+    out.push('\n');
+    out
+}
+
+// @implements REQ-049 v2 a5273df5
+fn write_context_md_if_absent() -> Result<(), String> {
+    let context_path = Path::new("CONTEXT.md");
+    if context_path.exists() {
+        return Ok(());
+    }
+
+    let mut skills: Vec<(String, String)> = EMBEDDED_SKILLS
+        .iter()
+        .filter(|(rel_path, _)| rel_path.ends_with("/SKILL.md") || *rel_path == "SKILL.md")
+        .filter_map(|(_, content)| parse_skill_frontmatter(content))
+        .collect();
+    skills.sort_by(|(a, _), (b, _)| a.cmp(b));
+    skills.dedup_by(|(a, _), (b, _)| a == b);
+
+    let content = build_context_md(&skills);
+    fs::write(context_path, content).map_err(|e| format!("CONTEXT.md: {e}"))?;
+    println!("created CONTEXT.md");
+    Ok(())
+}
+
 // @implements REQ-013 v5 b7c46a27
 // @implements REQ-035 v2 1e646999
 // @implements REQ-048 v2 94fdea44
@@ -659,6 +767,11 @@ fn init_cmd() -> ExitCode {
     }
 
     if let Err(e) = install_embedded_skills(&skills_dest) {
+        eprintln!("{e}");
+        return ExitCode::FAILURE;
+    }
+
+    if let Err(e) = write_context_md_if_absent() {
         eprintln!("{e}");
         return ExitCode::FAILURE;
     }

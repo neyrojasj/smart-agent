@@ -5,6 +5,7 @@ addresses = [
     "REQ-014 v2 d217a603",
     "REQ-015 v2 3d05542c",
     "REQ-048 v2 94fdea44",
+    "REQ-049 v2 a5273df5",
     "REQ-050 v2 b7e04277",
     "REQ-051 v2 16a337fc",
 ]

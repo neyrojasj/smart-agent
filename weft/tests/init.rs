@@ -197,6 +197,70 @@ fn agent_tools_skills_directories_exist() {
     }
 }
 
+// @verifies REQ-049 v2 a5273df5
+#[test]
+fn init_creates_context_md() {
+    let dir = TempDir::new().expect("create temp dir");
+    fs::create_dir_all(dir.path().join(".claude")).expect("create .claude dir");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let context_path = dir.path().join("CONTEXT.md");
+    assert!(context_path.exists(), "expected CONTEXT.md to be created");
+
+    let src = fs::read_to_string(&context_path).expect("read CONTEXT.md");
+    assert!(src.contains("weft"), "expected weft skill reference");
+    assert!(src.contains(".scratch"), "expected .scratch/ issue tracker reference");
+    assert!(src.contains("docs/adr"), "expected docs/adr/ reference");
+    assert!(src.contains("docs/decisions"), "expected docs/decisions/ reference");
+}
+
+// @verifies REQ-049 v2 a5273df5
+#[test]
+fn init_does_not_overwrite_existing_context_md() {
+    let dir = TempDir::new().expect("create temp dir");
+    let context_path = dir.path().join("CONTEXT.md");
+    fs::write(&context_path, "# My custom context\n").expect("write fixture CONTEXT.md");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let src = fs::read_to_string(&context_path).expect("read CONTEXT.md");
+    assert_eq!(
+        src, "# My custom context\n",
+        "expected init to leave existing CONTEXT.md untouched, got:\n{src}"
+    );
+}
+
+// @verifies REQ-049 v2 a5273df5
+#[test]
+fn init_context_md_lists_installed_skills() {
+    let dir = TempDir::new().expect("create temp dir");
+    fs::create_dir_all(dir.path().join(".claude")).expect("create .claude dir");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let src = fs::read_to_string(dir.path().join("CONTEXT.md")).expect("read CONTEXT.md");
+    assert!(
+        src.contains("weft"),
+        "expected CONTEXT.md to list the weft skill, got:\n{src}"
+    );
+}
+
 // @verifies REQ-051 v2 16a337fc
 #[test]
 fn grill_with_docs_skill_includes_supporting_files() {
