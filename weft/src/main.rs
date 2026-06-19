@@ -107,6 +107,15 @@ enum Command {
     /// list each non-Verified requirement with its Trace State and exit
     /// non-zero. The autonomous agent's single loop-termination check.
     Gate,
+    /// Emit the single highest-priority not-yet-Verified requirement with an
+    /// explicit action verb (implement|rework|reseal|fix-tests|run-tests).
+    /// Exits zero (with "no next work item") when all active requirements are
+    /// Verified. The Work Driver for the autonomous agent loop (ADR 0014).
+    Next {
+        /// Emit the payload as a single JSON object instead of human-readable text.
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 #[derive(Clone, ValueEnum)]
@@ -143,6 +152,7 @@ fn main() -> ExitCode {
         Command::Trace { req_id } => trace_cmd(&req_id),
         Command::Annotate { req_id, kind } => annotate_cmd(&req_id, &kind),
         Command::Gate => gate_cmd(),
+        Command::Next { json } => next_cmd(json),
     }
 }
 
@@ -956,6 +966,233 @@ fn gate_cmd() -> ExitCode {
     } else {
         ExitCode::FAILURE
     }
+}
+
+/// The action verb an agent must perform to advance the selected requirement,
+/// derived from its blocking condition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ActionVerb {
+    Implement,
+    Rework,
+    Reseal,
+    FixTests,
+    RunTests,
+}
+
+impl ActionVerb {
+    fn as_str(self) -> &'static str {
+        match self {
+            ActionVerb::Implement => "implement",
+            ActionVerb::Rework => "rework",
+            ActionVerb::Reseal => "reseal",
+            ActionVerb::FixTests => "fix-tests",
+            ActionVerb::RunTests => "run-tests",
+        }
+    }
+}
+
+/// Priority score for a non-Verified requirement (lower = higher priority).
+/// Regressions-first, stable total order as defined in ADR 0014.
+fn next_priority(state: &TraceState, run_record: Option<&RunRecord>) -> u8 {
+    match state {
+        TraceState::Traced
+            if matches!(run_record, Some(r) if r.result == weft_core::TestResult::Failed) =>
+        {
+            1 // Traced-with-failing-tests
+        }
+        TraceState::Drifted(_) => 2,
+        TraceState::Stale => 3,
+        TraceState::Incomplete => 4,
+        TraceState::Orphaned => 5,
+        TraceState::Traced => 6, // without a recorded test run
+        TraceState::Verified => 7,
+    }
+}
+
+fn action_verb(state: &TraceState, run_record: Option<&RunRecord>) -> ActionVerb {
+    match state {
+        TraceState::Traced
+            if matches!(run_record, Some(r) if r.result == weft_core::TestResult::Failed) =>
+        {
+            ActionVerb::FixTests
+        }
+        TraceState::Drifted(_) => ActionVerb::Reseal,
+        TraceState::Stale => ActionVerb::Rework,
+        TraceState::Incomplete | TraceState::Orphaned => ActionVerb::Implement,
+        TraceState::Traced => ActionVerb::RunTests,
+        TraceState::Verified => unreachable!("Verified requirements are not selected by next"),
+    }
+}
+
+/// Returns the annotation strings for each relevant link kind for `implement`
+/// or `rework` actions. Keys are "addresses", "implements", "verifies".
+fn annotation_strings(
+    req: &weft_core::Requirement,
+    action: ActionVerb,
+    gap: &weft_core::TraceGap,
+) -> BTreeMap<String, String> {
+    if !matches!(action, ActionVerb::Implement | ActionVerb::Rework) {
+        return BTreeMap::new();
+    }
+    let kinds: Vec<&str> = match action {
+        ActionVerb::Implement => {
+            if gap.missing_links.is_empty() {
+                // Orphaned: all three links are missing
+                vec!["addresses", "implements", "verifies"]
+            } else {
+                gap.missing_links.iter().map(String::as_str).collect()
+            }
+        }
+        ActionVerb::Rework => gap.stale_links.iter().map(|l| l.kind.as_str()).collect(),
+        _ => unreachable!(),
+    };
+    let id = &req.id;
+    let v = req.version;
+    let h = &req.hash;
+    kinds
+        .into_iter()
+        .map(|kind| {
+            let annotation = match kind {
+                "addresses" => format!("\"{id} v{v} {h}\""),
+                "implements" => format!("@implements {id} v{v} {h}"),
+                "verifies" => format!("@verifies {id} v{v} {h}"),
+                _ => format!("@{kind} {id} v{v} {h}"),
+            };
+            (kind.to_string(), annotation)
+        })
+        .collect()
+}
+
+// @implements REQ-046 v3 fb90b6b7
+fn next_cmd(json: bool) -> ExitCode {
+    let mut req_files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut req_files);
+    req_files.sort();
+
+    let mut requirements = Vec::new();
+    for file in &req_files {
+        match load_requirement(file) {
+            Ok(req) => requirements.push(req),
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+    requirements.retain(|req| req.status == weft_core::Status::Active);
+    requirements.sort_by(|a, b| a.id.cmp(&b.id));
+
+    let file_annotations = scan_file_annotations(Path::new("."));
+    let annotations: Vec<weft_core::Annotation> = file_annotations
+        .iter()
+        .flat_map(|(_, a)| a.iter().cloned())
+        .collect();
+
+    let lock = fs::read_to_string(LOCK_PATH)
+        .map(|src| parse_lock(&src))
+        .unwrap_or_default();
+
+    let current_hashes: BTreeMap<String, String> =
+        all_annotated_files(&file_annotations)
+            .into_iter()
+            .filter_map(|path| {
+                let bytes = fs::read(&path).ok()?;
+                Some((path, file_hash(&bytes)))
+            })
+            .collect();
+
+    let run_lock = fs::read_to_string(RUN_LOCK_PATH)
+        .map(|src| parse_run_lock(&src))
+        .unwrap_or_default();
+
+    // Build (priority, check, req) for all non-Verified requirements.
+    let mut candidates: Vec<(u8, weft_core::RequirementCheck, weft_core::Requirement)> = Vec::new();
+    for req in &requirements {
+        let req_files = files_for_requirement(&req.id, &file_annotations);
+        let drifted = drifted_paths(&req_files, &lock, &current_hashes);
+        let req_file_hashes: BTreeMap<String, String> = req_files
+            .iter()
+            .filter_map(|path| current_hashes.get(path).map(|h| (path.clone(), h.clone())))
+            .collect();
+
+        let check = check_requirement(req, &annotations, drifted);
+        let run_record = run_lock.get(&req.id);
+        let check = verify_check(check, req, run_record, &req_file_hashes);
+
+        if check.state == weft_core::TraceState::Verified {
+            continue;
+        }
+
+        let priority = next_priority(&check.state, run_record);
+        candidates.push((priority, check, req.clone()));
+    }
+
+    if candidates.is_empty() {
+        if json {
+            println!("{{\"status\":\"no_next_work_item\"}}");
+        } else {
+            println!("no next work item");
+        }
+        return ExitCode::SUCCESS;
+    }
+
+    // Select the highest-priority candidate (lowest priority score), breaking
+    // ties by REQ_ID for a stable, reproducible selection.
+    candidates.sort_by(|(pa, ca, _), (pb, cb, _)| pa.cmp(pb).then(ca.id.cmp(&cb.id)));
+    let (_, check, req) = &candidates[0];
+
+    let run_record = run_lock.get(&req.id);
+    let action = action_verb(&check.state, run_record);
+    let annotations_map = annotation_strings(req, action, &check.gap);
+
+    if json {
+        let mut obj = serde_json::Map::new();
+        obj.insert("id".into(), serde_json::Value::String(req.id.clone()));
+        obj.insert("action".into(), serde_json::Value::String(action.as_str().into()));
+        obj.insert("state".into(), serde_json::Value::String(check.state.name().into()));
+        obj.insert("statement".into(), serde_json::Value::String(req.statement.clone()));
+        obj.insert("missing_links".into(), serde_json::Value::Array(
+            check.gap.missing_links.iter().map(|s| serde_json::Value::String(s.clone())).collect(),
+        ));
+        obj.insert("stale_links".into(), serde_json::json!(check.gap.stale_links));
+        obj.insert("drifted_files".into(), serde_json::Value::Array(
+            check.gap.drifted_files.iter().map(|s| serde_json::Value::String(s.clone())).collect(),
+        ));
+        if !annotations_map.is_empty() {
+            let ann_obj: serde_json::Map<String, serde_json::Value> = annotations_map
+                .iter()
+                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+                .collect();
+            obj.insert("annotations".into(), serde_json::Value::Object(ann_obj));
+        }
+        println!("{}", serde_json::Value::Object(obj));
+    } else {
+        println!("{}: {}", req.id, action.as_str());
+        println!("state: {}", check.state.name());
+        println!("statement: {}", description(&req.statement));
+        if !check.gap.missing_links.is_empty() {
+            println!("missing: {}", check.gap.missing_links.join(", "));
+        }
+        if !check.gap.stale_links.is_empty() {
+            let parts: Vec<String> = check.gap.stale_links.iter()
+                .map(|l| format!("{} (recorded: {}, current: {})", l.kind, l.recorded_hash, l.current_hash))
+                .collect();
+            println!("stale: {}", parts.join("; "));
+        }
+        if !check.gap.drifted_files.is_empty() {
+            println!("drifted: {}", check.gap.drifted_files.join(", "));
+        }
+        if action == ActionVerb::FixTests {
+            println!("gap: tests failed");
+        } else if action == ActionVerb::RunTests {
+            println!("gap: no recorded test run");
+        }
+        for (kind, annotation) in &annotations_map {
+            println!("annotation {kind}: {annotation}");
+        }
+    }
+
+    ExitCode::FAILURE
 }
 
 // @implements REQ-015 v2 3d05542c
