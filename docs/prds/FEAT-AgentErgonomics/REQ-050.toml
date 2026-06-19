@@ -1,0 +1,13 @@
+id = "REQ-050"
+version = 2
+feat = "FEAT-AgentErgonomics"
+hash = "b7e04277"
+status = "active"
+statement = "A weft skill must be provided in agent-tools/skills/weft/ containing the full weft command reference, trace annotation format, .scratch conventions, and docs hierarchy; its description must trigger on any weft or requirements-related activity."
+acceptance = [
+    "Given the weft skill is installed, then its description causes the agent to load it whenever weft commands, requirements, or trace annotations are mentioned.",
+    "Given the weft skill body is loaded, then it contains the complete weft command reference (verify, check, bump, seal, init, new, list, get, deprecate, render, annotate, trace).",
+    "Given the weft skill body is loaded, then it contains the correct @addresses, @implements, and @verifies annotation format with REQ_ID, version, and hash.",
+    "Given the weft skill body is loaded, then it documents the .scratch/ issue tracker conventions and the docs/adr/ + docs/decisions/ hierarchy.",
+]
+rationale = "The weft skill is the primary on-demand reference for agents. Without it, every agent session must re-derive the weft workflow from the binary help text, leading to errors in annotation format and trace state management."

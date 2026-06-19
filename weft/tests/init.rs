@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::PathBuf;
 
 use assert_cmd::Command;
 use tempfile::TempDir;
@@ -163,5 +164,54 @@ fn init_second_run_does_not_overwrite_existing_prd_record() {
     assert_eq!(
         src, "id = \"REQ-001\"\n",
         "expected init to leave existing records untouched, got:\n{src}"
+    );
+}
+
+// @verifies REQ-050 v2 b7e04277
+// @verifies REQ-051 v2 16a337fc
+#[test]
+fn agent_tools_skills_directories_exist() {
+    let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("workspace root")
+        .to_path_buf();
+    let skills_dir = workspace.join("agent-tools/skills");
+
+    for skill in &[
+        "weft",
+        "grill-with-docs",
+        "architecture",
+        "issue-tracker",
+        "domain",
+        "triage",
+    ] {
+        let skill_dir = skills_dir.join(skill);
+        assert!(
+            skill_dir.is_dir(),
+            "expected agent-tools/skills/{skill}/ to exist"
+        );
+        assert!(
+            skill_dir.join("SKILL.md").is_file(),
+            "expected agent-tools/skills/{skill}/SKILL.md to exist"
+        );
+    }
+}
+
+// @verifies REQ-051 v2 16a337fc
+#[test]
+fn grill_with_docs_skill_includes_supporting_files() {
+    let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("workspace root")
+        .to_path_buf();
+    let grill_dir = workspace.join("agent-tools/skills/grill-with-docs");
+
+    assert!(
+        grill_dir.join("CONTEXT-FORMAT.md").is_file(),
+        "expected agent-tools/skills/grill-with-docs/CONTEXT-FORMAT.md"
+    );
+    assert!(
+        grill_dir.join("ADR-FORMAT.md").is_file(),
+        "expected agent-tools/skills/grill-with-docs/ADR-FORMAT.md"
     );
 }

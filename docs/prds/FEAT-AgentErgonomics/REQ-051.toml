@@ -1,0 +1,14 @@
+id = "REQ-051"
+version = 2
+feat = "FEAT-AgentErgonomics"
+hash = "16a337fc"
+status = "active"
+statement = "The agent-tools/skills/ directory must include grill-with-docs (with CONTEXT-FORMAT.md and ADR-FORMAT.md) and the four agent config skills (architecture, issue-tracker, domain, triage), each with a trigger description that causes the agent to load it when the relevant context is needed."
+acceptance = [
+    "Given the grill-with-docs skill is installed, then it includes SKILL.md, CONTEXT-FORMAT.md, and ADR-FORMAT.md.",
+    "Given the architecture skill is installed, then its description triggers when the agent is writing, reviewing, or refactoring code.",
+    "Given the issue-tracker skill is installed, then its description triggers when the agent is creating or reading issues or planning work in .scratch/.",
+    "Given the domain skill is installed, then its description triggers when the agent is discussing domain concepts or updating CONTEXT.md.",
+    "Given the triage skill is installed, then its description triggers when the agent is labeling or triaging issues.",
+]
+rationale = "Static docs/agents/ config files require CLAUDE.md to wire them in and are always-loaded regardless of relevance. Skill-based agent config is loaded only when needed, saves context, and works identically for Claude and Copilot."
