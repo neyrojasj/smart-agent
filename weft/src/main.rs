@@ -705,9 +705,9 @@ fn write_context_md_if_absent() -> Result<(), String> {
         return Ok(());
     }
 
-    let mut skills: Vec<(String, String)> = EMBEDDED_SKILLS
+    let mut skills: Vec<(String, String)> = EMBEDDED_AGENT_TOOLS
         .iter()
-        .filter(|(rel_path, _)| rel_path.ends_with("/SKILL.md") || *rel_path == "SKILL.md")
+        .filter(|(rel_path, _)| rel_path.ends_with("/SKILL.md"))
         .filter_map(|(_, content)| parse_skill_frontmatter(content))
         .collect();
     skills.sort_by(|(a, _), (b, _)| a.cmp(b));
@@ -719,11 +719,11 @@ fn write_context_md_if_absent() -> Result<(), String> {
     Ok(())
 }
 
-// @implements REQ-013 v5 b7c46a27
+// @implements REQ-013 v7 fd2545ef
 // @implements REQ-035 v2 1e646999
-// @implements REQ-048 v2 94fdea44
+// @implements REQ-048 v3 74c0bba3
 fn init_cmd() -> ExitCode {
-    let dirs = ["docs/prds", "docs/decisions"];
+    let dirs = ["docs/prds", "docs/adr", "docs/decisions"];
     let mut ok = true;
 
     for dir in &dirs {
@@ -752,21 +752,33 @@ fn init_cmd() -> ExitCode {
     }
 
     let provider = detect_or_prompt_provider();
-    let skills_dest = match provider.as_str() {
-        "claude" => PathBuf::from(".claude/skills"),
-        "copilot" => PathBuf::from(".github/copilot"),
+    let provider_root = match provider.as_str() {
+        "claude" => PathBuf::from(".claude"),
+        "copilot" => PathBuf::from(".github"),
         _ => {
             println!("note: AI provider not selected, skipping skill installation");
             return ExitCode::SUCCESS;
         }
     };
 
+    let skills_dest = provider_root.join("skills");
     if let Err(e) = fs::create_dir_all(&skills_dest) {
         eprintln!("{}: {e}", skills_dest.display());
         return ExitCode::FAILURE;
     }
 
     if let Err(e) = install_embedded_skills(&skills_dest) {
+        eprintln!("{e}");
+        return ExitCode::FAILURE;
+    }
+
+    let scripts_dest = provider_root.join("scripts");
+    if let Err(e) = install_embedded_scripts(&scripts_dest, &provider) {
+        eprintln!("{e}");
+        return ExitCode::FAILURE;
+    }
+
+    if let Err(e) = install_provider_instruction_file(&provider) {
         eprintln!("{e}");
         return ExitCode::FAILURE;
     }
@@ -805,12 +817,14 @@ fn detect_or_prompt_provider() -> String {
     }
 }
 
-// @implements REQ-048 v2 94fdea44
+// @implements REQ-048 v3 74c0bba3
 fn install_embedded_skills(dest: &Path) -> Result<(), String> {
-    // Group entries by top-level skill directory name
-    let mut skill_names: Vec<&str> = EMBEDDED_SKILLS
+    // Only skill entries (path starts with "skills/"); strip that prefix for installation.
+    let mut skill_names: Vec<&str> = EMBEDDED_AGENT_TOOLS
         .iter()
-        .filter_map(|(rel_path, _)| rel_path.split('/').next())
+        .filter_map(|(rel_path, _)| {
+            rel_path.strip_prefix("skills/")?.split('/').next()
+        })
         .collect();
     skill_names.sort_unstable();
     skill_names.dedup();
@@ -821,11 +835,12 @@ fn install_embedded_skills(dest: &Path) -> Result<(), String> {
             println!("skipped {} (already exists)", skill_dest.display());
             continue;
         }
-        for &(rel_path, content) in EMBEDDED_SKILLS {
-            if !rel_path.starts_with(skill_name) {
+        for &(rel_path, content) in EMBEDDED_AGENT_TOOLS {
+            let Some(skill_rel) = rel_path.strip_prefix("skills/") else { continue };
+            if !skill_rel.starts_with(skill_name) {
                 continue;
             }
-            let file_dest = dest.join(rel_path);
+            let file_dest = dest.join(skill_rel);
             if let Some(parent) = file_dest.parent() {
                 fs::create_dir_all(parent)
                     .map_err(|e| format!("{}: {e}", parent.display()))?;
@@ -835,6 +850,63 @@ fn install_embedded_skills(dest: &Path) -> Result<(), String> {
         }
         println!("installed {}", skill_dest.display());
     }
+    Ok(())
+}
+
+// @implements REQ-048 v3 74c0bba3
+// @implements REQ-013 v7 fd2545ef
+fn install_embedded_scripts(dest: &Path, provider: &str) -> Result<(), String> {
+    let source_name = match provider {
+        "claude" => "scripts/afk-claude.sh",
+        "copilot" => "scripts/afk-copilot.sh",
+        _ => return Ok(()),
+    };
+
+    let ralph = dest.join("afk-ralph.sh");
+    if ralph.exists() {
+        println!("skipped {} (already exists)", ralph.display());
+        return Ok(());
+    }
+
+    let content = EMBEDDED_AGENT_TOOLS
+        .iter()
+        .find(|(rel_path, _)| *rel_path == source_name)
+        .map(|(_, content)| *content)
+        .ok_or_else(|| format!("embedded script not found: {source_name}"))?;
+
+    fs::create_dir_all(dest).map_err(|e| format!("{}: {e}", dest.display()))?;
+    fs::write(&ralph, content).map_err(|e| format!("{}: {e}", ralph.display()))?;
+    println!("installed {}", ralph.display());
+    Ok(())
+}
+
+// @implements REQ-013 v7 fd2545ef
+fn install_provider_instruction_file(provider: &str) -> Result<(), String> {
+    let (path, content) = match provider {
+        "claude" => (
+            PathBuf::from("CLAUDE.md"),
+            "# Claude Instructions\n\
+             \n\
+             For project context, conventions, and installed skills, see [CONTEXT.md](CONTEXT.md).\n",
+        ),
+        "copilot" => (
+            PathBuf::from(".github/copilot-instructions.md"),
+            "For project context, conventions, and installed skills, see [CONTEXT.md](CONTEXT.md).\n",
+        ),
+        _ => return Ok(()),
+    };
+
+    if path.exists() {
+        return Ok(());
+    }
+
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent).map_err(|e| format!("{}: {e}", parent.display()))?;
+        }
+    }
+    fs::write(&path, content).map_err(|e| format!("{}: {e}", path.display()))?;
+    println!("created {}", path.display());
     Ok(())
 }
 

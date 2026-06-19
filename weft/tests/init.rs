@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use assert_cmd::Command;
 use tempfile::TempDir;
 
-// @verifies REQ-048 v2 94fdea44
+// @verifies REQ-048 v3 74c0bba3
 #[test]
 fn init_installs_skills_from_binary_without_agent_tools_directory() {
     let dir = TempDir::new().expect("create temp dir");
@@ -41,7 +41,7 @@ fn init_installs_skills_from_binary_without_agent_tools_directory() {
     );
 }
 
-// @verifies REQ-013 v5 b7c46a27
+// @verifies REQ-013 v7 fd2545ef
 #[test]
 fn init_creates_docs_prds_directory() {
     let dir = TempDir::new().expect("create temp dir");
@@ -138,7 +138,7 @@ fn init_is_idempotent_on_existing_project() {
         .success();
 }
 
-// @verifies REQ-013 v5 b7c46a27
+// @verifies REQ-013 v7 fd2545ef
 #[test]
 fn init_second_run_does_not_overwrite_existing_prd_record() {
     let dir = TempDir::new().expect("create temp dir");
@@ -277,5 +277,147 @@ fn grill_with_docs_skill_includes_supporting_files() {
     assert!(
         grill_dir.join("ADR-FORMAT.md").is_file(),
         "expected agent-tools/skills/grill-with-docs/ADR-FORMAT.md"
+    );
+}
+
+// @verifies REQ-013 v7 fd2545ef
+#[test]
+fn init_creates_docs_adr_directory() {
+    let dir = TempDir::new().expect("create temp dir");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    assert!(
+        dir.path().join("docs/adr").is_dir(),
+        "expected docs/adr/ to be created"
+    );
+}
+
+// @verifies REQ-048 v3 74c0bba3
+// @verifies REQ-013 v7 fd2545ef
+#[test]
+fn init_installs_scripts_for_claude() {
+    let dir = TempDir::new().expect("create temp dir");
+    fs::create_dir_all(dir.path().join(".claude")).expect("create .claude dir");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let script = dir.path().join(".claude/scripts/afk-ralph.sh");
+    assert!(
+        script.is_file(),
+        "expected .claude/scripts/afk-ralph.sh to be installed"
+    );
+    let content = fs::read_to_string(&script).expect("read afk-ralph.sh");
+    assert!(
+        content.contains("afk-claude"),
+        "expected Claude-specific script content"
+    );
+}
+
+// @verifies REQ-013 v7 fd2545ef
+#[test]
+fn init_installs_claude_md_instruction_file() {
+    let dir = TempDir::new().expect("create temp dir");
+    fs::create_dir_all(dir.path().join(".claude")).expect("create .claude dir");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let claude_md = dir.path().join("CLAUDE.md");
+    assert!(
+        claude_md.is_file(),
+        "expected CLAUDE.md to be created for Claude provider"
+    );
+    let content = fs::read_to_string(&claude_md).expect("read CLAUDE.md");
+    assert!(
+        content.contains("CONTEXT.md"),
+        "expected CLAUDE.md to reference CONTEXT.md"
+    );
+}
+
+// @verifies REQ-013 v7 fd2545ef
+#[test]
+fn init_does_not_overwrite_existing_claude_md() {
+    let dir = TempDir::new().expect("create temp dir");
+    fs::create_dir_all(dir.path().join(".claude")).expect("create .claude dir");
+    let claude_md = dir.path().join("CLAUDE.md");
+    fs::write(&claude_md, "# My custom CLAUDE.md\n").expect("write fixture CLAUDE.md");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let content = fs::read_to_string(&claude_md).expect("read CLAUDE.md");
+    assert_eq!(
+        content, "# My custom CLAUDE.md\n",
+        "expected init to leave existing CLAUDE.md untouched"
+    );
+}
+
+// @verifies REQ-048 v3 74c0bba3
+// @verifies REQ-013 v7 fd2545ef
+#[test]
+fn init_installs_scripts_for_copilot() {
+    let dir = TempDir::new().expect("create temp dir");
+    fs::create_dir_all(dir.path().join(".github/copilot")).expect("create .github/copilot dir");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let script = dir.path().join(".github/scripts/afk-ralph.sh");
+    assert!(
+        script.is_file(),
+        "expected .github/scripts/afk-ralph.sh to be installed"
+    );
+    let content = fs::read_to_string(&script).expect("read afk-ralph.sh");
+    assert!(
+        content.contains("afk-copilot"),
+        "expected Copilot-specific script content"
+    );
+}
+
+// @verifies REQ-013 v7 fd2545ef
+#[test]
+fn init_installs_copilot_instruction_file() {
+    let dir = TempDir::new().expect("create temp dir");
+    fs::create_dir_all(dir.path().join(".github/copilot")).expect("create .github/copilot dir");
+
+    Command::cargo_bin("weft")
+        .unwrap()
+        .arg("init")
+        .current_dir(dir.path())
+        .assert()
+        .success();
+
+    let instructions = dir.path().join(".github/copilot-instructions.md");
+    assert!(
+        instructions.is_file(),
+        "expected .github/copilot-instructions.md to be created for Copilot provider"
+    );
+    let content = fs::read_to_string(&instructions).expect("read copilot-instructions.md");
+    assert!(
+        content.contains("CONTEXT.md"),
+        "expected copilot-instructions.md to reference CONTEXT.md"
     );
 }

@@ -1,12 +1,12 @@
 id = "REQ-048"
-version = 2
+version = 3
 feat = "FEAT-Commands"
-hash = "94fdea44"
+hash = "74c0bba3"
 status = "active"
-statement = "The weft binary must embed all agent-tools skill files at compile time so that weft init can install skills without requiring an agent-tools/ directory to be present at runtime."
+statement = "The weft binary must embed the entire agent-tools/ directory tree at compile time so that weft init can install all agent tools without requiring an agent-tools/ directory to be present at runtime."
 acceptance = [
-    "Given a weft binary installed on a system with no agent-tools/ directory present, when weft init is run, then the embedded skills are written to the appropriate provider directory.",
-    "Given agent-tools/skills/ content changes and the binary is rebuilt, then weft init installs the updated skill content from the new binary.",
-    "Given weft init runs on a system where the target skill directory already contains a skill, then that skill is not overwritten and weft init exits 0.",
+    "Given a weft binary installed on a system with no agent-tools/ directory present, when weft init is run, then the full embedded tree (skills/, scripts/, and any other subdirectories) is written to the appropriate provider directory.",
+    "Given any file in agent-tools/ changes and the binary is rebuilt, then weft init installs the updated content from the new binary.",
+    "Given weft init runs on a system where a target file already exists, then that file is not overwritten and weft init exits 0.",
 ]
 rationale = "A single self-contained binary is the correct distribution unit for a CLI tool. Requiring an agent-tools/ directory alongside the binary breaks installation via cargo install or any package manager."

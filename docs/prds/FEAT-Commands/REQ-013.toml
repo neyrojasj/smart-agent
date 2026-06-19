@@ -1,12 +1,14 @@
 id = "REQ-013"
-version = 5
+version = 7
 feat = "FEAT-Commands"
-hash = "b7c46a27"
+hash = "fd2545ef"
 status = "active"
-statement = "The system must provide a weft init command that scaffolds docs/prds/, a design-decisions directory, and the embedded agent-tools skills into the AI-provider-specific directory for the current project."
+statement = "The system must provide a weft init command that scaffolds docs/prds/, docs/adr/, and docs/decisions/; installs the full embedded agent-tools/ tree into the AI-provider-specific directory; generates CONTEXT.md at the project root; and installs a provider-specific instruction file."
 acceptance = [
-    "Given weft init is run in an empty project, then docs/prds/ and docs/decisions/ are created.",
-    "Given weft init detects a Claude Code project (presence of .claude/), then it installs the embedded skills into .claude/skills/.",
-    "Given weft init detects a Copilot project (presence of .github/copilot-instructions.md or .github/copilot/), then it installs the embedded agent tools into the appropriate Copilot directory.",
+    "Given weft init is run in an empty project, then docs/prds/, docs/adr/, and docs/decisions/ are created.",
+    "Given weft init detects a Claude Code project (presence of .claude/), then it installs the embedded agent-tools/ tree into .claude/ and installs CLAUDE.md at the project root.",
+    "Given weft init detects a Copilot project (presence of .github/copilot-instructions.md or .github/copilot/), then it installs the embedded agent-tools/ tree into .github/ and installs .github/copilot-instructions.md.",
+    "Given either provider, weft init generates CONTEXT.md at the project root pre-filled with mandatory weft conventions, .scratch usage, docs hierarchy, and skill pointers.",
+    "Given weft init installs scripts, then the provider-specific source script (afk-claude.sh or afk-copilot.sh) is installed under the canonical name afk-ralph.sh, transparent to the user.",
     "Given weft init is run a second time, then it does not overwrite existing files and exits 0.",
 ]

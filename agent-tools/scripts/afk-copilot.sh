@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 #
-# afk-copilot.sh — AFK "Copilot" loop for building a PRD one vertical slice at a time.
+# afk-copilot.sh — GitHub Copilot AFK loop (installed as afk-ralph.sh).
 #
 # For each issue file under .scratch/*/issues/ with Status: ready-for-agent (in ascending
 # path order), it spins up a FRESH headless `claude` session that implements exactly that
 # one slice with TDD and lands a single commit. Continuity between sessions comes from the
 # last 5 commits + the issue file + the working tree (the Ralph pattern).
 #
-# Usage:
-#   scripts/afk-copilot.sh [FEATURE]         # FEATURE: .scratch/<feature>/, PRD.md path, or slug
-#   scripts/afk-copilot.sh weft --dry-run    # print the prompt for the next slice, don't run
+# Usage (after weft init installs it as afk-ralph.sh):
+#   .github/scripts/afk-ralph.sh [FEATURE]         # FEATURE: .scratch/<feature>/, PRD.md path, or slug
+#   .github/scripts/afk-ralph.sh weft --dry-run    # print the prompt for the next slice, don't run
 #
 # Env knobs:
 #   COPILOT_MAX      safety cap on iterations        (default: 50)
@@ -24,7 +24,6 @@ DRY_RUN=false
 
 MAX_ITERS="${COPILOT_MAX:-50}"
 MODEL="claude-sonnet-4-6"
-LOG_DIR="logs/copilot"
 SCRATCH_DIR=".scratch"
 
 # ---- preflight ----------------------------------------------------------------
@@ -32,7 +31,6 @@ command -v jq >/dev/null     || { echo "✗ jq not found"; exit 1; }
 command -v claude >/dev/null || { echo "✗ claude CLI not found"; exit 1; }
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "✗ not a git repo"; exit 1; }
 [[ -d "$SCRATCH_DIR" ]] || { echo "✗ $SCRATCH_DIR/ not found — no local issues"; exit 1; }
-mkdir -p "$LOG_DIR"
 
 # Resolve the feature folder and PRD path from the argument.
 # Accepts: a folder (.scratch/feat-foo/ or feat-foo), a PRD.md path, or nothing (all features).
@@ -153,6 +151,8 @@ while (( iter++ < MAX_ITERS )); do
   head_before="$(git rev-parse HEAD)"
   ts="$(date +%Y%m%d-%H%M%S)"
   slug="$(basename "$issue_path" .md)"
+  LOG_DIR="$(dirname "$(dirname "$issue_path")")/logs"
+  mkdir -p "$LOG_DIR"
   log_file="$LOG_DIR/${slug}-${ts}.log"
   raw_file="$LOG_DIR/${slug}-${ts}.jsonl"
 

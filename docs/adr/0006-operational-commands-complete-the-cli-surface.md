@@ -1,10 +1,10 @@
 +++
 addresses = [
     "REQ-012 v2 8afcf842",
-    "REQ-013 v5 b7c46a27",
+    "REQ-013 v7 fd2545ef",
     "REQ-014 v2 d217a603",
     "REQ-015 v2 3d05542c",
-    "REQ-048 v2 94fdea44",
+    "REQ-048 v3 74c0bba3",
     "REQ-049 v2 a5273df5",
     "REQ-050 v2 b7e04277",
     "REQ-051 v2 16a337fc",
