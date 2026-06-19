@@ -103,6 +103,10 @@ enum Command {
         #[arg(long, value_enum)]
         kind: AnnotateKind,
     },
+    /// Exit zero only when every active requirement is Verified; otherwise
+    /// list each non-Verified requirement with its Trace State and exit
+    /// non-zero. The autonomous agent's single loop-termination check.
+    Gate,
 }
 
 #[derive(Clone, ValueEnum)]
@@ -138,6 +142,7 @@ fn main() -> ExitCode {
         Command::Test { req_id } => test_cmd(req_id.as_deref()),
         Command::Trace { req_id } => trace_cmd(&req_id),
         Command::Annotate { req_id, kind } => annotate_cmd(&req_id, &kind),
+        Command::Gate => gate_cmd(),
     }
 }
 
@@ -594,7 +599,7 @@ fn render_cmd() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-// @implements REQ-013 v2 41174961
+// @implements REQ-013 v4 c6954fdc
 // @implements REQ-035 v2 1e646999
 fn init_cmd() -> ExitCode {
     let dirs = ["docs/prds", "docs/decisions"];
@@ -884,6 +889,73 @@ fn annotate_cmd(req_id: &str, kind: &AnnotateKind) -> ExitCode {
 
     eprintln!("requirement '{req_id}' not found under docs/prds");
     ExitCode::FAILURE
+}
+
+// @implements REQ-045 v2 12e173a6
+fn gate_cmd() -> ExitCode {
+    let mut req_files = Vec::new();
+    find_toml_files(Path::new("docs/prds"), &mut req_files);
+    req_files.sort();
+
+    let mut requirements = Vec::new();
+    for file in &req_files {
+        match load_requirement(file) {
+            Ok(req) => requirements.push(req),
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+    requirements.retain(|req| req.status == Status::Active);
+    requirements.sort_by(|a, b| a.id.cmp(&b.id));
+
+    let file_annotations = scan_file_annotations(Path::new("."));
+    let annotations: Vec<Annotation> = file_annotations
+        .iter()
+        .flat_map(|(_, annotations)| annotations.iter().cloned())
+        .collect();
+
+    let lock = fs::read_to_string(LOCK_PATH)
+        .map(|src| parse_lock(&src))
+        .unwrap_or_default();
+
+    let current_hashes: BTreeMap<String, String> =
+        all_annotated_files(&file_annotations)
+            .into_iter()
+            .filter_map(|path| {
+                let bytes = fs::read(&path).ok()?;
+                Some((path, file_hash(&bytes)))
+            })
+            .collect();
+
+    let run_lock = fs::read_to_string(RUN_LOCK_PATH)
+        .map(|src| parse_run_lock(&src))
+        .unwrap_or_default();
+
+    let mut all_verified = true;
+    for req in &requirements {
+        let req_files = files_for_requirement(&req.id, &file_annotations);
+        let drifted = drifted_paths(&req_files, &lock, &current_hashes);
+        let req_file_hashes: BTreeMap<String, String> = req_files
+            .iter()
+            .filter_map(|path| current_hashes.get(path).map(|hash| (path.clone(), hash.clone())))
+            .collect();
+
+        let check = check_requirement(req, &annotations, drifted);
+        let check = verify_check(check, req, run_lock.get(&req.id), &req_file_hashes);
+
+        if check.state != TraceState::Verified {
+            all_verified = false;
+            println!("{}: {}", req.id, check.state);
+        }
+    }
+
+    if all_verified {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
 }
 
 // @implements REQ-015 v2 3d05542c
